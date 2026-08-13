@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Electro Mec - Service</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#f4f6f8;color:#17202a}
+.app{display:flex;min-height:100vh}.side{width:245px;background:#111827;color:#fff;padding:22px 16px}.brand{font-size:20px;font-weight:800;margin-bottom:24px}.brand small{display:block;color:#9ca3af;font-size:12px;margin-top:4px}.nav button{width:100%;padding:12px 14px;margin:4px 0;border:0;border-radius:10px;background:transparent;color:#d1d5db;text-align:left;font-size:14px;cursor:pointer}.nav button:hover,.nav button.active{background:#263244;color:#fff}.main{flex:1;padding:24px;max-width:1400px;margin:auto;width:100%}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}.title h1{margin:0;font-size:28px}.title p{margin:5px 0;color:#6b7280}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.card{background:#fff;border-radius:16px;padding:18px;box-shadow:0 3px 15px #0000000d}.label{color:#6b7280;font-size:13px}.num{font-size:28px;font-weight:800;margin-top:7px}.ok{color:#15803d}.warn{color:#b45309}.danger{color:#b91c1c}.section{margin-top:20px}.section h2{font-size:18px}.panel{background:#fff;border-radius:16px;padding:18px;box-shadow:0 3px 15px #0000000d}.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px}input,select{padding:11px;border:1px solid #d1d5db;border-radius:9px;background:#fff}input{min-width:220px}.btn{border:0;border-radius:9px;padding:11px 15px;cursor:pointer;background:#111827;color:#fff}.btn.secondary{background:#e5e7eb;color:#111827}.table{width:100%;border-collapse:collapse}.table th,.table td{padding:12px 8px;border-bottom:1px solid #e5e7eb;text-align:left;font-size:14px}.badge{display:inline-block;padding:5px 8px;border-radius:99px;background:#eef2ff;font-size:12px}.empty{color:#6b7280;text-align:center;padding:35px}.form{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.form label{font-size:13px;color:#4b5563}.form input{width:100%;margin-top:5px}.modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;padding:20px}.modal.show{display:flex}.modalbox{background:#fff;border-radius:16px;padding:22px;width:min(620px,100%)}.modalbox h2{margin-top:0}.actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}@media(max-width:900px){.side{width:190px}.cards{grid-template-columns:repeat(2,1fr)}}@media(max-width:650px){.app{display:block}.side{width:100%;padding:12px}.nav{display:flex;overflow:auto}.nav button{white-space:nowrap;width:auto}.main{padding:15px}.cards{grid-template-columns:1fr 1fr}.form{grid-template-columns:1fr}.table{font-size:12px}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="side"><div class="brand">⚡ Electro Mec<small>Service · App V1</small></div><div class="nav">
+<button class="active" onclick="show('inicio',this)">🏠 Inicio</button>
+<button onclick="show('clientes',this)">👤 Clientes</button>
+<button onclick="show('motos',this)">🏍️ Motos</button>
+<button onclick="show('ot',this)">🔧 Órdenes de trabajo</button>
+<button onclick="show('inventario',this)">📦 Inventario</button>
+<button onclick="show('presupuestos',this)">💰 Presupuestos</button>
+<button onclick="show('caja',this)">💵 Caja</button>
+</div></aside>
+<main class="main">
+<div id="inicio" class="view">
+<div class="top"><div class="title"><h1>Panel de control</h1><p>Centro de operaciones del taller</p></div></div>
+<div class="cards" id="kpis"></div>
+<div class="section"><h2>⚡ Alertas</h2><div class="panel" id="alerts"></div></div>
+</div>
+<div id="clientes" class="view" style="display:none">
+<div class="top"><div class="title"><h1>Clientes</h1><p>Base de clientes del taller</p></div><button class="btn" onclick="openClient()">＋ Nuevo cliente</button></div>
+<div class="panel"><div class="toolbar"><input id="clientSearch" placeholder="Buscar por nombre o teléfono" oninput="renderClients()"></div><div id="clientTable"></div></div>
+</div>
+<div id="motos" class="view" style="display:none">
+<div class="top"><div class="title"><h1>Motos</h1><p>Vehículos asociados a clientes</p></div><button class="btn" onclick="openMoto()">＋ Nueva moto</button></div>
+<div class="panel"><div class="toolbar"><input id="motoSearch" placeholder="Buscar dominio, marca o modelo" oninput="renderMotos()"></div><div id="motoTable"></div></div>
+</div>
+<div id="ot" class="view" style="display:none"><div class="top"><div class="title"><h1>Órdenes de Trabajo</h1><p>Recepción, diagnóstico y seguimiento</p></div><button class="btn" onclick="openOT()">＋ Nueva OT</button></div><div class="panel"><div class="toolbar"><input id="otSearch" placeholder="Buscar OT, dominio o cliente" oninput="renderOT()"></div><div id="otTable"></div></div></div>
+<div id="inventario" class="view" style="display:none"><div class="top"><div class="title"><h1>Inventario</h1><p>Stock y alertas de reposición</p></div><button class="btn" onclick="openPart()">＋ Nuevo repuesto</button></div><div class="panel"><div class="toolbar"><input id="partSearch" placeholder="Buscar repuesto" oninput="renderParts()"></div><div id="partTable"></div></div></div>
+<div id="presupuestos" class="view" style="display:none"><div class="top"><div class="title"><h1>Presupuestos</h1><p>Estados y seguimiento</p></div></div><div class="panel"><div id="quoteTable"></div></div></div>
+<div id="caja" class="view" style="display:none"><div class="top"><div class="title"><h1>Caja</h1><p>Ingresos, egresos y saldo</p></div><div><button class="btn" onclick="openMove('Ingreso')">＋ Ingreso</button> <button class="btn secondary" onclick="openMove('Egreso')">＋ Egreso</button></div></div><div class="panel" id="cashPanel"></div></div>
+</main></div>
+<div class="modal" id="modal"><div class="modalbox" id="modalbox"></div></div>
+<script>
+const key='electroMecAppV1';
+let db=JSON.parse(localStorage.getItem(key)||'{"clientes":[],"motos":[],"ots":[],"repuestos":[],"presupuestos":[],"movimientos":[]}');
+const save=()=>{localStorage.setItem(key,JSON.stringify(db));renderAll()};
+function show(id,btn){document.querySelectorAll('.view').forEach(v=>v.style.display='none');document.getElementById(id).style.display='block';document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderAll()}
+function nextId(arr,prefix){let n=arr.length+1;return prefix+String(n).padStart(4,'0')}
+function openClient(edit=null){
+let c=edit||{id:nextId(db.clientes,'CLI-'),nombre:'',apellido:'',telefono:'',email:'',direccion:''};
+document.getElementById('modalbox').innerHTML=`<h2>${edit?'Editar':'Nuevo'} cliente</h2><div class="form">
+<label>Nombre<input id="fNombre" value="${c.nombre}"></label><label>Apellido<input id="fApellido" value="${c.apellido}"></label>
+<label>Teléfono<input id="fTelefono" value="${c.telefono}"></label><label>Email<input id="fEmail" value="${c.email}"></label>
+<label>Dirección<input id="fDireccion" value="${c.direccion}"></label></div>
+<div class="actions"><button class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn" onclick="saveClient('${c.id}')">Guardar</button></div>`;
+document.getElementById('modal').classList.add('show')}
+function saveClient(id){let c={id,nombre:f('fNombre'),apellido:f('fApellido'),telefono:f('fTelefono'),email:f('fEmail'),direccion:f('fDireccion'),fecha:new Date().toLocaleDateString('es-AR')};let i=db.clientes.findIndex(x=>x.id===id);if(i>=0)db.clientes[i]=c;else db.clientes.push(c);closeModal();save()}
+function f(id){return document.getElementById(id).value.trim()}
+function closeModal(){document.getElementById('modal').classList.remove('show')}
+function openMoto(edit=null){
+let m=edit||{id:nextId(db.motos,'MOT-'),cliente:'',dominio:'',marca:'',modelo:'',anio:'',km:'',color:''};
+let opts=db.clientes.map(c=>`<option value="${c.id}" ${c.id===m.cliente?'selected':''}>${c.id} — ${c.nombre} ${c.apellido}</option>`).join('');
+document.getElementById('modalbox').innerHTML=`<h2>${edit?'Editar':'Nueva'} moto</h2><div class="form">
+<label>Cliente<select id="mCliente"><option value="">Seleccionar</option>${opts}</select></label>
+<label>Dominio<input id="mDominio" value="${m.dominio}"></label><label>Marca<input id="mMarca" value="${m.marca}"></label><label>Modelo<input id="mModelo" value="${m.modelo}"></label>
+<label>Año<input id="mAnio" value="${m.anio}"></label><label>Kilometraje<input id="mKm" value="${m.km}"></label><label>Color<input id="mColor" value="${m.color}"></label></div>
+<div class="actions"><button class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn" onclick="saveMoto('${m.id}')">Guardar</button></div>`;
+document.getElementById('modal').classList.add('show')}
+function saveMoto(id){if(!f('mCliente'))return alert('Seleccioná un cliente');let m={id,cliente:f('mCliente'),dominio:f('mDominio'),marca:f('mMarca'),modelo:f('mModelo'),anio:f('mAnio'),km:f('mKm'),color:f('mColor')};let i=db.motos.findIndex(x=>x.id===id);if(i>=0)db.motos[i]=m;else db.motos.push(m);closeModal();save()}
+function renderClients(){let q=(document.getElementById('clientSearch')?.value||'').toLowerCase();let rows=db.clientes.filter(c=>(c.nombre+' '+c.apellido+' '+c.telefono+' '+c.id).toLowerCase().includes(q));document.getElementById('clientTable').innerHTML=rows.length?`<table class="table"><tr><th>ID</th><th>Cliente</th><th>Teléfono</th><th>Email</th><th>Motos</th><th></th></tr>${rows.map(c=>`<tr><td>${c.id}</td><td><b>${c.nombre} ${c.apellido}</b></td><td>${c.telefono}</td><td>${c.email}</td><td><span class="badge">${db.motos.filter(m=>m.cliente===c.id).length}</span></td><td><button class="btn secondary" onclick='openClient(${JSON.stringify(c)})'>Editar</button></td></tr>`).join('')}</table>`:'<div class="empty">No hay clientes cargados.</div>'}
+function renderMotos(){let q=(document.getElementById('motoSearch')?.value||'').toLowerCase();let rows=db.motos.filter(m=>(m.dominio+' '+m.marca+' '+m.modelo+' '+m.id).toLowerCase().includes(q));document.getElementById('motoTable').innerHTML=rows.length?`<table class="table"><tr><th>ID</th><th>Dominio</th><th>Moto</th><th>Cliente</th><th>KM</th><th></th></tr>${rows.map(m=>{let c=db.clientes.find(x=>x.id===m.cliente)||{};return `<tr><td>${m.id}</td><td><b>${m.dominio}</b></td><td>${m.marca} ${m.modelo}</td><td>${c.nombre||''} ${c.apellido||''}</td><td>${m.km}</td><td><button class="btn secondary" onclick='openMoto(${JSON.stringify(m)})'>Editar</button></td></tr>`}).join('')}</table>`:'<div class="empty">No hay motos cargadas.</div>'}
+
+function openOT(){
+ if(!db.motos.length)return alert('Primero cargá una moto.');
+ let opts=db.motos.map(m=>`<option value="${m.id}">${m.dominio} — ${m.marca} ${m.modelo}</option>`).join('');
+ document.getElementById('modalbox').innerHTML=`<h2>Nueva Orden de Trabajo</h2><div class="form">
+ <label>Moto<select id="otMoto">${opts}</select></label>
+ <label>Estado<select id="otEstado"><option>Abierta</option><option>Esperando autorización</option><option>En reparación</option><option>Terminado</option><option>Entregado</option></select></label>
+ <label>Kilometraje<input id="otKm" type="number"></label><label>Diagnóstico<input id="otDiag"></label>
+ <label>Trabajos<input id="otTrab"></label><label>Mano de obra ($)<input id="otMO" type="number" value="0"></label>
+ <label>Repuestos ($)<input id="otRep" type="number" value="0"></label><label>Observaciones<input id="otObs"></label></div>
+ <div class="actions"><button class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn" onclick="saveOT()">Crear OT</button></div>`;
+ document.getElementById('modal').classList.add('show')
+}
+function saveOT(){
+ let moto=db.motos.find(x=>x.id===f('otMoto')), cli=db.clientes.find(x=>x.id===moto.cliente);
+ let ot={id:nextId(db.ots,'OT-'),cliente:cli?cli.id:'',moto:moto.id,fecha:new Date().toLocaleDateString('es-AR'),estado:f('otEstado'),km:f('otKm'),diagnostico:f('otDiag'),trabajos:f('otTrab'),mo:+f('otMO')||0,rep:+f('otRep')||0,obs:f('otObs')};
+ ot.total=ot.mo+ot.rep; db.ots.push(ot); closeModal();save()
+}
+function renderOT(){
+ let q=(document.getElementById('otSearch')?.value||'').toLowerCase();
+ let rows=db.ots.filter(o=>{let m=db.motos.find(x=>x.id===o.moto)||{},c=db.clientes.find(x=>x.id===o.cliente)||{};return (o.id+' '+m.dominio+' '+c.nombre+' '+c.apellido).toLowerCase().includes(q)});
+ document.getElementById('otTable').innerHTML=rows.length?`<table class="table"><tr><th>OT</th><th>Cliente</th><th>Moto</th><th>Estado</th><th>Total</th></tr>${rows.map(o=>{let m=db.motos.find(x=>x.id===o.moto)||{},c=db.clientes.find(x=>x.id===o.cliente)||{};return `<tr><td><b>${o.id}</b></td><td>${c.nombre||''} ${c.apellido||''}</td><td>${m.dominio||''} · ${m.marca||''} ${m.modelo||''}</td><td><span class="badge">${o.estado}</span></td><td>$ ${o.total.toLocaleString('es-AR')}</td></tr>`}).join('')}</table>`:'<div class="empty">No hay OT cargadas.</div>'
+}
+function openPart(){
+ document.getElementById('modalbox').innerHTML=`<h2>Nuevo repuesto</h2><div class="form"><label>Descripción<input id="pDesc"></label><label>Proveedor<input id="pProv"></label><label>Costo ($)<input id="pCosto" type="number"></label><label>Precio venta ($)<input id="pPrecio" type="number"></label><label>Stock<input id="pStock" type="number"></label><label>Stock mínimo<input id="pMin" type="number"></label></div><div class="actions"><button class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn" onclick="savePart()">Guardar</button></div>`;document.getElementById('modal').classList.add('show')
+}
+function savePart(){db.repuestos.push({id:nextId(db.repuestos,'REP-'),desc:f('pDesc'),prov:f('pProv'),costo:+f('pCosto')||0,precio:+f('pPrecio')||0,stock:+f('pStock')||0,min:+f('pMin')||0});closeModal();save()}
+function renderParts(){
+ let q=(document.getElementById('partSearch')?.value||'').toLowerCase(), rows=db.repuestos.filter(p=>(p.id+' '+p.desc+' '+p.prov).toLowerCase().includes(q));
+ document.getElementById('partTable').innerHTML=rows.length?`<table class="table"><tr><th>ID</th><th>Repuesto</th><th>Proveedor</th><th>Stock</th><th>Mínimo</th><th>Estado</th></tr>${rows.map(p=>`<tr><td>${p.id}</td><td>${p.desc}</td><td>${p.prov}</td><td>${p.stock}</td><td>${p.min}</td><td><span class="badge">${p.stock<=p.min?'🔴 COMPRAR':'🟢 OK'}</span></td></tr>`).join('')}</table>`:'<div class="empty">No hay repuestos cargados.</div>'
+}
+function openMove(tipo){
+ document.getElementById('modalbox').innerHTML=`<h2>Registrar ${tipo}</h2><div class="form"><label>Concepto<input id="mvConcepto"></label><label>Método de pago<select id="mvMetodo"><option>Efectivo</option><option>Transferencia</option><option>Débito</option><option>Crédito</option></select></label><label>Importe ($)<input id="mvImporte" type="number"></label></div><div class="actions"><button class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn" onclick="saveMove('${tipo}')">Guardar</button></div>`;document.getElementById('modal').classList.add('show')
+}
+function saveMove(tipo){db.movimientos.push({id:nextId(db.movimientos,'MOV-'),fecha:new Date().toLocaleDateString('es-AR'),tipo,concepto:f('mvConcepto'),metodo:f('mvMetodo'),importe:+f('mvImporte')||0});closeModal();save()}
+function renderCash(){
+ let ing=db.movimientos.filter(m=>m.tipo==='Ingreso').reduce((a,m)=>a+m.importe,0),egr=db.movimientos.filter(m=>m.tipo==='Egreso').reduce((a,m)=>a+m.importe,0);
+ document.getElementById('cashPanel').innerHTML=`<div class="cards"><div class="card"><div class="label">Ingresos</div><div class="num ok">$ ${ing.toLocaleString('es-AR')}</div></div><div class="card"><div class="label">Egresos</div><div class="num danger">$ ${egr.toLocaleString('es-AR')}</div></div><div class="card"><div class="label">Saldo</div><div class="num">$ ${(ing-egr).toLocaleString('es-AR')}</div></div></div><div class="section"><table class="table"><tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th>Método</th><th>Importe</th></tr>${db.movimientos.map(m=>`<tr><td>${m.fecha}</td><td>${m.tipo}</td><td>${m.concepto}</td><td>${m.metodo}</td><td>$ ${m.importe.toLocaleString('es-AR')}</td></tr>`).join('')}</table></div>`
+}
+function renderQuotes(){
+ document.getElementById('quoteTable').innerHTML=db.ots.length?`<table class="table"><tr><th>Presupuesto</th><th>OT</th><th>Total</th><th>Estado</th></tr>${db.ots.map(o=>`<tr><td>PRE-${o.id.slice(3)}</td><td>${o.id}</td><td>$ ${o.total.toLocaleString('es-AR')}</td><td><span class="badge">${o.estado}</span></td></tr>`).join('')}</table>`:'<div class="empty">Los presupuestos se generarán desde las OT en el siguiente módulo.</div>'
+}
+function renderDashboard(){let open=db.ots.filter(o=>o.estado!=='Entregado').length, pending=db.ots.filter(o=>o.estado==='Esperando autorización').length, low=db.repuestos.filter(p=>p.stock<=p.min).length, ing=db.movimientos.filter(m=>m.tipo==='Ingreso').reduce((a,m)=>a+m.importe,0), egr=db.movimientos.filter(m=>m.tipo==='Egreso').reduce((a,m)=>a+m.importe,0);document.getElementById('kpis').innerHTML=[['👤 Clientes',db.clientes.length,''],['🏍️ Motos',db.motos.length,''],['🔧 OT abiertas',open,open?'Revisar':'OK'],['🟡 Autorizaciones',pending,pending?'Atención':'OK'],['📦 Stock bajo',low,low?'Comprar':'OK'],['💵 Saldo','$ '+(ing-egr).toLocaleString('es-AR'),''],].map(x=>`<div class="card"><div class="label">${x[0]}</div><div class="num">${x[1]}</div><div class="label">${x[2]}</div></div>`).join('');let a=[];if(pending)a.push('🟡 '+pending+' OT esperando autorización.');if(low)a.push('🔴 '+low+' repuestos están en stock mínimo.');document.getElementById('alerts').innerHTML=a.length?a.map(x=>`<div style="padding:10px 0">${x}</div>`).join(''):'<div class="empty">🟢 Sin alertas importantes.</div>'}
+function renderAll(){renderDashboard();renderClients();renderMotos();renderOT();renderParts();renderQuotes();renderCash()}renderAll();
+</script>
+</body></html>
