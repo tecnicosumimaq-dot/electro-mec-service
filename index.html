@@ -113,7 +113,7 @@
 <script>
 const SUPABASE_URL = 'https://vqkqiogttsjfrbomghtl.supabase.co';
 
-const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_3u_6QZ0oMgDi4Dp18qD1TQ_Vw--DeMN';
+const SUPABASE_PUBLISHABLE_KEY = '[TU_PUBLISHABLE_KEY]';
 
 const supabaseClient = window.supabase.createClient(
     SUPABASE_URL,
@@ -126,35 +126,39 @@ async function comprobarSupabase() {
             await supabaseClient.auth.getSession();
 
         if (error) {
-            console.error('❌ Error Supabase:', error);
+            console.error('Error Supabase:', error);
             return;
         }
 
         if (session) {
-            console.log('✅ Supabase conectado');
+            console.log('Supabase conectado');
             console.log('Usuario:', session.user.email);
         } else {
-            console.log('✅ Supabase conectado');
-            console.log('⚠️ No hay usuario autenticado todavía');
+            console.log('Supabase conectado');
+            console.log('No hay usuario autenticado todavía');
         }
 
     } catch (error) {
-        console.error('❌ Error de conexión:', error);
+        console.error('Error de conexión:', error);
     }
 }
 
-comprobarSupabase();
-   async function iniciarSesion(){
+async function iniciarSesion() {
 
-    const email = document.getElementById('loginEmail').value.trim();
-    const password = document.getElementById('loginPassword').value;
+    const email =
+        document.getElementById('loginEmail').value.trim();
 
-    const errorBox = document.getElementById('loginError');
+    const password =
+        document.getElementById('loginPassword').value;
+
+    const errorBox =
+        document.getElementById('loginError');
 
     errorBox.textContent = '';
 
-    if(!email || !password){
-        errorBox.textContent = 'Ingresá email y contraseña.';
+    if (!email || !password) {
+        errorBox.textContent =
+            'Ingresá email y contraseña.';
         return;
     }
 
@@ -164,16 +168,25 @@ comprobarSupabase();
             password: password
         });
 
-    if(error){
+    if (error) {
         console.error(error);
-        errorBox.textContent = 'Email o contraseña incorrectos.';
+        errorBox.textContent =
+            'Email o contraseña incorrectos.';
         return;
     }
 
-    console.log('✅ Usuario autenticado:', data.user.email);
+    console.log(
+        'Usuario autenticado:',
+        data.user.email
+    );
 
-document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('loginScreen').style.display =
+        'none';
 }
+
+comprobarSupabase();
+
+const key='electroMecAppV1';
 
 const key='electroMecAppV1';
 let db=JSON.parse(localStorage.getItem(key)||'{"clientes":[],"motos":[],"ots":[],"repuestos":[],"presupuestos":[],"movimientos":[]}');
