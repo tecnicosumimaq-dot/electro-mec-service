@@ -50,18 +50,24 @@ const supabaseClient = window.supabase.createClient(
     SUPABASE_PUBLISHABLE_KEY
  async function comprobarSupabase() {
     try {
-        const { data: { session } } =
+        const { data: { session }, error } =
             await supabaseClient.auth.getSession();
+
+        if (error) {
+            console.error('❌ Error Supabase:', error);
+            return;
+        }
 
         if (session) {
             console.log('✅ Supabase conectado');
             console.log('Usuario:', session.user.email);
         } else {
-            console.log('⚠️ Supabase conectado, pero no hay sesión iniciada');
+            console.log('✅ Supabase conectado');
+            console.log('⚠️ No hay usuario autenticado todavía');
         }
 
     } catch (error) {
-        console.error('❌ Error de conexión con Supabase:', error);
+        console.error('❌ Error de conexión:', error);
     }
 }
 
