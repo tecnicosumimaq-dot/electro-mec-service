@@ -118,7 +118,9 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_3u_6QZ0oMgDi4Dp18qD1TQ_Vw--DeMN
 const supabaseClient = window.supabase.createClient(
     SUPABASE_URL,
     SUPABASE_PUBLISHABLE_KEY
- async function comprobarSupabase() {
+);
+
+async function comprobarSupabase() {
     try {
         const { data: { session }, error } =
             await supabaseClient.auth.getSession();
