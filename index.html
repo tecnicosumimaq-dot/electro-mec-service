@@ -172,10 +172,10 @@ comprobarSupabase();
 
     console.log('✅ Usuario autenticado:', data.user.email);
 
-    document.getElementById('loginScreen').style.display = 'none';
+document.getElementById('loginScreen').style.display = 'none';
 }
-}
-);const key='electroMecAppV1';
+
+const key='electroMecAppV1';
 let db=JSON.parse(localStorage.getItem(key)||'{"clientes":[],"motos":[],"ots":[],"repuestos":[],"presupuestos":[],"movimientos":[]}');
 const save=()=>{localStorage.setItem(key,JSON.stringify(db));renderAll()};
 function show(id,btn){document.querySelectorAll('.view').forEach(v=>v.style.display='none');document.getElementById(id).style.display='block';document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderAll()}
