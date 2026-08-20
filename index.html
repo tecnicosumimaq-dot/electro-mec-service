@@ -144,7 +144,7 @@ async function comprobarSupabase() {
 }
 
 comprobarSupabase();
-    async function iniciarSesion(){
+   async function iniciarSesion(){
 
     const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value;
@@ -173,6 +173,7 @@ comprobarSupabase();
     console.log('✅ Usuario autenticado:', data.user.email);
 
     document.getElementById('loginScreen').style.display = 'none';
+}
 }
 );const key='electroMecAppV1';
 let db=JSON.parse(localStorage.getItem(key)||'{"clientes":[],"motos":[],"ots":[],"repuestos":[],"presupuestos":[],"movimientos":[]}');
