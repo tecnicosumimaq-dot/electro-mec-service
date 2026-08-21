@@ -297,14 +297,72 @@ const save=()=>{localStorage.setItem(key,JSON.stringify(db));renderAll()};
 function show(id,btn){document.querySelectorAll('.view').forEach(v=>v.style.display='none');document.getElementById(id).style.display='block';document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderAll()}
 function nextId(arr,prefix){let n=arr.length+1;return prefix+String(n).padStart(4,'0')}
 function openClient(edit=null){
-let c=edit||{id:nextId(db.clientes,'CLI-'),nombre:'',apellido:'',telefono:'',email:'',direccion:''};
+let c=edit||{id:'',nombre:'',apellido:'',telefono:'',email:'',direccion:''};
 document.getElementById('modalbox').innerHTML=`<h2>${edit?'Editar':'Nuevo'} cliente</h2><div class="form">
 <label>Nombre<input id="fNombre" value="${c.nombre}"></label><label>Apellido<input id="fApellido" value="${c.apellido}"></label>
 <label>Teléfono<input id="fTelefono" value="${c.telefono}"></label><label>Email<input id="fEmail" value="${c.email}"></label>
 <label>Dirección<input id="fDireccion" value="${c.direccion}"></label></div>
 <div class="actions"><button class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn" onclick="saveClient('${c.id}')">Guardar</button></div>`;
 document.getElementById('modal').classList.add('show')}
-function saveClient(id){let c={id,nombre:f('fNombre'),apellido:f('fApellido'),telefono:f('fTelefono'),email:f('fEmail'),direccion:f('fDireccion'),fecha:new Date().toLocaleDateString('es-AR')};let i=db.clientes.findIndex(x=>x.id===id);if(i>=0)db.clientes[i]=c;else db.clientes.push(c);closeModal();save()}
+async function saveClient(id) {
+
+    const cliente = {
+        nombre: f('fNombre'),
+        apellido: f('fApellido'),
+        telefono: f('fTelefono'),
+        email: f('fEmail'),
+        direccion: f('fDireccion'),
+        observaciones: ''
+    };
+
+    if (!cliente.nombre) {
+        alert('Ingresá el nombre del cliente.');
+        return;
+    }
+
+    try {
+
+        let error;
+
+        if (id && id.includes('-') && id.length > 20) {
+
+            const resultado = await supabaseClient
+                .from('clientes')
+                .update(cliente)
+                .eq('id', id);
+
+            error = resultado.error;
+
+        } else {
+
+            const resultado = await supabaseClient
+                .from('clientes')
+                .insert(cliente);
+
+            error = resultado.error;
+        }
+
+        if (error) {
+            console.error('Error guardando cliente:', error);
+            alert('No se pudo guardar el cliente: ' + error.message);
+            return;
+        }
+
+        closeModal();
+
+        await renderClients();
+
+        await renderDashboard();
+
+        console.log('✅ Cliente guardado en Supabase');
+
+    } catch (error) {
+
+        console.error('Error:', error);
+
+        alert('Ocurrió un error al guardar el cliente.');
+    }
+}
 function f(id){return document.getElementById(id).value.trim()}
 function closeModal(){document.getElementById('modal').classList.remove('show')}
 function openMoto(edit=null){
@@ -317,7 +375,117 @@ document.getElementById('modalbox').innerHTML=`<h2>${edit?'Editar':'Nueva'} moto
 <div class="actions"><button class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn" onclick="saveMoto('${m.id}')">Guardar</button></div>`;
 document.getElementById('modal').classList.add('show')}
 function saveMoto(id){if(!f('mCliente'))return alert('Seleccioná un cliente');let m={id,cliente:f('mCliente'),dominio:f('mDominio'),marca:f('mMarca'),modelo:f('mModelo'),anio:f('mAnio'),km:f('mKm'),color:f('mColor')};let i=db.motos.findIndex(x=>x.id===id);if(i>=0)db.motos[i]=m;else db.motos.push(m);closeModal();save()}
-function renderClients(){let q=(document.getElementById('clientSearch')?.value||'').toLowerCase();let rows=db.clientes.filter(c=>(c.nombre+' '+c.apellido+' '+c.telefono+' '+c.id).toLowerCase().includes(q));document.getElementById('clientTable').innerHTML=rows.length?`<table class="table"><tr><th>ID</th><th>Cliente</th><th>Teléfono</th><th>Email</th><th>Motos</th><th></th></tr>${rows.map(c=>`<tr><td>${c.id}</td><td><b>${c.nombre} ${c.apellido}</b></td><td>${c.telefono}</td><td>${c.email}</td><td><span class="badge">${db.motos.filter(m=>m.cliente===c.id).length}</span></td><td><button class="btn secondary" onclick='openClient(${JSON.stringify(c)})'>Editar</button></td></tr>`).join('')}</table>`:'<div class="empty">No hay clientes cargados.</div>'}
+async function renderClients() {
+
+    const container =
+        document.getElementById('clientTable');
+
+    if (!container) return;
+
+    container.innerHTML =
+        '<div class="empty">Cargando clientes...</div>';
+
+    try {
+
+        const { data, error } =
+            await supabaseClient
+                .from('clientes')
+                .select('*')
+                .eq('activo', true)
+                .order('fecha_alta', {
+                    ascending: false
+                });
+
+        if (error) {
+            console.error(
+                'Error cargando clientes:',
+                error
+            );
+
+            container.innerHTML =
+                '<div class="empty">Error al cargar clientes.</div>';
+
+            return;
+        }
+
+        const q =
+            (document.getElementById('clientSearch')?.value || '')
+            .toLowerCase();
+
+        const rows = (data || []).filter(c => {
+
+            const texto =
+                `${c.nombre || ''} ${c.apellido || ''} ${c.telefono || ''} ${c.email || ''}`;
+
+            return texto.toLowerCase().includes(q);
+        });
+
+        if (!rows.length) {
+
+            container.innerHTML =
+                '<div class="empty">No hay clientes cargados.</div>';
+
+            return;
+        }
+
+        container.innerHTML = `
+            <table class="table">
+                <tr>
+                    <th>Cliente</th>
+                    <th>Teléfono</th>
+                    <th>Email</th>
+                    <th>Motos</th>
+                    <th></th>
+                </tr>
+
+                ${rows.map(c => `
+
+                    <tr>
+
+                        <td>
+                            <b>
+                                ${c.nombre || ''}
+                                ${c.apellido || ''}
+                            </b>
+                        </td>
+
+                        <td>
+                            ${c.telefono || ''}
+                        </td>
+
+                        <td>
+                            ${c.email || ''}
+                        </td>
+
+                        <td>
+                            <span class="badge">
+                                -
+                            </span>
+                        </td>
+
+                        <td>
+                            <button
+                                class="btn secondary"
+                                onclick='openClient(${JSON.stringify(c)})'>
+                                Editar
+                            </button>
+                        </td>
+
+                    </tr>
+
+                `).join('')}
+
+            </table>
+        `;
+
+    } catch (error) {
+
+        console.error(error);
+
+        container.innerHTML =
+            '<div class="empty">Error inesperado.</div>';
+    }
+}
 function renderMotos(){let q=(document.getElementById('motoSearch')?.value||'').toLowerCase();let rows=db.motos.filter(m=>(m.dominio+' '+m.marca+' '+m.modelo+' '+m.id).toLowerCase().includes(q));document.getElementById('motoTable').innerHTML=rows.length?`<table class="table"><tr><th>ID</th><th>Dominio</th><th>Moto</th><th>Cliente</th><th>KM</th><th></th></tr>${rows.map(m=>{let c=db.clientes.find(x=>x.id===m.cliente)||{};return `<tr><td>${m.id}</td><td><b>${m.dominio}</b></td><td>${m.marca} ${m.modelo}</td><td>${c.nombre||''} ${c.apellido||''}</td><td>${m.km}</td><td><button class="btn secondary" onclick='openMoto(${JSON.stringify(m)})'>Editar</button></td></tr>`}).join('')}</table>`:'<div class="empty">No hay motos cargadas.</div>'}
 
 function openOT(){
