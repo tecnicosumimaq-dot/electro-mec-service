@@ -365,16 +365,123 @@ async function saveClient(id) {
 }
 function f(id){return document.getElementById(id).value.trim()}
 function closeModal(){document.getElementById('modal').classList.remove('show')}
-function openMoto(edit=null){
+async function openMoto(edit=null){
 let m=edit||{id:nextId(db.motos,'MOT-'),cliente:'',dominio:'',marca:'',modelo:'',anio:'',km:'',color:''};
-let opts=db.clientes.map(c=>`<option value="${c.id}" ${c.id===m.cliente?'selected':''}>${c.id} — ${c.nombre} ${c.apellido}</option>`).join('');
+let opts = [];
+
+try {
+
+    const { data, error } =
+        await supabaseClient
+            .from('clientes')
+            .select('id,nombre,apellido')
+            .eq('activo', true)
+            .order('nombre');
+
+    if (error) {
+        console.error(error);
+        alert('No se pudieron cargar los clientes.');
+        return;
+    }
+
+    opts = (data || []).map(c => `
+        <option
+            value="${c.id}"
+            ${c.id === m.cliente ? 'selected' : ''}>
+            ${c.nombre} ${c.apellido || ''}
+        </option>
+    `);
+
+} catch (error) {
+
+    console.error(error);
+    alert('Error cargando clientes.');
+    return;
+}" ${c.id===m.cliente?'selected':''}>${c.id} — ${c.nombre} ${c.apellido}</option>`).join('');
 document.getElementById('modalbox').innerHTML=`<h2>${edit?'Editar':'Nueva'} moto</h2><div class="form">
 <label>Cliente<select id="mCliente"><option value="">Seleccionar</option>${opts}</select></label>
 <label>Dominio<input id="mDominio" value="${m.dominio}"></label><label>Marca<input id="mMarca" value="${m.marca}"></label><label>Modelo<input id="mModelo" value="${m.modelo}"></label>
 <label>Año<input id="mAnio" value="${m.anio}"></label><label>Kilometraje<input id="mKm" value="${m.km}"></label><label>Color<input id="mColor" value="${m.color}"></label></div>
 <div class="actions"><button class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn" onclick="saveMoto('${m.id}')">Guardar</button></div>`;
 document.getElementById('modal').classList.add('show')}
-function saveMoto(id){if(!f('mCliente'))return alert('Seleccioná un cliente');let m={id,cliente:f('mCliente'),dominio:f('mDominio'),marca:f('mMarca'),modelo:f('mModelo'),anio:f('mAnio'),km:f('mKm'),color:f('mColor')};let i=db.motos.findIndex(x=>x.id===id);if(i>=0)db.motos[i]=m;else db.motos.push(m);closeModal();save()}
+async function saveMoto(id) {
+
+    const clienteId = f('mCliente');
+
+    if (!clienteId) {
+        alert('Seleccioná un cliente.');
+        return;
+    }
+
+    const moto = {
+        cliente_id: clienteId,
+        dominio: f('mDominio'),
+        marca: f('mMarca'),
+        modelo: f('mModelo'),
+        anio: parseInt(f('mAnio')) || null,
+        kilometraje: parseInt(f('mKm')) || null,
+        color: f('mColor'),
+        observaciones: ''
+    };
+
+    if (!moto.marca || !moto.modelo) {
+        alert('Ingresá marca y modelo.');
+        return;
+    }
+
+    try {
+
+        let error;
+
+        if (id && id.length > 20) {
+
+            const resultado = await supabaseClient
+                .from('motos')
+                .update(moto)
+                .eq('id', id);
+
+            error = resultado.error;
+
+        } else {
+
+            const resultado = await supabaseClient
+                .from('motos')
+                .insert(moto);
+
+            error = resultado.error;
+        }
+
+        if (error) {
+            console.error(
+                'Error guardando moto:',
+                error
+            );
+
+            alert(
+                'No se pudo guardar la moto: ' +
+                error.message
+            );
+
+            return;
+        }
+
+        closeModal();
+
+        await renderMotos();
+
+        await renderDashboard();
+
+        console.log('✅ Moto guardada en Supabase');
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            'Ocurrió un error al guardar la moto.'
+        );
+    }
+}if(!f('mCliente'))return alert('Seleccioná un cliente');let m={id,cliente:f('mCliente'),dominio:f('mDominio'),marca:f('mMarca'),modelo:f('mModelo'),anio:f('mAnio'),km:f('mKm'),color:f('mColor')};let i=db.motos.findIndex(x=>x.id===id);if(i>=0)db.motos[i]=m;else db.motos.push(m);closeModal();save()}
 async function renderClients() {
 
     const container =
@@ -486,7 +593,151 @@ async function renderClients() {
             '<div class="empty">Error inesperado.</div>';
     }
 }
-function renderMotos(){let q=(document.getElementById('motoSearch')?.value||'').toLowerCase();let rows=db.motos.filter(m=>(m.dominio+' '+m.marca+' '+m.modelo+' '+m.id).toLowerCase().includes(q));document.getElementById('motoTable').innerHTML=rows.length?`<table class="table"><tr><th>ID</th><th>Dominio</th><th>Moto</th><th>Cliente</th><th>KM</th><th></th></tr>${rows.map(m=>{let c=db.clientes.find(x=>x.id===m.cliente)||{};return `<tr><td>${m.id}</td><td><b>${m.dominio}</b></td><td>${m.marca} ${m.modelo}</td><td>${c.nombre||''} ${c.apellido||''}</td><td>${m.km}</td><td><button class="btn secondary" onclick='openMoto(${JSON.stringify(m)})'>Editar</button></td></tr>`}).join('')}</table>`:'<div class="empty">No hay motos cargadas.</div>'}
+async function renderMotos() {
+
+    const container =
+        document.getElementById('motoTable');
+
+    if (!container) return;
+
+    container.innerHTML =
+        '<div class="empty">Cargando motos...</div>';
+
+    try {
+
+        const { data, error } =
+            await supabaseClient
+                .from('motos')
+                .select(`
+                    *,
+                    clientes (
+                        nombre,
+                        apellido
+                    )
+                `)
+                .eq('activo', true)
+                .order('fecha_alta', {
+                    ascending: false
+                });
+
+        if (error) {
+
+            console.error(
+                'Error cargando motos:',
+                error
+            );
+
+            container.innerHTML =
+                '<div class="empty">Error al cargar motos.</div>';
+
+            return;
+        }
+
+        const q =
+            (
+                document.getElementById('motoSearch')?.value ||
+                ''
+            ).toLowerCase();
+
+        const rows = (data || []).filter(m => {
+
+            const cliente =
+                m.clientes || {};
+
+            const texto =
+                `${m.dominio || ''}
+                 ${m.marca || ''}
+                 ${m.modelo || ''}
+                 ${cliente.nombre || ''}
+                 ${cliente.apellido || ''}`;
+
+            return texto
+                .toLowerCase()
+                .includes(q);
+        });
+
+        if (!rows.length) {
+
+            container.innerHTML =
+                '<div class="empty">No hay motos cargadas.</div>';
+
+            return;
+        }
+
+        container.innerHTML = `
+            <table class="table">
+
+                <tr>
+                    <th>Dominio</th>
+                    <th>Moto</th>
+                    <th>Cliente</th>
+                    <th>KM</th>
+                    <th></th>
+                </tr>
+
+                ${rows.map(m => {
+
+                    const cliente =
+                        m.clientes || {};
+
+                    const motoParaEditar = {
+                        id: m.id,
+                        cliente: m.cliente_id,
+                        dominio: m.dominio || '',
+                        marca: m.marca || '',
+                        modelo: m.modelo || '',
+                        anio: m.anio || '',
+                        km: m.kilometraje || '',
+                        color: m.color || ''
+                    };
+
+                    return `
+                        <tr>
+
+                            <td>
+                                <b>
+                                    ${m.dominio || ''}
+                                </b>
+                            </td>
+
+                            <td>
+                                ${m.marca || ''}
+                                ${m.modelo || ''}
+                            </td>
+
+                            <td>
+                                ${cliente.nombre || ''}
+                                ${cliente.apellido || ''}
+                            </td>
+
+                            <td>
+                                ${m.kilometraje || ''}
+                            </td>
+
+                            <td>
+                                <button
+                                    class="btn secondary"
+                                    onclick='openMoto(${JSON.stringify(motoParaEditar)})'>
+                                    Editar
+                                </button>
+                            </td>
+
+                        </tr>
+                    `;
+
+                }).join('')}
+
+            </table>
+        `;
+
+    } catch (error) {
+
+        console.error(error);
+
+        container.innerHTML =
+            '<div class="empty">Error inesperado.</div>';
+    }
+}let q=(document.getElementById('motoSearch')?.value||'').toLowerCase();let rows=db.motos.filter(m=>(m.dominio+' '+m.marca+' '+m.modelo+' '+m.id).toLowerCase().includes(q));document.getElementById('motoTable').innerHTML=rows.length?`<table class="table"><tr><th>ID</th><th>Dominio</th><th>Moto</th><th>Cliente</th><th>KM</th><th></th></tr>${rows.map(m=>{let c=db.clientes.find(x=>x.id===m.cliente)||{};return `<tr><td>${m.id}</td><td><b>${m.dominio}</b></td><td>${m.marca} ${m.modelo}</td><td>${c.nombre||''} ${c.apellido||''}</td><td>${m.km}</td><td><button class="btn secondary" onclick='openMoto(${JSON.stringify(m)})'>Editar</button></td></tr>`}).join('')}</table>`:'<div class="empty">No hay motos cargadas.</div>'}
 
 function openOT(){
  if(!db.motos.length)return alert('Primero cargá una moto.');
