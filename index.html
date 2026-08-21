@@ -397,7 +397,7 @@ try {
     console.error(error);
     alert('Error cargando clientes.');
     return;
-}" ${c.id===m.cliente?'selected':''}>${c.id} — ${c.nombre} ${c.apellido}</option>`).join('');
+
 document.getElementById('modalbox').innerHTML=`<h2>${edit?'Editar':'Nueva'} moto</h2><div class="form">
 <label>Cliente<select id="mCliente"><option value="">Seleccionar</option>${opts}</select></label>
 <label>Dominio<input id="mDominio" value="${m.dominio}"></label><label>Marca<input id="mMarca" value="${m.marca}"></label><label>Modelo<input id="mModelo" value="${m.modelo}"></label>
@@ -481,7 +481,7 @@ async function saveMoto(id) {
             'Ocurrió un error al guardar la moto.'
         );
     }
-}if(!f('mCliente'))return alert('Seleccioná un cliente');let m={id,cliente:f('mCliente'),dominio:f('mDominio'),marca:f('mMarca'),modelo:f('mModelo'),anio:f('mAnio'),km:f('mKm'),color:f('mColor')};let i=db.motos.findIndex(x=>x.id===id);if(i>=0)db.motos[i]=m;else db.motos.push(m);closeModal();save()}
+
 async function renderClients() {
 
     const container =
@@ -737,7 +737,7 @@ async function renderMotos() {
         container.innerHTML =
             '<div class="empty">Error inesperado.</div>';
     }
-}let q=(document.getElementById('motoSearch')?.value||'').toLowerCase();let rows=db.motos.filter(m=>(m.dominio+' '+m.marca+' '+m.modelo+' '+m.id).toLowerCase().includes(q));document.getElementById('motoTable').innerHTML=rows.length?`<table class="table"><tr><th>ID</th><th>Dominio</th><th>Moto</th><th>Cliente</th><th>KM</th><th></th></tr>${rows.map(m=>{let c=db.clientes.find(x=>x.id===m.cliente)||{};return `<tr><td>${m.id}</td><td><b>${m.dominio}</b></td><td>${m.marca} ${m.modelo}</td><td>${c.nombre||''} ${c.apellido||''}</td><td>${m.km}</td><td><button class="btn secondary" onclick='openMoto(${JSON.stringify(m)})'>Editar</button></td></tr>`}).join('')}</table>`:'<div class="empty">No hay motos cargadas.</div>'}
+
 
 function openOT(){
  if(!db.motos.length)return alert('Primero cargá una moto.');
