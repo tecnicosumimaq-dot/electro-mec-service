@@ -738,7 +738,7 @@ async function renderMotos() {
             '<div class="empty">Error inesperado.</div>';
     }
 
-
+}
 function openOT(){
  if(!db.motos.length)return alert('Primero cargá una moto.');
  let opts=db.motos.map(m=>`<option value="${m.id}">${m.dominio} — ${m.marca} ${m.modelo}</option>`).join('');
