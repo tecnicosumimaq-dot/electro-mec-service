@@ -58,6 +58,47 @@
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head>
 <body>
+    <div id="resetPasswordScreen" style="display:none; min-height:100vh; align-items:center; justify-content:center; background:#f4f6f8; padding:20px;">
+    <div style="background:white; padding:30px; border-radius:16px; width:min(420px,100%); box-shadow:0 3px 20px #0002;">
+        
+        <h2 style="margin-top:0;">🔐 Nueva contraseña</h2>
+        
+        <p style="color:#6b7280;">
+            Ingresá una nueva contraseña para tu cuenta de Electro Mec Service.
+        </p>
+
+        <label style="display:block; margin-top:15px;">
+            Nueva contraseña
+            <input 
+                id="newPassword"
+                type="password"
+                placeholder="Nueva contraseña"
+                style="width:100%; margin-top:6px;"
+            >
+        </label>
+
+        <label style="display:block; margin-top:15px;">
+            Repetir contraseña
+            <input 
+                id="newPasswordConfirm"
+                type="password"
+                placeholder="Repetir contraseña"
+                style="width:100%; margin-top:6px;"
+            >
+        </label>
+
+        <div id="resetPasswordError" style="color:#b91c1c; margin-top:12px;"></div>
+
+        <button 
+            class="btn"
+            onclick="cambiarPassword()"
+            style="width:100%; margin-top:18px;"
+        >
+            Cambiar contraseña
+        </button>
+
+    </div>
+</div>
     <div class="login-screen" id="loginScreen">
     <div class="login-box">
         <h1>⚡ Electro Mec</h1>
@@ -185,6 +226,69 @@ async function iniciarSesion() {
 }
 
 comprobarSupabase();
+    async function cambiarPassword() {
+
+    const password =
+        document.getElementById('newPassword').value;
+
+    const confirmPassword =
+        document.getElementById('newPasswordConfirm').value;
+
+    const errorBox =
+        document.getElementById('resetPasswordError');
+
+    errorBox.textContent = '';
+
+    if (!password || !confirmPassword) {
+        errorBox.textContent =
+            'Completá ambos campos.';
+        return;
+    }
+
+    if (password.length < 6) {
+        errorBox.textContent =
+            'La contraseña debe tener al menos 6 caracteres.';
+        return;
+    }
+
+    if (password !== confirmPassword) {
+        errorBox.textContent =
+            'Las contraseñas no coinciden.';
+        return;
+    }
+
+    const { error } =
+        await supabaseClient.auth.updateUser({
+            password: password
+        });
+
+    if (error) {
+        console.error(error);
+        errorBox.textContent =
+            'No se pudo cambiar la contraseña.';
+        return;
+    }
+
+    alert('✅ Contraseña actualizada correctamente.');
+
+    document.getElementById('resetPasswordScreen').style.display =
+        'none';
+
+    document.getElementById('loginScreen').style.display =
+        'flex';
+}
+    supabaseClient.auth.onAuthStateChange((event, session) => {
+
+    if (event === 'PASSWORD_RECOVERY') {
+
+        document.getElementById('loginScreen').style.display =
+            'none';
+
+        document.getElementById('resetPasswordScreen').style.display =
+            'flex';
+    }
+
+});
 
 
 const key='electroMecAppV1';
