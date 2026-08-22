@@ -1198,7 +1198,88 @@ async function openOTEdit(ot) {
 
     document.getElementById('modal').classList.add('show');
 }
-function openPart(){
+async function saveOTEdit(id) {
+
+    const manoObra =
+        parseFloat(f('editOTMO')) || 0;
+
+    const repuestos =
+        parseFloat(f('editOTRep')) || 0;
+
+    const descuento =
+        parseFloat(f('editOTDesc')) || 0;
+
+    const total =
+        manoObra + repuestos - descuento;
+
+    const cambios = {
+
+        estado: f('editOTEstado'),
+
+        kilometraje:
+            parseInt(f('editOTKm')) || null,
+
+        diagnostico:
+            f('editOTDiag'),
+
+        trabajos_realizados:
+            f('editOTTrab'),
+
+        mano_obra:
+            manoObra,
+
+        repuestos_total:
+            repuestos,
+
+        descuento:
+            descuento,
+
+        observaciones:
+            f('editOTObs'),
+
+        total:
+            total
+    };
+
+    try {
+
+        const { error } = await supabaseClient
+            .from('ordenes_trabajo')
+            .update(cambios)
+            .eq('id', id);
+
+        if (error) {
+
+            console.error(
+                'Error actualizando OT:',
+                error
+            );
+
+            alert(
+                'No se pudo actualizar la OT:\n\n' +
+                error.message
+            );
+
+            return;
+        }
+
+        closeModal();
+
+        await renderOT();
+        await renderDashboard();
+
+        alert('✅ OT actualizada correctamente.');
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            'Ocurrió un error al actualizar la OT.'
+        );
+    }
+}
+    function openPart(){
  document.getElementById('modalbox').innerHTML=`<h2>Nuevo repuesto</h2><div class="form"><label>Descripción<input id="pDesc"></label><label>Proveedor<input id="pProv"></label><label>Costo ($)<input id="pCosto" type="number"></label><label>Precio venta ($)<input id="pPrecio" type="number"></label><label>Stock<input id="pStock" type="number"></label><label>Stock mínimo<input id="pMin" type="number"></label></div><div class="actions"><button class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn" onclick="savePart()">Guardar</button></div>`;document.getElementById('modal').classList.add('show')
 }
 function savePart(){db.repuestos.push({id:nextId(db.repuestos,'REP-'),desc:f('pDesc'),prov:f('pProv'),costo:+f('pCosto')||0,precio:+f('pPrecio')||0,stock:+f('pStock')||0,min:+f('pMin')||0});closeModal();save()}
