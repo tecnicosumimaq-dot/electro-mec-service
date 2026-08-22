@@ -738,17 +738,139 @@ async function renderMotos() {
     }
 
 }
-function openOT(){
- if(!db.motos.length)return alert('Primero cargá una moto.');
- let opts=db.motos.map(m=>`<option value="${m.id}">${m.dominio} — ${m.marca} ${m.modelo}</option>`).join('');
- document.getElementById('modalbox').innerHTML=`<h2>Nueva Orden de Trabajo</h2><div class="form">
- <label>Moto<select id="otMoto">${opts}</select></label>
- <label>Estado<select id="otEstado"><option>Abierta</option><option>Esperando autorización</option><option>En reparación</option><option>Terminado</option><option>Entregado</option></select></label>
- <label>Kilometraje<input id="otKm" type="number"></label><label>Diagnóstico<input id="otDiag"></label>
- <label>Trabajos<input id="otTrab"></label><label>Mano de obra ($)<input id="otMO" type="number" value="0"></label>
- <label>Repuestos ($)<input id="otRep" type="number" value="0"></label><label>Observaciones<input id="otObs"></label></div>
- <div class="actions"><button class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn" onclick="saveOT()">Crear OT</button></div>`;
- document.getElementById('modal').classList.add('show')
+async function openOT() {
+
+    try {
+
+        const { data: motos, error } = await supabaseClient
+            .from('motos')
+            .select(`
+                id,
+                dominio,
+                marca,
+                modelo,
+                cliente_id,
+                clientes (
+                    id,
+                    nombre,
+                    apellido
+                )
+            `)
+            .eq('activo', true)
+            .order('fecha_alta', { ascending: false });
+
+        if (error) {
+            console.error('Error cargando motos para OT:', error);
+            alert('No se pudieron cargar las motos.');
+            return;
+        }
+
+        if (!motos || !motos.length) {
+            alert('Primero cargá una moto.');
+            return;
+        }
+
+        const opcionesMoto = motos.map(m => {
+
+            const cliente = m.clientes || {};
+
+            return `
+                <option value="${m.id}">
+                    ${m.dominio || 'Sin dominio'} -
+                    ${m.marca || ''} ${m.modelo || ''}
+                    - ${cliente.nombre || ''} ${cliente.apellido || ''}
+                </option>
+            `;
+
+        }).join('');
+
+        document.getElementById('modalbox').innerHTML = `
+
+            <h2>Nueva Orden de Trabajo</h2>
+
+            <div class="form">
+
+                <label>
+                    Moto
+                    <select id="otMoto">
+                        <option value="">Seleccionar moto</option>
+                        ${opcionesMoto}
+                    </select>
+                </label>
+
+                <label>
+                    Estado
+                    <select id="otEstado">
+                        <option>Abierta</option>
+                        <option>Esperando autorización</option>
+                        <option>En reparación</option>
+                        <option>Terminado</option>
+                        <option>Entregado</option>
+                    </select>
+                </label>
+
+                <label>
+                    Kilometraje
+                    <input id="otKm" type="number">
+                </label>
+
+                <label>
+                    Diagnóstico
+                    <input id="otDiag">
+                </label>
+
+                <label>
+                    Trabajos realizados
+                    <input id="otTrab">
+                </label>
+
+                <label>
+                    Mano de obra ($)
+                    <input id="otMO" type="number" value="0">
+                </label>
+
+                <label>
+                    Repuestos ($)
+                    <input id="otRep" type="number" value="0">
+                </label>
+
+                <label>
+                    Descuento ($)
+                    <input id="otDesc" type="number" value="0">
+                </label>
+
+                <label>
+                    Observaciones
+                    <input id="otObs">
+                </label>
+
+            </div>
+
+            <div class="actions">
+
+                <button
+                    class="btn secondary"
+                    onclick="closeModal()">
+                    Cancelar
+                </button>
+
+                <button
+                    class="btn"
+                    onclick="saveOT()">
+                    Crear OT
+                </button>
+
+            </div>
+        `;
+
+        document.getElementById('modal').classList.add('show');
+
+    } catch (error) {
+
+        console.error('Error inesperado abriendo OT:', error);
+
+        alert('No se pudo abrir el formulario de OT.');
+    }
 }
 function saveOT(){
  let moto=db.motos.find(x=>x.id===f('otMoto')), cli=db.clientes.find(x=>x.id===moto.cliente);
