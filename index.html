@@ -1402,12 +1402,18 @@ async function openOTRepuestos(otId) {
     try {
 
         const { data: repuestos, error } =
-            await supabaseClient
-                .from('repuestos')
-                .select('*')
-                .eq('activo', true)
-                .order('descripcion');
+    await supabaseClient
+        .from('repuestos')
+        .select('*')
+        .order('descripcion');
+      const { data: repuestos, error } =
+    await supabaseClient
+        .from('repuestos')
+        .select('*')
+        .order('descripcion');
 
+console.log('📦 Repuestos recibidos:', repuestos);
+console.log('❌ Error repuestos:', error);
         if (error) {
 
             console.error(
