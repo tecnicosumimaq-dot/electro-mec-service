@@ -1091,7 +1091,7 @@ async function renderOT() {
             '<div class="empty">Error inesperado.</div>';
     }
 }
-}
+
 function openPart(){
  document.getElementById('modalbox').innerHTML=`<h2>Nuevo repuesto</h2><div class="form"><label>Descripción<input id="pDesc"></label><label>Proveedor<input id="pProv"></label><label>Costo ($)<input id="pCosto" type="number"></label><label>Precio venta ($)<input id="pPrecio" type="number"></label><label>Stock<input id="pStock" type="number"></label><label>Stock mínimo<input id="pMin" type="number"></label></div><div class="actions"><button class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn" onclick="savePart()">Guardar</button></div>`;document.getElementById('modal').classList.add('show')
 }
