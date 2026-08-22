@@ -1061,13 +1061,21 @@ async function renderOT() {
                                 $ ${total.toLocaleString('es-AR')}
                             </td>
 
-                            <td>
-                                <button
-                                    class="btn secondary"
-                                    onclick='openOTEdit(${JSON.stringify(ot)})'>
-                                    Editar
-                                </button>
-                            </td>
+                           <td>
+
+    <button
+        class="btn secondary"
+        onclick='openOTEdit(${JSON.stringify(ot)})'>
+        Editar
+    </button>
+
+    <button
+        class="btn secondary"
+        onclick='openOTRepuestos("${ot.id}")'>
+        Repuestos
+    </button>
+
+</td>
 
                         </tr>
 
@@ -1388,6 +1396,482 @@ async function saveOTEdit(id) {
             'Ocurrió un error al actualizar la OT.'
         );
     }
+}
+async function openOTRepuestos(otId) {
+
+    try {
+
+        const { data: repuestos, error } =
+            await supabaseClient
+                .from('repuestos')
+                .select('*')
+                .eq('activo', true)
+                .order('descripcion');
+
+        if (error) {
+
+            console.error(
+                'Error cargando repuestos:',
+                error
+            );
+
+            alert(
+                'No se pudieron cargar los repuestos:\n\n' +
+                error.message
+            );
+
+            return;
+        }
+
+        if (!repuestos || !repuestos.length) {
+
+            alert(
+                'No hay repuestos disponibles en el inventario.'
+            );
+
+            return;
+        }
+
+        const opciones = repuestos.map(r => {
+
+            return `
+                <option value="${r.id}">
+                    ${r.descripcion}
+                    ${r.codigo ? ' - ' + r.codigo : ''}
+                    ${r.precio_venta
+                        ? ' - $ ' +
+                          Number(r.precio_venta)
+                            .toLocaleString('es-AR')
+                        : ''}
+                </option>
+            `;
+
+        }).join('');
+
+        document.getElementById('modalbox').innerHTML = `
+
+            <h2>Repuestos de la OT</h2>
+
+            <div class="toolbar">
+
+                <select id="otRepuestoSelect">
+                    <option value="">
+                        Seleccionar repuesto
+                    </option>
+
+                    ${opciones}
+
+                </select>
+
+                <input
+                    id="otRepuestoCantidad"
+                    type="number"
+                    min="1"
+                    value="1"
+                    placeholder="Cantidad">
+
+                <button
+                    class="btn"
+                    onclick="agregarRepuestoOT('${otId}')">
+
+                    ＋ Agregar
+
+                </button>
+
+            </div>
+
+            <div id="otRepuestosLista">
+
+                <div class="empty">
+                    Cargando repuestos de la OT...
+                </div>
+
+            </div>
+
+            <div class="actions">
+
+                <button
+                    class="btn secondary"
+                    onclick="closeModal()">
+
+                    Cerrar
+
+                </button>
+
+            </div>
+        `;
+
+        document.getElementById('modal').classList.add('show');
+
+        await renderOTRepuestos(otId);
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            'Ocurrió un error cargando los repuestos.'
+        );
+    }
+}
+   async function renderOTRepuestos(otId) {
+
+    const container =
+        document.getElementById('otRepuestosLista');
+
+    if (!container) return;
+
+    const { data, error } =
+        await supabaseClient
+            .from('ot_repuestos')
+            .select(`
+                id,
+                cantidad,
+                precio_unitario,
+                subtotal,
+                repuesto_id,
+                repuestos (
+                    descripcion,
+                    codigo
+                )
+            `)
+            .eq('ot_id', otId)
+            .order('id');
+
+    if (error) {
+
+        console.error(
+            'Error cargando repuestos OT:',
+            error
+        );
+
+        container.innerHTML =
+            '<div class="empty">Error cargando repuestos.</div>';
+
+        return;
+    }
+
+    if (!data || !data.length) {
+
+        container.innerHTML =
+            '<div class="empty">Esta OT todavía no tiene repuestos.</div>';
+
+        return;
+    }
+
+    let total = 0;
+
+    const filas = data.map(r => {
+
+        const repuesto =
+            r.repuestos || {};
+
+        const subtotal =
+            Number(r.subtotal) ||
+            (
+                Number(r.precio_unitario || 0) *
+                Number(r.cantidad || 0)
+            );
+
+        total += subtotal;
+
+        return `
+
+            <tr>
+
+                <td>
+                    ${repuesto.descripcion || ''}
+                </td>
+
+                <td>
+                    ${r.cantidad}
+                </td>
+
+                <td>
+                    $ ${Number(
+                        r.precio_unitario || 0
+                    ).toLocaleString('es-AR')}
+                </td>
+
+                <td>
+                    $ ${subtotal.toLocaleString('es-AR')}
+                </td>
+
+                <td>
+
+                    <button
+                        class="btn secondary"
+                        onclick="eliminarRepuestoOT('${r.id}','${otId}')">
+
+                        Eliminar
+
+                    </button>
+
+                </td>
+
+            </tr>
+        `;
+
+    }).join('');
+
+    container.innerHTML = `
+
+        <table class="table">
+
+            <tr>
+                <th>Repuesto</th>
+                <th>Cantidad</th>
+                <th>Precio</th>
+                <th>Subtotal</th>
+                <th></th>
+            </tr>
+
+            ${filas}
+
+        </table>
+
+        <div style="
+            margin-top:15px;
+            text-align:right;
+            font-size:20px;
+            font-weight:800;
+        ">
+
+            Total repuestos:
+            $ ${total.toLocaleString('es-AR')}
+
+        </div>
+    `;
+}
+ async function agregarRepuestoOT(otId) {
+
+    const repuestoId =
+        f('otRepuestoSelect');
+
+    const cantidad =
+        parseInt(f('otRepuestoCantidad')) || 0;
+
+    if (!repuestoId) {
+
+        alert(
+            'Seleccioná un repuesto.'
+        );
+
+        return;
+    }
+
+    if (cantidad <= 0) {
+
+        alert(
+            'Ingresá una cantidad válida.'
+        );
+
+        return;
+    }
+
+    try {
+
+        const { data: repuesto, error: errorRepuesto } =
+            await supabaseClient
+                .from('repuestos')
+                .select('*')
+                .eq('id', repuestoId)
+                .single();
+
+        if (errorRepuesto) {
+
+            console.error(
+                errorRepuesto
+            );
+
+            alert(
+                'No se pudo obtener el repuesto.'
+            );
+
+            return;
+        }
+
+        const precio =
+            Number(repuesto.precio_venta) || 0;
+
+        const subtotal =
+            precio * cantidad;
+
+        const { error } =
+            await supabaseClient
+                .from('ot_repuestos')
+                .insert({
+
+                    ot_id: otId,
+
+                    repuesto_id:
+                        repuestoId,
+
+                    cantidad:
+                        cantidad,
+
+                    precio_unitario:
+                        precio,
+
+                    subtotal:
+                        subtotal
+
+                });
+
+        if (error) {
+
+            console.error(
+                'Error agregando repuesto:',
+                error
+            );
+
+            alert(
+                'No se pudo agregar el repuesto:\n\n' +
+                error.message
+            );
+
+            return;
+        }
+
+        console.log(
+            '✅ Repuesto agregado a la OT'
+        );
+
+        await actualizarTotalRepuestosOT(otId);
+
+        await renderOTRepuestos(otId);
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            'Ocurrió un error agregando el repuesto.'
+        );
+    }
+}
+  async function actualizarTotalRepuestosOT(otId) {
+
+    const { data, error } =
+        await supabaseClient
+            .from('ot_repuestos')
+            .select('subtotal')
+            .eq('ot_id', otId);
+
+    if (error) {
+
+        console.error(
+            'Error calculando repuestos:',
+            error
+        );
+
+        return;
+    }
+
+    const totalRepuestos =
+        (data || []).reduce(
+            (total, item) =>
+                total + (Number(item.subtotal) || 0),
+            0
+        );
+
+    const { data: ot, error: errorOT } =
+        await supabaseClient
+            .from('ordenes_trabajo')
+            .select('mano_obra, descuento')
+            .eq('id', otId)
+            .single();
+
+    if (errorOT) {
+
+        console.error(errorOT);
+
+        return;
+    }
+
+    const manoObra =
+        Number(ot.mano_obra) || 0;
+
+    const descuento =
+        Number(ot.descuento) || 0;
+
+    const total =
+        Math.max(
+            0,
+            manoObra +
+            totalRepuestos -
+            descuento
+        );
+
+    const { error: errorUpdate } =
+        await supabaseClient
+            .from('ordenes_trabajo')
+            .update({
+
+                repuestos_total:
+                    totalRepuestos,
+
+                total:
+                    total
+
+            })
+            .eq('id', otId);
+
+    if (errorUpdate) {
+
+        console.error(
+            'Error actualizando total OT:',
+            errorUpdate
+        );
+
+        return;
+    }
+
+    console.log(
+        '✅ Total de repuestos actualizado:',
+        totalRepuestos
+    );
+}
+   async function eliminarRepuestoOT(
+    id,
+    otId
+) {
+
+    const confirmar =
+        confirm(
+            '¿Eliminar este repuesto de la OT?'
+        );
+
+    if (!confirmar) return;
+
+    const { error } =
+        await supabaseClient
+            .from('ot_repuestos')
+            .delete()
+            .eq('id', id);
+
+    if (error) {
+
+        console.error(
+            'Error eliminando repuesto:',
+            error
+        );
+
+        alert(
+            'No se pudo eliminar:\n\n' +
+            error.message
+        );
+
+        return;
+    }
+
+    await actualizarTotalRepuestosOT(otId);
+
+    await renderOTRepuestos(otId);
+
+    console.log(
+        '✅ Repuesto eliminado'
+    );
 }
     function openPart(){
  document.getElementById('modalbox').innerHTML=`<h2>Nuevo repuesto</h2><div class="form"><label>Descripción<input id="pDesc"></label><label>Proveedor<input id="pProv"></label><label>Costo ($)<input id="pCosto" type="number"></label><label>Precio venta ($)<input id="pPrecio" type="number"></label><label>Stock<input id="pStock" type="number"></label><label>Stock mínimo<input id="pMin" type="number"></label></div><div class="actions"><button class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn" onclick="savePart()">Guardar</button></div>`;document.getElementById('modal').classList.add('show')
