@@ -974,11 +974,7 @@ async function renderOT() {
             });
 
         if (error) {
-
-            console.error(
-                'Error cargando OT:',
-                error
-            );
+            console.error('Error cargando OT:', error);
 
             container.innerHTML =
                 '<div class="empty">Error al cargar órdenes de trabajo.</div>';
@@ -1006,13 +1002,10 @@ async function renderOT() {
                 ${ot.estado || ''}
             `;
 
-            return texto
-                .toLowerCase()
-                .includes(q);
+            return texto.toLowerCase().includes(q);
         });
 
         if (!rows.length) {
-
             container.innerHTML =
                 '<div class="empty">No hay órdenes de trabajo cargadas.</div>';
 
@@ -1029,24 +1022,21 @@ async function renderOT() {
                     <th>Moto</th>
                     <th>Estado</th>
                     <th>Total</th>
+                    <th>Acciones</th>
                 </tr>
 
                 ${rows.map(ot => {
 
                     const cliente = ot.clientes || {};
                     const moto = ot.motos || {};
-
-                    const total =
-                        Number(ot.total) || 0;
+                    const total = Number(ot.total) || 0;
 
                     return `
 
                         <tr>
 
                             <td>
-                                <b>
-                                    ${ot.numero_ot || ot.id}
-                                </b>
+                                <b>${ot.numero_ot || ot.id}</b>
                             </td>
 
                             <td>
@@ -1069,6 +1059,14 @@ async function renderOT() {
 
                             <td>
                                 $ ${total.toLocaleString('es-AR')}
+                            </td>
+
+                            <td>
+                                <button
+                                    class="btn secondary"
+                                    onclick='openOTEdit(${JSON.stringify(ot)})'>
+                                    Editar
+                                </button>
                             </td>
 
                         </tr>
