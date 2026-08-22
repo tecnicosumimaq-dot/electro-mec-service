@@ -872,10 +872,77 @@ async function openOT() {
         alert('No se pudo abrir el formulario de OT.');
     }
 }
-function saveOT(){
- let moto=db.motos.find(x=>x.id===f('otMoto')), cli=db.clientes.find(x=>x.id===moto.cliente);
- let ot={id:nextId(db.ots,'OT-'),cliente:cli?cli.id:'',moto:moto.id,fecha:new Date().toLocaleDateString('es-AR'),estado:f('otEstado'),km:f('otKm'),diagnostico:f('otDiag'),trabajos:f('otTrab'),mo:+f('otMO')||0,rep:+f('otRep')||0,obs:f('otObs')};
- ot.total=ot.mo+ot.rep; db.ots.push(ot); closeModal();save()
+async function saveOT() {
+
+    const motoId = f('otMoto');
+
+    if (!motoId) {
+        alert('Seleccioná una moto.');
+        return;
+    }
+
+    const moto = await supabaseClient
+        .from('motos')
+        .select('cliente_id, kilometraje')
+        .eq('id', motoId)
+        .single();
+
+    if (moto.error) {
+        console.error('Error obteniendo moto:', moto.error);
+        alert('No se pudo obtener la información de la moto.');
+        return;
+    }
+
+    const manoObra = parseFloat(f('otMO')) || 0;
+    const repuestos = parseFloat(f('otRep')) || 0;
+    const descuento = parseFloat(f('otDesc')) || 0;
+
+    const total = manoObra + repuestos - descuento;
+
+    const nuevaOT = {
+        cliente_id: moto.data.cliente_id,
+        moto_id: motoId,
+        fecha_recepcion: new Date().toISOString(),
+        estado: f('otEstado'),
+        kilometraje: parseInt(f('otKm')) || moto.data.kilometraje || null,
+        diagnostico: f('otDiag'),
+        trabajos_realizados: f('otTrab'),
+        observaciones: f('otObs'),
+        mano_obra: manoObra,
+        repuestos_total: repuestos,
+        descuento: descuento,
+        total: total,
+        autorizada: false
+    };
+
+    console.log('Guardando OT:', nuevaOT);
+
+    const { data, error } = await supabaseClient
+        .from('ordenes_trabajo')
+        .insert(nuevaOT)
+        .select()
+        .single();
+
+    if (error) {
+
+        console.error('❌ Error guardando OT:', error);
+
+        alert(
+            'No se pudo guardar la OT:\n\n' +
+            error.message
+        );
+
+        return;
+    }
+
+    console.log('✅ OT guardada:', data);
+
+    closeModal();
+
+    await renderOT();
+    await renderDashboard();
+
+    alert('✅ Orden de trabajo creada correctamente.');
 }
 function renderOT(){
  let q=(document.getElementById('otSearch')?.value||'').toLowerCase();
