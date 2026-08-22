@@ -1089,7 +1089,115 @@ async function renderOT() {
             '<div class="empty">Error inesperado.</div>';
     }
 }
+async function openOTEdit(ot) {
 
+    document.getElementById('modalbox').innerHTML = `
+
+        <h2>Editar Orden de Trabajo</h2>
+
+        <div class="form">
+
+            <label>
+                Estado
+                <select id="editOTEstado">
+
+                    <option ${ot.estado === 'Abierta' ? 'selected' : ''}>
+                        Abierta
+                    </option>
+
+                    <option ${ot.estado === 'Esperando autorización' ? 'selected' : ''}>
+                        Esperando autorización
+                    </option>
+
+                    <option ${ot.estado === 'En reparación' ? 'selected' : ''}>
+                        En reparación
+                    </option>
+
+                    <option ${ot.estado === 'Terminado' ? 'selected' : ''}>
+                        Terminado
+                    </option>
+
+                    <option ${ot.estado === 'Entregado' ? 'selected' : ''}>
+                        Entregado
+                    </option>
+
+                </select>
+            </label>
+
+            <label>
+                Kilometraje
+                <input
+                    id="editOTKm"
+                    type="number"
+                    value="${ot.kilometraje || ''}">
+            </label>
+
+            <label>
+                Diagnóstico
+                <input
+                    id="editOTDiag"
+                    value="${ot.diagnostico || ''}">
+            </label>
+
+            <label>
+                Trabajos realizados
+                <input
+                    id="editOTTrab"
+                    value="${ot.trabajos_realizados || ''}">
+            </label>
+
+            <label>
+                Mano de obra ($)
+                <input
+                    id="editOTMO"
+                    type="number"
+                    value="${ot.mano_obra || 0}">
+            </label>
+
+            <label>
+                Repuestos ($)
+                <input
+                    id="editOTRep"
+                    type="number"
+                    value="${ot.repuestos_total || 0}">
+            </label>
+
+            <label>
+                Descuento ($)
+                <input
+                    id="editOTDesc"
+                    type="number"
+                    value="${ot.descuento || 0}">
+            </label>
+
+            <label>
+                Observaciones
+                <input
+                    id="editOTObs"
+                    value="${ot.observaciones || ''}">
+            </label>
+
+        </div>
+
+        <div class="actions">
+
+            <button
+                class="btn secondary"
+                onclick="closeModal()">
+                Cancelar
+            </button>
+
+            <button
+                class="btn"
+                onclick="saveOTEdit('${ot.id}')">
+                Guardar cambios
+            </button>
+
+        </div>
+    `;
+
+    document.getElementById('modal').classList.add('show');
+}
 function openPart(){
  document.getElementById('modalbox').innerHTML=`<h2>Nuevo repuesto</h2><div class="form"><label>Descripción<input id="pDesc"></label><label>Proveedor<input id="pProv"></label><label>Costo ($)<input id="pCosto" type="number"></label><label>Precio venta ($)<input id="pPrecio" type="number"></label><label>Stock<input id="pStock" type="number"></label><label>Stock mínimo<input id="pMin" type="number"></label></div><div class="actions"><button class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn" onclick="savePart()">Guardar</button></div>`;document.getElementById('modal').classList.add('show')
 }
