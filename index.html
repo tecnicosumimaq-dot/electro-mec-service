@@ -1693,7 +1693,21 @@ async function openOTRepuestos(otId) {
 
         const precio =
             Number(repuesto.precio_venta) || 0;
+const stockActual =
+    Number(repuesto.stock) || 0;
 
+if (stockActual < cantidad) {
+
+    alert(
+        'Stock insuficiente.\n\n' +
+        'Disponible: ' +
+        stockActual +
+        '\nSolicitado: ' +
+        cantidad
+    );
+
+    return;
+}
         const subtotal =
             precio * cantidad;
 
@@ -1732,7 +1746,23 @@ async function openOTRepuestos(otId) {
 
             return;
         }
+const stockActualizado =
+    await actualizarStockRepuesto(
+        repuestoId,
+        cantidad
+    );
 
+if (!stockActualizado) {
+
+    await supabaseClient
+        .from('ot_repuestos')
+        .delete()
+        .eq('ot_id', otId)
+        .eq('repuesto_id', repuestoId)
+        .eq('cantidad', cantidad);
+
+    return;
+}
         console.log(
             '✅ Repuesto agregado a la OT'
         );
@@ -1750,7 +1780,78 @@ async function openOTRepuestos(otId) {
         );
     }
 }
-  async function actualizarTotalRepuestosOT(otId) {
+ async function actualizarStockRepuesto(repuestoId, cantidad) {
+
+    try {
+
+        const { data: repuesto, error } =
+            await supabaseClient
+                .from('repuestos')
+                .select('stock')
+                .eq('id', repuestoId)
+                .single();
+
+        if (error) {
+            console.error(
+                'Error consultando stock:',
+                error
+            );
+            return false;
+        }
+
+        const stockActual =
+            Number(repuesto.stock) || 0;
+
+        const nuevoStock =
+            stockActual - cantidad;
+
+        if (nuevoStock < 0) {
+
+            alert(
+                'No hay suficiente stock disponible.'
+            );
+
+            return false;
+        }
+
+        const { error: errorUpdate } =
+            await supabaseClient
+                .from('repuestos')
+                .update({
+                    stock: nuevoStock
+                })
+                .eq('id', repuestoId);
+
+        if (errorUpdate) {
+
+            console.error(
+                'Error actualizando stock:',
+                errorUpdate
+            );
+
+            return false;
+        }
+
+        console.log(
+            '✅ Stock actualizado:',
+            stockActual,
+            '→',
+            nuevoStock
+        );
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            'Error inesperado actualizando stock:',
+            error
+        );
+
+        return false;
+    }
+}
+    async function actualizarTotalRepuestosOT(otId) {
 
     const { data, error } =
         await supabaseClient
