@@ -1091,14 +1091,52 @@ async function renderOT() {
 }
 async function openOTEdit(ot) {
 
+    const cliente = ot.clientes || {};
+    const moto = ot.motos || {};
+
+    const fechaRecepcion = ot.fecha_recepcion
+        ? new Date(ot.fecha_recepcion).toLocaleString('es-AR')
+        : '';
+
+    const fechaEntrega = ot.fecha_entrega
+        ? new Date(ot.fecha_entrega).toISOString().split('T')[0]
+        : '';
+
     document.getElementById('modalbox').innerHTML = `
 
-        <h2>Editar Orden de Trabajo</h2>
+        <h2>Orden de Trabajo Nº ${ot.numero_ot || ''}</h2>
+
+        <div style="
+            background:#f3f4f6;
+            padding:12px;
+            border-radius:10px;
+            margin-bottom:15px;
+        ">
+
+            <b>Cliente:</b>
+            ${cliente.nombre || ''}
+            ${cliente.apellido || ''}
+
+            <br>
+
+            <b>Moto:</b>
+            ${moto.dominio || ''}
+            ·
+            ${moto.marca || ''}
+            ${moto.modelo || ''}
+
+            <br>
+
+            <b>Recepción:</b>
+            ${fechaRecepcion}
+
+        </div>
 
         <div class="form">
 
             <label>
                 Estado
+
                 <select id="editOTEstado">
 
                     <option ${ot.estado === 'Abierta' ? 'selected' : ''}>
@@ -1126,6 +1164,7 @@ async function openOTEdit(ot) {
 
             <label>
                 Kilometraje
+
                 <input
                     id="editOTKm"
                     type="number"
@@ -1134,6 +1173,7 @@ async function openOTEdit(ot) {
 
             <label>
                 Diagnóstico
+
                 <input
                     id="editOTDiag"
                     value="${ot.diagnostico || ''}">
@@ -1141,6 +1181,7 @@ async function openOTEdit(ot) {
 
             <label>
                 Trabajos realizados
+
                 <input
                     id="editOTTrab"
                     value="${ot.trabajos_realizados || ''}">
@@ -1148,6 +1189,7 @@ async function openOTEdit(ot) {
 
             <label>
                 Mano de obra ($)
+
                 <input
                     id="editOTMO"
                     type="number"
@@ -1156,6 +1198,7 @@ async function openOTEdit(ot) {
 
             <label>
                 Repuestos ($)
+
                 <input
                     id="editOTRep"
                     type="number"
@@ -1164,6 +1207,7 @@ async function openOTEdit(ot) {
 
             <label>
                 Descuento ($)
+
                 <input
                     id="editOTDesc"
                     type="number"
@@ -1171,11 +1215,41 @@ async function openOTEdit(ot) {
             </label>
 
             <label>
+                Fecha de entrega
+
+                <input
+                    id="editOTEntrega"
+                    type="date"
+                    value="${fechaEntrega}">
+            </label>
+
+            <label>
                 Observaciones
+
                 <input
                     id="editOTObs"
                     value="${ot.observaciones || ''}">
             </label>
+
+        </div>
+
+        <div style="
+            margin-top:18px;
+            padding:15px;
+            background:#f9fafb;
+            border-radius:10px;
+            text-align:right;
+        ">
+
+            <span style="color:#6b7280;">
+                Total
+            </span>
+
+            <strong
+                id="editOTTotal"
+                style="font-size:24px;display:block;">
+                $ ${(Number(ot.total) || 0).toLocaleString('es-AR')}
+            </strong>
 
         </div>
 
@@ -1210,11 +1284,15 @@ async function saveOTEdit(id) {
         parseFloat(f('editOTDesc')) || 0;
 
     const total =
-        manoObra + repuestos - descuento;
+        Math.max(0, manoObra + repuestos - descuento);
+
+    const fechaEntrega =
+        f('editOTEntrega');
 
     const cambios = {
 
-        estado: f('editOTEstado'),
+        estado:
+            f('editOTEstado'),
 
         kilometraje:
             parseInt(f('editOTKm')) || null,
@@ -1234,24 +1312,50 @@ async function saveOTEdit(id) {
         descuento:
             descuento,
 
+        total:
+            total,
+
         observaciones:
             f('editOTObs'),
 
-        total:
-            total
+        fecha_entrega:
+            fechaEntrega
+                ? new Date(fechaEntrega + 'T12:00:00').toISOString()
+                : null
     };
+
+    /*
+     * Si la OT pasa a Entregado y no se indicó
+     * una fecha, usamos la fecha actual.
+     */
+
+    if (
+        cambios.estado === 'Entregado' &&
+        !cambios.fecha_entrega
+    ) {
+
+        cambios.fecha_entrega =
+            new Date().toISOString();
+    }
 
     try {
 
-        const { error } = await supabaseClient
-            .from('ordenes_trabajo')
-            .update(cambios)
-            .eq('id', id);
+        console.log(
+            'Actualizando OT:',
+            id,
+            cambios
+        );
+
+        const { error } =
+            await supabaseClient
+                .from('ordenes_trabajo')
+                .update(cambios)
+                .eq('id', id);
 
         if (error) {
 
             console.error(
-                'Error actualizando OT:',
+                '❌ Error actualizando OT:',
                 error
             );
 
@@ -1266,13 +1370,19 @@ async function saveOTEdit(id) {
         closeModal();
 
         await renderOT();
+
         await renderDashboard();
 
-        alert('✅ OT actualizada correctamente.');
+        alert(
+            '✅ OT actualizada correctamente.'
+        );
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            'Error inesperado:',
+            error
+        );
 
         alert(
             'Ocurrió un error al actualizar la OT.'
