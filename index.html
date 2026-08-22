@@ -944,10 +944,153 @@ async function saveOT() {
 
     alert('✅ Orden de trabajo creada correctamente.');
 }
-function renderOT(){
- let q=(document.getElementById('otSearch')?.value||'').toLowerCase();
- let rows=db.ots.filter(o=>{let m=db.motos.find(x=>x.id===o.moto)||{},c=db.clientes.find(x=>x.id===o.cliente)||{};return (o.id+' '+m.dominio+' '+c.nombre+' '+c.apellido).toLowerCase().includes(q)});
- document.getElementById('otTable').innerHTML=rows.length?`<table class="table"><tr><th>OT</th><th>Cliente</th><th>Moto</th><th>Estado</th><th>Total</th></tr>${rows.map(o=>{let m=db.motos.find(x=>x.id===o.moto)||{},c=db.clientes.find(x=>x.id===o.cliente)||{};return `<tr><td><b>${o.id}</b></td><td>${c.nombre||''} ${c.apellido||''}</td><td>${m.dominio||''} · ${m.marca||''} ${m.modelo||''}</td><td><span class="badge">${o.estado}</span></td><td>$ ${o.total.toLocaleString('es-AR')}</td></tr>`}).join('')}</table>`:'<div class="empty">No hay OT cargadas.</div>'
+async function renderOT() {
+
+    const container = document.getElementById('otTable');
+
+    if (!container) return;
+
+    container.innerHTML =
+        '<div class="empty">Cargando órdenes de trabajo...</div>';
+
+    try {
+
+        const { data, error } = await supabaseClient
+            .from('ordenes_trabajo')
+            .select(`
+                *,
+                clientes (
+                    nombre,
+                    apellido
+                ),
+                motos (
+                    dominio,
+                    marca,
+                    modelo
+                )
+            `)
+            .order('fecha_recepcion', {
+                ascending: false
+            });
+
+        if (error) {
+
+            console.error(
+                'Error cargando OT:',
+                error
+            );
+
+            container.innerHTML =
+                '<div class="empty">Error al cargar órdenes de trabajo.</div>';
+
+            return;
+        }
+
+        const q = (
+            document.getElementById('otSearch')?.value || ''
+        ).toLowerCase();
+
+        const rows = (data || []).filter(ot => {
+
+            const cliente = ot.clientes || {};
+            const moto = ot.motos || {};
+
+            const texto = `
+                ${ot.id || ''}
+                ${ot.numero_ot || ''}
+                ${cliente.nombre || ''}
+                ${cliente.apellido || ''}
+                ${moto.dominio || ''}
+                ${moto.marca || ''}
+                ${moto.modelo || ''}
+                ${ot.estado || ''}
+            `;
+
+            return texto
+                .toLowerCase()
+                .includes(q);
+        });
+
+        if (!rows.length) {
+
+            container.innerHTML =
+                '<div class="empty">No hay órdenes de trabajo cargadas.</div>';
+
+            return;
+        }
+
+        container.innerHTML = `
+
+            <table class="table">
+
+                <tr>
+                    <th>OT</th>
+                    <th>Cliente</th>
+                    <th>Moto</th>
+                    <th>Estado</th>
+                    <th>Total</th>
+                </tr>
+
+                ${rows.map(ot => {
+
+                    const cliente = ot.clientes || {};
+                    const moto = ot.motos || {};
+
+                    const total =
+                        Number(ot.total) || 0;
+
+                    return `
+
+                        <tr>
+
+                            <td>
+                                <b>
+                                    ${ot.numero_ot || ot.id}
+                                </b>
+                            </td>
+
+                            <td>
+                                ${cliente.nombre || ''}
+                                ${cliente.apellido || ''}
+                            </td>
+
+                            <td>
+                                ${moto.dominio || ''}
+                                ·
+                                ${moto.marca || ''}
+                                ${moto.modelo || ''}
+                            </td>
+
+                            <td>
+                                <span class="badge">
+                                    ${ot.estado || ''}
+                                </span>
+                            </td>
+
+                            <td>
+                                $ ${total.toLocaleString('es-AR')}
+                            </td>
+
+                        </tr>
+
+                    `;
+
+                }).join('')}
+
+            </table>
+        `;
+
+    } catch (error) {
+
+        console.error(
+            'Error inesperado cargando OT:',
+            error
+        );
+
+        container.innerHTML =
+            '<div class="empty">Error inesperado.</div>';
+    }
+}
 }
 function openPart(){
  document.getElementById('modalbox').innerHTML=`<h2>Nuevo repuesto</h2><div class="form"><label>Descripción<input id="pDesc"></label><label>Proveedor<input id="pProv"></label><label>Costo ($)<input id="pCosto" type="number"></label><label>Precio venta ($)<input id="pPrecio" type="number"></label><label>Stock<input id="pStock" type="number"></label><label>Stock mínimo<input id="pMin" type="number"></label></div><div class="actions"><button class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn" onclick="savePart()">Guardar</button></div>`;document.getElementById('modal').classList.add('show')
