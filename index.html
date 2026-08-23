@@ -1406,13 +1406,7 @@ async function openOTRepuestos(otId) {
         .from('repuestos')
         .select('*')
         .order('descripcion');
-      const { data: repuestos, error } =
-    await supabaseClient
-        .from('repuestos')
-        .select('*')
-        .order('descripcion');
-
-console.log('📦 Repuestos recibidos:', repuestos);
+     console.log('📦 Repuestos recibidos:', repuestos);
 console.log('❌ Error repuestos:', error);
         if (error) {
 
