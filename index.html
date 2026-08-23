@@ -1977,10 +1977,219 @@ if (!stockActualizado) {
     function openPart(){
  document.getElementById('modalbox').innerHTML=`<h2>Nuevo repuesto</h2><div class="form"><label>Descripción<input id="pDesc"></label><label>Proveedor<input id="pProv"></label><label>Costo ($)<input id="pCosto" type="number"></label><label>Precio venta ($)<input id="pPrecio" type="number"></label><label>Stock<input id="pStock" type="number"></label><label>Stock mínimo<input id="pMin" type="number"></label></div><div class="actions"><button class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn" onclick="savePart()">Guardar</button></div>`;document.getElementById('modal').classList.add('show')
 }
-function savePart(){db.repuestos.push({id:nextId(db.repuestos,'REP-'),desc:f('pDesc'),prov:f('pProv'),costo:+f('pCosto')||0,precio:+f('pPrecio')||0,stock:+f('pStock')||0,min:+f('pMin')||0});closeModal();save()}
-function renderParts(){
- let q=(document.getElementById('partSearch')?.value||'').toLowerCase(), rows=db.repuestos.filter(p=>(p.id+' '+p.desc+' '+p.prov).toLowerCase().includes(q));
- document.getElementById('partTable').innerHTML=rows.length?`<table class="table"><tr><th>ID</th><th>Repuesto</th><th>Proveedor</th><th>Stock</th><th>Mínimo</th><th>Estado</th></tr>${rows.map(p=>`<tr><td>${p.id}</td><td>${p.desc}</td><td>${p.prov}</td><td>${p.stock}</td><td>${p.min}</td><td><span class="badge">${p.stock<=p.min?'🔴 COMPRAR':'🟢 OK'}</span></td></tr>`).join('')}</table>`:'<div class="empty">No hay repuestos cargados.</div>'
+async function savePart() {
+
+    const repuesto = {
+
+        descripcion: f('pDesc'),
+
+        proveedor: f('pProv'),
+
+        costo: parseFloat(f('pCosto')) || 0,
+
+        precio_venta:
+            parseFloat(f('pPrecio')) || 0,
+
+        stock:
+            parseFloat(f('pStock')) || 0,
+
+        stock_minimo:
+            parseFloat(f('pMin')) || 0
+
+    };
+
+    if (!repuesto.descripcion) {
+
+        alert(
+            'Ingresá la descripción del repuesto.'
+        );
+
+        return;
+    }
+
+    try {
+
+        const { data, error } =
+            await supabaseClient
+                .from('repuestos')
+                .insert(repuesto)
+                .select()
+                .single();
+
+        if (error) {
+
+            console.error(
+                'Error guardando repuesto:',
+                error
+            );
+
+            alert(
+                'No se pudo guardar el repuesto:\n\n' +
+                error.message
+            );
+
+            return;
+        }
+
+        console.log(
+            '✅ Repuesto guardado en Supabase:',
+            data
+        );
+
+        closeModal();
+
+        await renderParts();
+
+        await renderDashboard();
+
+        alert(
+            '✅ Repuesto guardado correctamente.'
+        );
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            'Ocurrió un error al guardar el repuesto.'
+        );
+    }
+}
+async function renderParts() {
+
+    const container =
+        document.getElementById('partTable');
+
+    if (!container) return;
+
+    container.innerHTML =
+        '<div class="empty">Cargando inventario...</div>';
+
+    try {
+
+        const { data, error } =
+            await supabaseClient
+                .from('repuestos')
+                .select('*')
+                .order('descripcion');
+
+        if (error) {
+
+            console.error(
+                'Error cargando inventario:',
+                error
+            );
+
+            container.innerHTML =
+                '<div class="empty">Error al cargar inventario.</div>';
+
+            return;
+        }
+
+        const q =
+            (
+                document.getElementById('partSearch')?.value ||
+                ''
+            ).toLowerCase();
+
+        const rows =
+            (data || []).filter(r => {
+
+                const texto = `
+                    ${r.codigo || ''}
+                    ${r.descripcion || ''}
+                    ${r.proveedor || ''}
+                `;
+
+                return texto
+                    .toLowerCase()
+                    .includes(q);
+
+            });
+
+        if (!rows.length) {
+
+            container.innerHTML =
+                '<div class="empty">No hay repuestos cargados.</div>';
+
+            return;
+        }
+
+        container.innerHTML = `
+
+            <table class="table">
+
+                <tr>
+                    <th>Código</th>
+                    <th>Repuesto</th>
+                    <th>Proveedor</th>
+                    <th>Stock</th>
+                    <th>Mínimo</th>
+                    <th>Estado</th>
+                </tr>
+
+                ${rows.map(r => {
+
+                    const stock =
+                        Number(r.stock) || 0;
+
+                    const minimo =
+                        Number(r.stock_minimo) || 0;
+
+                    return `
+
+                        <tr>
+
+                            <td>
+                                ${r.codigo || ''}
+                            </td>
+
+                            <td>
+                                <b>
+                                    ${r.descripcion || ''}
+                                </b>
+                            </td>
+
+                            <td>
+                                ${r.proveedor || ''}
+                            </td>
+
+                            <td>
+                                ${stock}
+                            </td>
+
+                            <td>
+                                ${minimo}
+                            </td>
+
+                            <td>
+
+                                <span class="badge">
+
+                                    ${stock <= minimo
+                                        ? '🔴 COMPRAR'
+                                        : '🟢 OK'}
+
+                                </span>
+
+                            </td>
+
+                        </tr>
+
+                    `;
+
+                }).join('')}
+
+            </table>
+        `;
+
+    } catch (error) {
+
+        console.error(error);
+
+        container.innerHTML =
+            '<div class="empty">Error inesperado.</div>';
+    }
 }
 function openMove(tipo){
  document.getElementById('modalbox').innerHTML=`<h2>Registrar ${tipo}</h2><div class="form"><label>Concepto<input id="mvConcepto"></label><label>Método de pago<select id="mvMetodo"><option>Efectivo</option><option>Transferencia</option><option>Débito</option><option>Crédito</option></select></label><label>Importe ($)<input id="mvImporte" type="number"></label></div><div class="actions"><button class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn" onclick="saveMove('${tipo}')">Guardar</button></div>`;document.getElementById('modal').classList.add('show')
