@@ -1677,7 +1677,19 @@ console.log('❌ Error repuestos:', error);
                 .select('*')
                 .eq('id', repuestoId)
                 .single();
+const stockActual =
+    Number(repuesto.stock) || 0;
 
+if (stockActual < cantidad) {
+
+    alert(
+        'Stock insuficiente.\n\n' +
+        'Disponible: ' + stockActual +
+        '\nSolicitado: ' + cantidad
+    );
+
+    return;
+}
         if (errorRepuesto) {
 
             console.error(
@@ -1713,8 +1725,99 @@ if (stockActual < cantidad) {
 
         const { error } =
             await supabaseClient
+            const { data: existente, error: errorExistente } =
+    await supabaseClient
+        .from('ot_repuestos')
+        .select('*')
+        .eq('ot_id', otId)
+        .eq('repuesto_id', repuestoId)
+        .maybeSingle();
+
+if (errorExistente) {
+
+    console.error(
+        'Error verificando repuesto existente:',
+        errorExistente
+    );
+
+    alert(
+        'No se pudo verificar el repuesto.'
+    );
+
+    return;
+}
                 .from('ot_repuestos')
-                .insert({
+                let error;
+
+if (existente) {
+
+    const nuevaCantidad =
+        Number(existente.cantidad || 0) +
+        cantidad;
+
+    const nuevoSubtotal =
+        precio * nuevaCantidad;
+
+    const resultado =
+        await supabaseClient
+            .from('ot_repuestos')
+            .update({
+
+                cantidad:
+                    nuevaCantidad,
+
+                precio_unitario:
+                    precio,
+
+                subtotal:
+                    nuevoSubtotal
+
+            })
+            .eq('id', existente.id);
+
+    error = resultado.error;
+
+} else {
+
+    const resultado =
+        await supabaseClient
+            .from('ot_repuestos')
+            .insert({
+
+                ot_id:
+                    otId,
+
+                repuesto_id:
+                    repuestoId,
+
+                cantidad:
+                    cantidad,
+
+                precio_unitario:
+                    precio,
+
+                subtotal:
+                    subtotal
+
+            });
+
+    error = resultado.error;
+}
+
+if (error) {
+
+    console.error(
+        'Error guardando repuesto:',
+        error
+    );
+
+    alert(
+        'No se pudo guardar el repuesto:\n\n' +
+        error.message
+    );
+
+    return;
+}
 
                     ot_id: otId,
 
@@ -1731,7 +1834,38 @@ if (stockActual < cantidad) {
                         subtotal
 
                 });
+const nuevoStock =
+    stockActual - cantidad;
 
+const { error: errorStock } =
+    await supabaseClient
+        .from('repuestos')
+        .update({
+            stock: nuevoStock
+        })
+        .eq('id', repuestoId);
+
+if (errorStock) {
+
+    console.error(
+        'Error actualizando stock:',
+        errorStock
+    );
+
+    alert(
+        'El repuesto fue agregado a la OT, ' +
+        'pero no se pudo actualizar el stock.'
+    );
+
+    return;
+}
+
+console.log(
+    '✅ Stock actualizado:',
+    stockActual,
+    '→',
+    nuevoStock
+);
         if (error) {
 
             console.error(
@@ -1770,7 +1904,10 @@ if (!stockActualizado) {
         await actualizarTotalRepuestosOT(otId);
 
         await renderOTRepuestos(otId);
-
+await renderParts();
+     console.log(
+    '✅ Inventario actualizado'
+);
     } catch (error) {
 
         console.error(error);
@@ -1933,10 +2070,7 @@ if (!stockActualizado) {
         totalRepuestos
     );
 }
-   async function eliminarRepuestoOT(
-    id,
-    otId
-) {
+ async function eliminarRepuestoOT(id, otId) {
 
     const confirmar =
         confirm(
@@ -1945,34 +2079,138 @@ if (!stockActualizado) {
 
     if (!confirmar) return;
 
-    const { error } =
-        await supabaseClient
-            .from('ot_repuestos')
-            .delete()
-            .eq('id', id);
+    try {
 
-    if (error) {
+        // Obtener el detalle antes de eliminarlo
+
+        const { data: detalle, error: errorDetalle } =
+            await supabaseClient
+                .from('ot_repuestos')
+                .select(`
+                    id,
+                    cantidad,
+                    repuesto_id
+                `)
+                .eq('id', id)
+                .single();
+
+        if (errorDetalle) {
+
+            console.error(
+                'Error obteniendo repuesto:',
+                errorDetalle
+            );
+
+            alert(
+                'No se pudo obtener el repuesto.'
+            );
+
+            return;
+        }
+
+        // Obtener stock actual
+
+        const { data: repuesto, error: errorRepuesto } =
+            await supabaseClient
+                .from('repuestos')
+                .select('stock')
+                .eq('id', detalle.repuesto_id)
+                .single();
+
+        if (errorRepuesto) {
+
+            console.error(
+                'Error obteniendo stock:',
+                errorRepuesto
+            );
+
+            alert(
+                'No se pudo obtener el stock.'
+            );
+
+            return;
+        }
+
+        const stockActual =
+            Number(repuesto.stock) || 0;
+
+        const cantidadDevuelta =
+            Number(detalle.cantidad) || 0;
+
+        const nuevoStock =
+            stockActual + cantidadDevuelta;
+
+        // Eliminar de la OT
+
+        const { error: errorDelete } =
+            await supabaseClient
+                .from('ot_repuestos')
+                .delete()
+                .eq('id', id);
+
+        if (errorDelete) {
+
+            console.error(
+                'Error eliminando repuesto:',
+                errorDelete
+            );
+
+            alert(
+                'No se pudo eliminar el repuesto.'
+            );
+
+            return;
+        }
+
+        // Devolver al stock
+
+        const { error: errorStock } =
+            await supabaseClient
+                .from('repuestos')
+                .update({
+                    stock: nuevoStock
+                })
+                .eq('id', detalle.repuesto_id);
+
+        if (errorStock) {
+
+            console.error(
+                'Error devolviendo stock:',
+                errorStock
+            );
+
+            alert(
+                'El repuesto fue eliminado, ' +
+                'pero no se pudo devolver el stock.'
+            );
+
+            return;
+        }
+
+        // Actualizar total de la OT
+
+        await actualizarTotalRepuestosOT(otId);
+
+        await renderOTRepuestos(otId);
+
+        await renderParts();
+
+        console.log(
+            '✅ Repuesto eliminado y stock devuelto:',
+            cantidadDevuelta
+        );
+
+    } catch (error) {
 
         console.error(
-            'Error eliminando repuesto:',
+            'Error inesperado:',
             error
         );
 
         alert(
-            'No se pudo eliminar:\n\n' +
-            error.message
+            'Ocurrió un error al eliminar el repuesto.'
         );
-
-        return;
     }
-
-    await actualizarTotalRepuestosOT(otId);
-
-    await renderOTRepuestos(otId);
-
-    console.log(
-        '✅ Repuesto eliminado'
-    );
 }
     function openPart(){
  document.getElementById('modalbox').innerHTML=`<h2>Nuevo repuesto</h2><div class="form"><label>Descripción<input id="pDesc"></label><label>Proveedor<input id="pProv"></label><label>Costo ($)<input id="pCosto" type="number"></label><label>Precio venta ($)<input id="pPrecio" type="number"></label><label>Stock<input id="pStock" type="number"></label><label>Stock mínimo<input id="pMin" type="number"></label></div><div class="actions"><button class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn" onclick="savePart()">Guardar</button></div>`;document.getElementById('modal').classList.add('show')
