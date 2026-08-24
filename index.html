@@ -4847,5 +4847,145 @@ function textoDatoPDF(
 }
     function renderDashboard(){let open=db.ots.filter(o=>o.estado!=='Entregado').length, pending=db.ots.filter(o=>o.estado==='Esperando autorización').length, low=db.repuestos.filter(p=>p.stock<=p.min).length, ing=db.movimientos.filter(m=>m.tipo==='Ingreso').reduce((a,m)=>a+m.importe,0), egr=db.movimientos.filter(m=>m.tipo==='Egreso').reduce((a,m)=>a+m.importe,0);document.getElementById('kpis').innerHTML=[['👤 Clientes',db.clientes.length,''],['🏍️ Motos',db.motos.length,''],['🔧 OT abiertas',open,open?'Revisar':'OK'],['🟡 Autorizaciones',pending,pending?'Atención':'OK'],['📦 Stock bajo',low,low?'Comprar':'OK'],['💵 Saldo','$ '+(ing-egr).toLocaleString('es-AR'),''],].map(x=>`<div class="card"><div class="label">${x[0]}</div><div class="num">${x[1]}</div><div class="label">${x[2]}</div></div>`).join('');let a=[];if(pending)a.push('🟡 '+pending+' OT esperando autorización.');if(low)a.push('🔴 '+low+' repuestos están en stock mínimo.');document.getElementById('alerts').innerHTML=a.length?a.map(x=>`<div style="padding:10px 0">${x}</div>`).join(''):'<div class="empty">🟢 Sin alertas importantes.</div>'}
 function renderAll(){renderDashboard();renderClients();renderMotos();renderOT();renderParts();renderQuotes();renderCash()}renderAll();
+function cajaPDF(
+    doc,
+    x,
+    y,
+    w,
+    h,
+    titulo,
+    celeste
+) {
+
+    doc.setDrawColor(
+        190,
+        205,
+        220
+    );
+
+    doc.roundedRect(
+        x,
+        y,
+        w,
+        h,
+        2,
+        2,
+        'S'
+    );
+
+    doc.setTextColor(
+        ...celeste
+    );
+
+    doc.setFont(
+        'helvetica',
+        'bold'
+    );
+
+    doc.setFontSize(8);
+
+    doc.text(
+        titulo,
+        x + 4,
+        y + 6
+    );
+
+    doc.setDrawColor(
+        210,
+        220,
+        230
+    );
+
+    doc.line(
+        x + 4,
+        y + 9,
+        x + w - 4,
+        y + 9
+    );
+}
+function dineroPDF(valor) {
+
+    return '$ ' +
+        Number(valor || 0)
+            .toLocaleString('es-AR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+}
+
+
+function formatearFechaPDF(fecha) {
+
+    if (!fecha) {
+
+        const ahora = new Date();
+
+        return String(
+            ahora.getDate()
+        ).padStart(2, '0') +
+        '/' +
+        String(
+            ahora.getMonth() + 1
+        ).padStart(2, '0') +
+        '/' +
+        ahora.getFullYear();
+    }
+
+    const d = new Date(fecha);
+
+    if (isNaN(d.getTime())) {
+        return '';
+    }
+
+    return String(
+        d.getDate()
+    ).padStart(2, '0') +
+    '/' +
+    String(
+        d.getMonth() + 1
+    ).padStart(2, '0') +
+    '/' +
+    d.getFullYear();
+}
+
+
+function textoDatoPDF(
+    doc,
+    etiqueta,
+    valor,
+    x,
+    y
+) {
+
+    doc.setTextColor(
+        70,
+        85,
+        105
+    );
+
+    doc.setFont(
+        'helvetica',
+        'bold'
+    );
+
+    doc.setFontSize(8);
+
+    doc.text(
+        etiqueta,
+        x,
+        y
+    );
+
+    doc.setFont(
+        'helvetica',
+        'normal'
+    );
+
+    doc.text(
+        String(valor || ''),
+        x + 28,
+        y
+    );
+}
 </script>
 </body></html>
