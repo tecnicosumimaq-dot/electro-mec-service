@@ -1,6 +1,8 @@
 <!doctype html>
 <html lang="es">
-<head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Electro Mec - Service</title>
@@ -2397,10 +2399,2400 @@ function renderCash(){
  let ing=db.movimientos.filter(m=>m.tipo==='Ingreso').reduce((a,m)=>a+m.importe,0),egr=db.movimientos.filter(m=>m.tipo==='Egreso').reduce((a,m)=>a+m.importe,0);
  document.getElementById('cashPanel').innerHTML=`<div class="cards"><div class="card"><div class="label">Ingresos</div><div class="num ok">$ ${ing.toLocaleString('es-AR')}</div></div><div class="card"><div class="label">Egresos</div><div class="num danger">$ ${egr.toLocaleString('es-AR')}</div></div><div class="card"><div class="label">Saldo</div><div class="num">$ ${(ing-egr).toLocaleString('es-AR')}</div></div></div><div class="section"><table class="table"><tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th>Método</th><th>Importe</th></tr>${db.movimientos.map(m=>`<tr><td>${m.fecha}</td><td>${m.tipo}</td><td>${m.concepto}</td><td>${m.metodo}</td><td>$ ${m.importe.toLocaleString('es-AR')}</td></tr>`).join('')}</table></div>`
 }
-function renderQuotes(){
- document.getElementById('quoteTable').innerHTML=db.ots.length?`<table class="table"><tr><th>Presupuesto</th><th>OT</th><th>Total</th><th>Estado</th></tr>${db.ots.map(o=>`<tr><td>PRE-${o.id.slice(3)}</td><td>${o.id}</td><td>$ ${o.total.toLocaleString('es-AR')}</td><td><span class="badge">${o.estado}</span></td></tr>`).join('')}</table>`:'<div class="empty">Los presupuestos se generarán desde las OT en el siguiente módulo.</div>'
+function renderQuotes() {
+
+    const container =
+        document.getElementById('quoteTable');
+
+    if (!container) return;
+
+    if (!db.ots.length) {
+
+        container.innerHTML =
+            '<div class="empty">No hay presupuestos disponibles.</div>';
+
+        return;
+    }
+
+    container.innerHTML = `
+
+        <table class="table">
+
+            <tr>
+                <th>Presupuesto</th>
+                <th>OT</th>
+                <th>Total</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+
+            ${db.ots.map(o => `
+
+                <tr>
+
+                    <td>
+                        <b>
+                            PRE-${String(o.id).slice(3)}
+                        </b>
+                    </td>
+
+                    <td>
+                        ${o.id}
+                    </td>
+
+                    <td>
+                        $ ${
+                            Number(o.total || 0)
+                                .toLocaleString('es-AR')
+                        }
+                    </td>
+
+                    <td>
+                        <span class="badge">
+                            ${o.estado || 'Pendiente'}
+                        </span>
+                    </td>
+
+                    <td>
+
+                        <button
+                            class="btn secondary"
+                            onclick="descargarPresupuestoPDF('${o.id}')">
+
+                            📄 Descargar PDF
+
+                        </button>
+
+                    </td>
+
+                </tr>
+
+            `).join('')}
+
+        </table>
+    `;
 }
-function renderDashboard(){let open=db.ots.filter(o=>o.estado!=='Entregado').length, pending=db.ots.filter(o=>o.estado==='Esperando autorización').length, low=db.repuestos.filter(p=>p.stock<=p.min).length, ing=db.movimientos.filter(m=>m.tipo==='Ingreso').reduce((a,m)=>a+m.importe,0), egr=db.movimientos.filter(m=>m.tipo==='Egreso').reduce((a,m)=>a+m.importe,0);document.getElementById('kpis').innerHTML=[['👤 Clientes',db.clientes.length,''],['🏍️ Motos',db.motos.length,''],['🔧 OT abiertas',open,open?'Revisar':'OK'],['🟡 Autorizaciones',pending,pending?'Atención':'OK'],['📦 Stock bajo',low,low?'Comprar':'OK'],['💵 Saldo','$ '+(ing-egr).toLocaleString('es-AR'),''],].map(x=>`<div class="card"><div class="label">${x[0]}</div><div class="num">${x[1]}</div><div class="label">${x[2]}</div></div>`).join('');let a=[];if(pending)a.push('🟡 '+pending+' OT esperando autorización.');if(low)a.push('🔴 '+low+' repuestos están en stock mínimo.');document.getElementById('alerts').innerHTML=a.length?a.map(x=>`<div style="padding:10px 0">${x}</div>`).join(''):'<div class="empty">🟢 Sin alertas importantes.</div>'}
+function descargarPresupuestoPDF(otId) {
+
+    try {
+
+        const ot =
+            db.ots.find(o => String(o.id) === String(otId));
+
+        if (!ot) {
+
+            alert('No se encontró la OT.');
+
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+
+        const doc =
+            new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+        const azul =
+            [15, 23, 42];
+
+        const celeste =
+            [0, 170, 190];
+
+        const gris =
+            [80, 90, 105];
+
+        const margen = 14;
+
+        // ==========================
+        // ENCABEZADO
+        // ==========================
+
+        doc.setFillColor(
+            79,
+            211,
+            220
+        );
+
+        doc.roundedRect(
+            margen,
+            12,
+            25,
+            25,
+            2,
+            2,
+            'F'
+        );
+
+        doc.setTextColor(...azul);
+
+        doc.setFont(
+            'helvetica',
+            'bold'
+        );
+
+        doc.setFontSize(17);
+
+        doc.text(
+            'ELECTRO MEC - SERVICE',
+            44,
+            20
+        );
+
+        doc.setFontSize(8);
+
+        doc.setTextColor(...celeste);
+
+        doc.text(
+            'ELECTROMECÁNICA & MANTENIMIENTO ESPECIALIZADO',
+            44,
+            25
+        );
+
+        doc.setTextColor(...gris);
+
+        doc.text(
+            'Teléfono / WhatsApp: 341 653-9187',
+            44,
+            30
+        );
+
+        doc.text(
+            'Email: tecnicosumimaq@gmail.com',
+            44,
+            34
+        );
+
+        // ==========================
+        // PRESUPUESTO
+        // ==========================
+
+        doc.setFillColor(...azul);
+
+        doc.roundedRect(
+            158,
+            12,
+            38,
+            10,
+            2,
+            2,
+            'F'
+        );
+
+        doc.setTextColor(
+            255,
+            255,
+            255
+        );
+
+        doc.setFontSize(10);
+
+        doc.text(
+            'PRESUPUESTO',
+            177,
+            18,
+            {
+                align: 'center'
+            }
+        );
+
+        doc.setTextColor(...gris);
+
+        doc.setFontSize(8);
+
+        doc.text(
+            'N° Presupuesto:',
+            145,
+            28
+        );
+
+        doc.setFont(
+            'helvetica',
+            'bold'
+        );
+
+        doc.text(
+            `PRE-${String(ot.id).slice(3)}`,
+            196,
+            28,
+            {
+                align: 'right'
+            }
+        );
+
+        doc.setFont(
+            'helvetica',
+            'normal'
+        );
+
+        doc.text(
+            'Fecha:',
+            160,
+            33
+        );
+
+        doc.text(
+            formatearFechaPDF(
+                ot.fecha || ot.fecha_alta
+            ),
+            196,
+            33,
+            {
+                align: 'right'
+            }
+        );
+
+        doc.text(
+            'Validez: 15 Días',
+            196,
+            38,
+            {
+                align: 'right'
+            }
+        );
+
+        doc.setDrawColor(...celeste);
+
+        doc.line(
+            margen,
+            40,
+            196,
+            40
+        );
+
+        // ==========================
+        // CLIENTE
+        // ==========================
+
+        const cliente =
+            db.clientes.find(
+                c =>
+                    String(c.id) ===
+                    String(
+                        ot.cliente ||
+                        ot.cliente_id
+                    )
+            ) || {};
+
+        const moto =
+            db.motos.find(
+                m =>
+                    String(m.id) ===
+                    String(
+                        ot.moto ||
+                        ot.moto_id
+                    )
+            ) || {};
+
+        doc.setTextColor(...azul);
+
+        doc.setFont(
+            'helvetica',
+            'bold'
+        );
+
+        doc.setFontSize(9);
+
+        doc.text(
+            'DATOS DEL CLIENTE Y EQUIPO / VEHÍCULO',
+            18,
+            49
+        );
+
+        doc.setDrawColor(
+            190,
+            205,
+            220
+        );
+
+        doc.roundedRect(
+            margen,
+            43,
+            182,
+            38,
+            2,
+            2,
+            'S'
+        );
+
+        textoDatoPDF(
+            doc,
+            'Cliente:',
+            `${cliente.nombre || ''} ${cliente.apellido || ''}`,
+            18,
+            56
+        );
+
+        textoDatoPDF(
+            doc,
+            'Teléfono:',
+            cliente.telefono || '',
+            105,
+            56
+        );
+
+        textoDatoPDF(
+            doc,
+            'Domicilio:',
+            cliente.direccion || '',
+            18,
+            63
+        );
+
+        textoDatoPDF(
+            doc,
+            'Email:',
+            cliente.email || '',
+            105,
+            63
+        );
+
+        textoDatoPDF(
+            doc,
+            'Vehículo:',
+            `${moto.marca || ''} ${moto.modelo || ''}`,
+            18,
+            70
+        );
+
+        textoDatoPDF(
+            doc,
+            'Dominio:',
+            moto.dominio || '',
+            105,
+            70
+        );
+
+        textoDatoPDF(
+            doc,
+            'KM:',
+            moto.km ||
+            moto.kilometraje ||
+            ot.km ||
+            '',
+            18,
+            77
+        );
+
+        // ==========================
+        // DIAGNÓSTICO
+        // ==========================
+
+        doc.setTextColor(...azul);
+
+        doc.setFont(
+            'helvetica',
+            'bold'
+        );
+
+        doc.setFontSize(9);
+
+        doc.text(
+            'DETALLE DEL DIAGNÓSTICO / TRABAJO A REALIZAR',
+            18,
+            90
+        );
+
+        doc.setFont(
+            'helvetica',
+            'normal'
+        );
+
+        doc.setTextColor(...gris);
+
+        doc.setFontSize(8);
+
+        const diagnostico =
+            ot.diagnostico ||
+            ot.trabajos ||
+            ot.observaciones ||
+            '';
+
+        doc.text(
+            doc.splitTextToSize(
+                String(diagnostico),
+                175
+            ),
+            18,
+            97
+        );
+
+        // ==========================
+        // REPUESTOS
+        // ==========================
+
+        doc.setTextColor(...azul);
+
+        doc.setFont(
+            'helvetica',
+            'bold'
+        );
+
+        doc.setFontSize(9);
+
+        doc.text(
+            'REPUESTOS, INSUMOS Y MATERIALES',
+            18,
+            112
+        );
+
+        const repuestos =
+            Array.isArray(ot.repuestos)
+                ? ot.repuestos
+                : [];
+
+        const filas =
+            repuestos.map((r, i) => {
+
+                const cantidad =
+                    Number(
+                        r.cantidad || 1
+                    );
+
+                const precio =
+                    Number(
+                        r.precio ||
+                        r.precio_unitario ||
+                        0
+                    );
+
+                return [
+
+                    i + 1,
+
+                    cantidad,
+
+                    r.descripcion ||
+                    r.nombre ||
+                    '',
+
+                    dineroPDF(precio),
+
+                    dineroPDF(
+                        cantidad * precio
+                    )
+                ];
+            });
+
+        doc.autoTable({
+
+            startY: 115,
+
+            margin: {
+                left: 18,
+                right: 18
+            },
+
+            head: [[
+                'ITEM',
+                'CANT.',
+                'DESCRIPCIÓN DEL REPUESTO / COMPONENTE',
+                'PRECIO UNIT.',
+                'SUBTOTAL'
+            ]],
+
+            body:
+                filas.length
+                    ? filas
+                    : [
+                        ['', '', '', '', '']
+                    ],
+
+            theme: 'grid',
+
+            styles: {
+                fontSize: 7,
+                cellPadding: 2
+            },
+
+            headStyles: {
+                fillColor: azul,
+                textColor: 255,
+                fontStyle: 'bold'
+            }
+
+        });
+
+        // ==========================
+        // TOTALES
+        // ==========================
+
+        const subtotalRepuestos =
+            repuestos.reduce(
+                (total, r) => {
+
+                    const cantidad =
+                        Number(
+                            r.cantidad || 1
+                        );
+
+                    const precio =
+                        Number(
+                            r.precio ||
+                            r.precio_unitario ||
+                            0
+                        );
+
+                    return total +
+                        cantidad * precio;
+
+                },
+                0
+            );
+
+        const manoObra =
+            Number(
+                ot.manoObra ||
+                ot.mano_obra ||
+                0
+            );
+
+        const total =
+            Number(
+                ot.total || 0
+            );
+
+        const y =
+            doc.lastAutoTable.finalY + 10;
+
+        doc.setTextColor(...gris);
+
+        doc.setFontSize(9);
+
+        doc.setFont(
+            'helvetica',
+            'bold'
+        );
+
+        doc.text(
+            'Subtotal Repuestos:',
+            130,
+            y
+        );
+
+        doc.text(
+            dineroPDF(subtotalRepuestos),
+            196,
+            y,
+            {
+                align: 'right'
+            }
+        );
+
+        doc.text(
+            'Subtotal Mano de Obra:',
+            130,
+            y + 6
+        );
+
+        doc.text(
+            dineroPDF(manoObra),
+            196,
+            y + 6,
+            {
+                align: 'right'
+            }
+        );
+
+        doc.setTextColor(...azul);
+
+        doc.setFontSize(11);
+
+        doc.text(
+            'TOTAL ESTIMADO:',
+            130,
+            y + 15
+        );
+
+        doc.setTextColor(...celeste);
+
+        doc.text(
+            dineroPDF(total),
+            196,
+            y + 15,
+            {
+                align: 'right'
+            }
+        );
+
+        // ==========================
+        // CONDICIONES
+        // ==========================
+
+        doc.setTextColor(...azul);
+
+        doc.setFontSize(8);
+
+        doc.text(
+            'TÉRMINOS Y CONDICIONES DEL SERVICIO',
+            18,
+            y + 28
+        );
+
+        doc.setTextColor(...gris);
+
+        doc.setFont(
+            'helvetica',
+            'normal'
+        );
+
+        doc.setFontSize(7);
+
+        doc.text(
+            '• Presupuesto válido por 15 días corridos a partir de la fecha de emisión.',
+            18,
+            y + 34
+        );
+
+        doc.text(
+            '• Los trabajos ejecutados cuentan con garantía sobre la mano de obra realizada.',
+            18,
+            y + 39
+        );
+
+        doc.text(
+            '• Precios de repuestos e insumos sujetos a disponibilidad y variación de mercado.',
+            18,
+            y + 44
+        );
+
+        doc.text(
+            '• Se requiere la confirmación y firma de conformidad para el inicio de las tareas.',
+            18,
+            y + 49
+        );
+
+        // ==========================
+        // FIRMAS
+        // ==========================
+
+        doc.line(
+            30,
+            275,
+            90,
+            275
+        );
+
+        doc.line(
+            120,
+            275,
+            180,
+            275
+        );
+
+        doc.text(
+            'Firma y Aclaración - Taller',
+            60,
+            281,
+            {
+                align: 'center'
+            }
+        );
+
+        doc.text(
+            'Firma y Aclaración - Cliente',
+            150,
+            281,
+            {
+                align: 'center'
+            }
+        );
+
+        doc.line(
+            14,
+            288,
+            196,
+            288
+        );
+
+        doc.setFontSize(7);
+
+        doc.text(
+            'Electro Mec - Service • Tel: 341 653-9187 • Email: tecnicosumimaq@gmail.com',
+            105,
+            294,
+            {
+                align: 'center'
+            }
+        );
+
+        // ==========================
+        // DESCARGA
+        // ==========================
+
+        doc.save(
+            `Presupuesto-PRE-${String(ot.id).slice(3)}.pdf`
+        );
+
+        console.log(
+            '✅ Presupuesto PDF generado'
+        );
+
+    } catch (error) {
+
+        console.error(
+            'Error generando PDF:',
+            error
+        );
+
+        alert(
+            'No se pudo generar el PDF:\n\n' +
+            error.message
+        );
+    }
+}
+  function dineroPDF(valor) {
+
+    return '$ ' +
+        Number(valor || 0)
+            .toLocaleString('es-AR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+}
+
+
+function formatearFechaPDF(fecha) {
+
+    if (!fecha) {
+
+        const ahora =
+            new Date();
+
+        return String(
+            ahora.getDate()
+        ).padStart(2, '0') +
+        '/' +
+        String(
+            ahora.getMonth() + 1
+        ).padStart(2, '0') +
+        '/' +
+        ahora.getFullYear();
+    }
+
+    const d =
+        new Date(fecha);
+
+    if (isNaN(d.getTime())) {
+
+        return '';
+    }
+
+    return String(
+        d.getDate()
+    ).padStart(2, '0') +
+    '/' +
+    String(
+        d.getMonth() + 1
+    ).padStart(2, '0') +
+    '/' +
+    d.getFullYear();
+}
+
+
+function textoDatoPDF(
+    doc,
+    etiqueta,
+    valor,
+    x,
+    y
+) {
+
+    doc.setTextColor(
+        70,
+        85,
+        105
+    );
+
+    doc.setFont(
+        'helvetica',
+        'bold'
+    );
+
+    doc.setFontSize(8);
+
+    doc.text(
+        etiqueta,
+        x,
+        y
+    );
+
+    doc.setFont(
+        'helvetica',
+        'normal'
+    );
+
+    doc.text(
+        String(valor || ''),
+        x + 28,
+        y
+    );
+}
+    async function descargarPresupuestoPDF(presupuestoId) {
+
+    try {
+
+        console.log(
+            '📄 Generando presupuesto PDF:',
+            presupuestoId
+        );
+
+        // =========================
+        // PRESUPUESTO
+        // =========================
+
+        const { data: presupuesto, error: errorPresupuesto } =
+            await supabaseClient
+                .from('presupuestos')
+                .select('*')
+                .eq('id', presupuestoId)
+                .single();
+
+        if (errorPresupuesto) {
+
+            console.error(
+                'Error cargando presupuesto:',
+                errorPresupuesto
+            );
+
+            alert(
+                'No se pudo cargar el presupuesto:\n\n' +
+                errorPresupuesto.message
+            );
+
+            return;
+        }
+
+        // =========================
+        // CLIENTE
+        // =========================
+
+        let cliente = {};
+
+        if (presupuesto.cliente_id) {
+
+            const { data } =
+                await supabaseClient
+                    .from('clientes')
+                    .select('*')
+                    .eq('id', presupuesto.cliente_id)
+                    .single();
+
+            cliente = data || {};
+        }
+
+        // =========================
+        // MOTO
+        // =========================
+
+        let moto = {};
+
+        if (presupuesto.moto_id) {
+
+            const { data } =
+                await supabaseClient
+                    .from('motos')
+                    .select('*')
+                    .eq('id', presupuesto.moto_id)
+                    .single();
+
+            moto = data || {};
+        }
+
+        // =========================
+        // DETALLES
+        // =========================
+
+        const { data: detalles, error: errorDetalles } =
+            await supabaseClient
+                .from('presupuesto_detalles')
+                .select('*')
+                .eq('presupuesto_id', presupuestoId);
+
+        if (errorDetalles) {
+
+            console.error(
+                'Error cargando detalles:',
+                errorDetalles
+            );
+
+            alert(
+                'No se pudieron cargar los detalles del presupuesto:\n\n' +
+                errorDetalles.message
+            );
+
+            return;
+        }
+
+        // =========================
+        // PDF
+        // =========================
+
+        const { jsPDF } = window.jspdf;
+
+        const doc =
+            new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+        const azul =
+            [15, 23, 42];
+
+        const celeste =
+            [0, 170, 190];
+
+        const gris =
+            [90, 105, 125];
+
+        const margen = 14;
+
+        // =========================
+        // ENCABEZADO
+        // =========================
+
+        doc.setFillColor(
+            79,
+            211,
+            220
+        );
+
+        doc.roundedRect(
+            margen,
+            12,
+            25,
+            25,
+            2,
+            2,
+            'F'
+        );
+
+        doc.setTextColor(...azul);
+
+        doc.setFont(
+            'helvetica',
+            'bold'
+        );
+
+        doc.setFontSize(17);
+
+        doc.text(
+            'ELECTRO MEC - SERVICE',
+            44,
+            20
+        );
+
+        doc.setFontSize(8);
+
+        doc.setTextColor(...celeste);
+
+        doc.text(
+            'ELECTROMECÁNICA & MANTENIMIENTO ESPECIALIZADO',
+            44,
+            25
+        );
+
+        doc.setTextColor(...gris);
+
+        doc.setFontSize(8);
+
+        doc.text(
+            'Teléfono / WhatsApp: 341 653-9187',
+            44,
+            30
+        );
+
+        doc.text(
+            'Email: tecnicosumimaq@gmail.com',
+            44,
+            34
+        );
+
+        // =========================
+        // TITULO PRESUPUESTO
+        // =========================
+
+        doc.setFillColor(...azul);
+
+        doc.roundedRect(
+            158,
+            12,
+            38,
+            10,
+            2,
+            2,
+            'F'
+        );
+
+        doc.setTextColor(255,255,255);
+
+        doc.setFontSize(10);
+
+        doc.text(
+            'PRESUPUESTO',
+            177,
+            18,
+            {
+                align: 'center'
+            }
+        );
+
+        doc.setTextColor(...gris);
+
+        doc.setFontSize(8);
+
+        const numero =
+            presupuesto.numero ||
+            presupuesto.nro ||
+            presupuesto.id ||
+            '';
+
+        doc.text(
+            'N° Presupuesto:',
+            145,
+            28
+        );
+
+        doc.setFont(
+            'helvetica',
+            'bold'
+        );
+
+        doc.text(
+            String(numero),
+            177,
+            28,
+            {
+                align: 'right'
+            }
+        );
+
+        doc.setFont(
+            'helvetica',
+            'normal'
+        );
+
+        const fecha =
+            presupuesto.fecha ||
+            presupuesto.fecha_alta ||
+            new Date().toISOString();
+
+        doc.text(
+            'Fecha:',
+            160,
+            33
+        );
+
+        doc.text(
+            formatearFechaPDF(fecha),
+            196,
+            33,
+            {
+                align: 'right'
+            }
+        );
+
+        doc.text(
+            'Validez: 15 Días',
+            196,
+            38,
+            {
+                align: 'right'
+            }
+        );
+
+        doc.setDrawColor(...celeste);
+
+        doc.line(
+            margen,
+            40,
+            196,
+            40
+        );
+
+        // =========================
+        // DATOS CLIENTE / MOTO
+        // =========================
+
+        cajaPDF(
+            doc,
+            margen,
+            43,
+            182,
+            38,
+            'DATOS DEL CLIENTE Y EQUIPO / VEHÍCULO',
+            celeste
+        );
+
+        const nombreCliente =
+            `${cliente.nombre || ''} ${cliente.apellido || ''}`.trim();
+
+        textoDatoPDF(
+            doc,
+            'Cliente:',
+            nombreCliente,
+            18,
+            53
+        );
+
+        textoDatoPDF(
+            doc,
+            'Teléfono:',
+            cliente.telefono || '',
+            105,
+            53
+        );
+
+        textoDatoPDF(
+            doc,
+            'Domicilio:',
+            cliente.direccion || '',
+            18,
+            60
+        );
+
+        textoDatoPDF(
+            doc,
+            'Email:',
+            cliente.email || '',
+            105,
+            60
+        );
+
+        textoDatoPDF(
+            doc,
+            'Equipo / Vehículo:',
+            moto.modelo || '',
+            18,
+            67
+        );
+
+        textoDatoPDF(
+            doc,
+            'Marca / Modelo:',
+            `${moto.marca || ''} ${moto.modelo || ''}`.trim(),
+            105,
+            67
+        );
+
+        textoDatoPDF(
+            doc,
+            'N° Serie / Dominio:',
+            moto.dominio || '',
+            18,
+            74
+        );
+
+        textoDatoPDF(
+            doc,
+            'Horas / Km:',
+            moto.kilometraje || '',
+            105,
+            74
+        );
+
+        // =========================
+        // DIAGNOSTICO
+        // =========================
+
+        cajaPDF(
+            doc,
+            margen,
+            85,
+            182,
+            30,
+            'DETALLE DEL DIAGNÓSTICO / TRABAJO A REALIZAR',
+            celeste
+        );
+
+        const diagnostico =
+            presupuesto.diagnostico ||
+            presupuesto.descripcion ||
+            presupuesto.observaciones ||
+            '';
+
+        doc.setTextColor(...gris);
+
+        doc.setFontSize(8);
+
+        doc.text(
+            doc.splitTextToSize(
+                diagnostico,
+                170
+            ),
+            18,
+            96
+        );
+
+        // =========================
+        // REPUESTOS
+        // =========================
+
+        const repuestos =
+            (detalles || []).filter(d => {
+
+                const tipo =
+                    String(
+                        d.tipo ||
+                        d.categoria ||
+                        ''
+                    ).toLowerCase();
+
+                return !tipo.includes('mano');
+            });
+
+        const filasRepuestos =
+            repuestos.map((r, i) => [
+
+                i + 1,
+
+                r.cantidad || 1,
+
+                r.descripcion ||
+                r.detalle ||
+                r.nombre ||
+                '',
+
+                dineroPDF(
+                    r.precio_unitario ||
+                    r.precio ||
+                    0
+                ),
+
+                dineroPDF(
+                    r.subtotal ||
+                    (
+                        Number(r.cantidad || 1) *
+                        Number(
+                            r.precio_unitario ||
+                            r.precio ||
+                            0
+                        )
+                    )
+                )
+
+            ]);
+
+        doc.setTextColor(...azul);
+
+        doc.setFont(
+            'helvetica',
+            'bold'
+        );
+
+        doc.setFontSize(9);
+
+        doc.text(
+            'REPUESTOS, INSUMOS Y MATERIALES',
+            18,
+            123
+        );
+
+        doc.autoTable({
+
+            startY: 126,
+
+            margin: {
+                left: 18,
+                right: 18
+            },
+
+            head: [[
+                'ITEM',
+                'CANT.',
+                'DESCRIPCIÓN DEL REPUESTO / COMPONENTE',
+                'PRECIO UNIT.',
+                'SUBTOTAL'
+            ]],
+
+            body:
+                filasRepuestos.length
+                    ? filasRepuestos
+                    : [
+                        ['', '', '', '', '']
+                    ],
+
+            theme: 'grid',
+
+            styles: {
+                fontSize: 7,
+                cellPadding: 2
+            },
+
+            headStyles: {
+                fillColor: azul,
+                textColor: 255,
+                fontStyle: 'bold'
+            },
+
+            columnStyles: {
+
+                0: {
+                    cellWidth: 12
+                },
+
+                1: {
+                    cellWidth: 15
+                },
+
+                2: {
+                    cellWidth: 80
+                },
+
+                3: {
+                    cellWidth: 30
+                },
+
+                4: {
+                    cellWidth: 30
+                }
+
+            }
+
+        });
+
+        // =========================
+        // TOTALES
+        // =========================
+
+        const subtotalRepuestos =
+            repuestos.reduce(
+                (total, r) =>
+                    total +
+                    Number(
+                        r.subtotal ||
+                        (
+                            Number(r.cantidad || 1) *
+                            Number(
+                                r.precio_unitario ||
+                                r.precio ||
+                                0
+                            )
+                        )
+                    ),
+                0
+            );
+
+        const subtotalManoObra =
+            Number(
+                presupuesto.mano_obra ||
+                presupuesto.subtotal_mano_obra ||
+                0
+            );
+
+        const descuento =
+            Number(
+                presupuesto.descuento ||
+                0
+            );
+
+        const total =
+            Number(
+                presupuesto.total
+            ) ||
+            subtotalRepuestos +
+            subtotalManoObra -
+            descuento;
+
+        const yTotales =
+            Math.min(
+                doc.lastAutoTable.finalY + 8,
+                265
+            );
+
+        doc.setFont(
+            'helvetica',
+            'bold'
+        );
+
+        doc.setFontSize(9);
+
+        doc.setTextColor(...gris);
+
+        doc.text(
+            'Subtotal Repuestos:',
+            130,
+            yTotales
+        );
+
+        doc.text(
+            dineroPDF(subtotalRepuestos),
+            196,
+            yTotales,
+            {
+                align: 'right'
+            }
+        );
+
+        doc.text(
+            'Subtotal Mano de Obra:',
+            130,
+            yTotales + 6
+        );
+
+        doc.text(
+            dineroPDF(subtotalManoObra),
+            196,
+            yTotales + 6,
+            {
+                align: 'right'
+            }
+        );
+
+        doc.text(
+            'Descuento / Ajuste:',
+            130,
+            yTotales + 12
+        );
+
+        doc.text(
+            dineroPDF(descuento),
+            196,
+            yTotales + 12,
+            {
+                align: 'right'
+            }
+        );
+
+        doc.setTextColor(...azul);
+
+        doc.setFontSize(11);
+
+        doc.text(
+            'TOTAL ESTIMADO:',
+            130,
+            yTotales + 20
+        );
+
+        doc.setTextColor(...celeste);
+
+        doc.text(
+            dineroPDF(total),
+            196,
+            yTotales + 20,
+            {
+                align: 'right'
+            }
+        );
+
+        // =========================
+        // CONDICIONES
+        // =========================
+
+        const yCond =
+            yTotales + 29;
+
+        doc.setTextColor(...azul);
+
+        doc.setFontSize(8);
+
+        doc.text(
+            'TÉRMINOS Y CONDICIONES DEL SERVICIO',
+            18,
+            yCond
+        );
+
+        doc.setFont(
+            'helvetica',
+            'normal'
+        );
+
+        doc.setTextColor(...gris);
+
+        doc.setFontSize(7);
+
+        const condiciones = [
+            '• Presupuesto válido por 15 días corridos a partir de la fecha de emisión.',
+            '• Los trabajos ejecutados cuentan con garantía sobre la mano de obra realizada.',
+            '• Precios de repuestos e insumos sujetos a disponibilidad y variación de mercado.',
+            '• Se requiere la confirmación y firma de conformidad para el inicio de las tareas.'
+        ];
+
+        doc.text(
+            condiciones,
+            18,
+            yCond + 6
+        );
+
+        // =========================
+        // FIRMAS
+        // =========================
+
+        const yFirma =
+            282;
+
+        doc.setDrawColor(
+            170,
+            180,
+            195
+        );
+
+        doc.line(
+            30,
+            yFirma,
+            90,
+            yFirma
+        );
+
+        doc.line(
+            120,
+            yFirma,
+            180,
+            yFirma
+        );
+
+        doc.setTextColor(...gris);
+
+        doc.setFontSize(8);
+
+        doc.text(
+            'Firma y Aclaración - Taller',
+            60,
+            yFirma + 5,
+            {
+                align: 'center'
+            }
+        );
+
+        doc.text(
+            'Firma y Aclaración - Cliente',
+            150,
+            yFirma + 5,
+            {
+                align: 'center'
+            }
+        );
+
+        doc.line(
+            14,
+            290,
+            196,
+            290
+        );
+
+        doc.setFontSize(7);
+
+        doc.text(
+            'Electro Mec - Service • Tel: 341 653-9187 • Email: tecnicosumimaq@gmail.com',
+            105,
+            296,
+            {
+                align: 'center'
+            }
+        );
+
+        // =========================
+        // DESCARGAR
+        // =========================
+
+        const nombreArchivo =
+            `Presupuesto-${numero || presupuestoId}.pdf`;
+
+        doc.save(nombreArchivo);
+
+        console.log(
+            '✅ PDF generado:',
+            nombreArchivo
+        );
+
+    } catch (error) {
+
+        console.error(
+            'Error generando PDF:',
+            error
+        );
+
+        alert(
+            'No se pudo generar el PDF.\n\n' +
+            error.message
+        );
+    }
+}
+   async function descargarPresupuestoPDF(presupuestoId) {
+
+    try {
+
+        console.log(
+            '📄 Generando presupuesto PDF:',
+            presupuestoId
+        );
+
+        // =========================
+        // PRESUPUESTO
+        // =========================
+
+        const { data: presupuesto, error: errorPresupuesto } =
+            await supabaseClient
+                .from('presupuestos')
+                .select('*')
+                .eq('id', presupuestoId)
+                .single();
+
+        if (errorPresupuesto) {
+
+            console.error(
+                'Error cargando presupuesto:',
+                errorPresupuesto
+            );
+
+            alert(
+                'No se pudo cargar el presupuesto:\n\n' +
+                errorPresupuesto.message
+            );
+
+            return;
+        }
+
+        // =========================
+        // CLIENTE
+        // =========================
+
+        let cliente = {};
+
+        if (presupuesto.cliente_id) {
+
+            const { data } =
+                await supabaseClient
+                    .from('clientes')
+                    .select('*')
+                    .eq('id', presupuesto.cliente_id)
+                    .single();
+
+            cliente = data || {};
+        }
+
+        // =========================
+        // MOTO
+        // =========================
+
+        let moto = {};
+
+        if (presupuesto.moto_id) {
+
+            const { data } =
+                await supabaseClient
+                    .from('motos')
+                    .select('*')
+                    .eq('id', presupuesto.moto_id)
+                    .single();
+
+            moto = data || {};
+        }
+
+        // =========================
+        // DETALLES
+        // =========================
+
+        const { data: detalles, error: errorDetalles } =
+            await supabaseClient
+                .from('presupuesto_detalles')
+                .select('*')
+                .eq('presupuesto_id', presupuestoId);
+
+        if (errorDetalles) {
+
+            console.error(
+                'Error cargando detalles:',
+                errorDetalles
+            );
+
+            alert(
+                'No se pudieron cargar los detalles del presupuesto:\n\n' +
+                errorDetalles.message
+            );
+
+            return;
+        }
+
+        // =========================
+        // PDF
+        // =========================
+
+        const { jsPDF } = window.jspdf;
+
+        const doc =
+            new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+        const azul =
+            [15, 23, 42];
+
+        const celeste =
+            [0, 170, 190];
+
+        const gris =
+            [90, 105, 125];
+
+        const margen = 14;
+
+        // =========================
+        // ENCABEZADO
+        // =========================
+
+        doc.setFillColor(
+            79,
+            211,
+            220
+        );
+
+        doc.roundedRect(
+            margen,
+            12,
+            25,
+            25,
+            2,
+            2,
+            'F'
+        );
+
+        doc.setTextColor(...azul);
+
+        doc.setFont(
+            'helvetica',
+            'bold'
+        );
+
+        doc.setFontSize(17);
+
+        doc.text(
+            'ELECTRO MEC - SERVICE',
+            44,
+            20
+        );
+
+        doc.setFontSize(8);
+
+        doc.setTextColor(...celeste);
+
+        doc.text(
+            'ELECTROMECÁNICA & MANTENIMIENTO ESPECIALIZADO',
+            44,
+            25
+        );
+
+        doc.setTextColor(...gris);
+
+        doc.setFontSize(8);
+
+        doc.text(
+            'Teléfono / WhatsApp: 341 653-9187',
+            44,
+            30
+        );
+
+        doc.text(
+            'Email: tecnicosumimaq@gmail.com',
+            44,
+            34
+        );
+
+        // =========================
+        // TITULO PRESUPUESTO
+        // =========================
+
+        doc.setFillColor(...azul);
+
+        doc.roundedRect(
+            158,
+            12,
+            38,
+            10,
+            2,
+            2,
+            'F'
+        );
+
+        doc.setTextColor(255,255,255);
+
+        doc.setFontSize(10);
+
+        doc.text(
+            'PRESUPUESTO',
+            177,
+            18,
+            {
+                align: 'center'
+            }
+        );
+
+        doc.setTextColor(...gris);
+
+        doc.setFontSize(8);
+
+        const numero =
+            presupuesto.numero ||
+            presupuesto.nro ||
+            presupuesto.id ||
+            '';
+
+        doc.text(
+            'N° Presupuesto:',
+            145,
+            28
+        );
+
+        doc.setFont(
+            'helvetica',
+            'bold'
+        );
+
+        doc.text(
+            String(numero),
+            177,
+            28,
+            {
+                align: 'right'
+            }
+        );
+
+        doc.setFont(
+            'helvetica',
+            'normal'
+        );
+
+        const fecha =
+            presupuesto.fecha ||
+            presupuesto.fecha_alta ||
+            new Date().toISOString();
+
+        doc.text(
+            'Fecha:',
+            160,
+            33
+        );
+
+        doc.text(
+            formatearFechaPDF(fecha),
+            196,
+            33,
+            {
+                align: 'right'
+            }
+        );
+
+        doc.text(
+            'Validez: 15 Días',
+            196,
+            38,
+            {
+                align: 'right'
+            }
+        );
+
+        doc.setDrawColor(...celeste);
+
+        doc.line(
+            margen,
+            40,
+            196,
+            40
+        );
+
+        // =========================
+        // DATOS CLIENTE / MOTO
+        // =========================
+
+        cajaPDF(
+            doc,
+            margen,
+            43,
+            182,
+            38,
+            'DATOS DEL CLIENTE Y EQUIPO / VEHÍCULO',
+            celeste
+        );
+
+        const nombreCliente =
+            `${cliente.nombre || ''} ${cliente.apellido || ''}`.trim();
+
+        textoDatoPDF(
+            doc,
+            'Cliente:',
+            nombreCliente,
+            18,
+            53
+        );
+
+        textoDatoPDF(
+            doc,
+            'Teléfono:',
+            cliente.telefono || '',
+            105,
+            53
+        );
+
+        textoDatoPDF(
+            doc,
+            'Domicilio:',
+            cliente.direccion || '',
+            18,
+            60
+        );
+
+        textoDatoPDF(
+            doc,
+            'Email:',
+            cliente.email || '',
+            105,
+            60
+        );
+
+        textoDatoPDF(
+            doc,
+            'Equipo / Vehículo:',
+            moto.modelo || '',
+            18,
+            67
+        );
+
+        textoDatoPDF(
+            doc,
+            'Marca / Modelo:',
+            `${moto.marca || ''} ${moto.modelo || ''}`.trim(),
+            105,
+            67
+        );
+
+        textoDatoPDF(
+            doc,
+            'N° Serie / Dominio:',
+            moto.dominio || '',
+            18,
+            74
+        );
+
+        textoDatoPDF(
+            doc,
+            'Horas / Km:',
+            moto.kilometraje || '',
+            105,
+            74
+        );
+
+        // =========================
+        // DIAGNOSTICO
+        // =========================
+
+        cajaPDF(
+            doc,
+            margen,
+            85,
+            182,
+            30,
+            'DETALLE DEL DIAGNÓSTICO / TRABAJO A REALIZAR',
+            celeste
+        );
+
+        const diagnostico =
+            presupuesto.diagnostico ||
+            presupuesto.descripcion ||
+            presupuesto.observaciones ||
+            '';
+
+        doc.setTextColor(...gris);
+
+        doc.setFontSize(8);
+
+        doc.text(
+            doc.splitTextToSize(
+                diagnostico,
+                170
+            ),
+            18,
+            96
+        );
+
+        // =========================
+        // REPUESTOS
+        // =========================
+
+        const repuestos =
+            (detalles || []).filter(d => {
+
+                const tipo =
+                    String(
+                        d.tipo ||
+                        d.categoria ||
+                        ''
+                    ).toLowerCase();
+
+                return !tipo.includes('mano');
+            });
+
+        const filasRepuestos =
+            repuestos.map((r, i) => [
+
+                i + 1,
+
+                r.cantidad || 1,
+
+                r.descripcion ||
+                r.detalle ||
+                r.nombre ||
+                '',
+
+                dineroPDF(
+                    r.precio_unitario ||
+                    r.precio ||
+                    0
+                ),
+
+                dineroPDF(
+                    r.subtotal ||
+                    (
+                        Number(r.cantidad || 1) *
+                        Number(
+                            r.precio_unitario ||
+                            r.precio ||
+                            0
+                        )
+                    )
+                )
+
+            ]);
+
+        doc.setTextColor(...azul);
+
+        doc.setFont(
+            'helvetica',
+            'bold'
+        );
+
+        doc.setFontSize(9);
+
+        doc.text(
+            'REPUESTOS, INSUMOS Y MATERIALES',
+            18,
+            123
+        );
+
+        doc.autoTable({
+
+            startY: 126,
+
+            margin: {
+                left: 18,
+                right: 18
+            },
+
+            head: [[
+                'ITEM',
+                'CANT.',
+                'DESCRIPCIÓN DEL REPUESTO / COMPONENTE',
+                'PRECIO UNIT.',
+                'SUBTOTAL'
+            ]],
+
+            body:
+                filasRepuestos.length
+                    ? filasRepuestos
+                    : [
+                        ['', '', '', '', '']
+                    ],
+
+            theme: 'grid',
+
+            styles: {
+                fontSize: 7,
+                cellPadding: 2
+            },
+
+            headStyles: {
+                fillColor: azul,
+                textColor: 255,
+                fontStyle: 'bold'
+            },
+
+            columnStyles: {
+
+                0: {
+                    cellWidth: 12
+                },
+
+                1: {
+                    cellWidth: 15
+                },
+
+                2: {
+                    cellWidth: 80
+                },
+
+                3: {
+                    cellWidth: 30
+                },
+
+                4: {
+                    cellWidth: 30
+                }
+
+            }
+
+        });
+
+        // =========================
+        // TOTALES
+        // =========================
+
+        const subtotalRepuestos =
+            repuestos.reduce(
+                (total, r) =>
+                    total +
+                    Number(
+                        r.subtotal ||
+                        (
+                            Number(r.cantidad || 1) *
+                            Number(
+                                r.precio_unitario ||
+                                r.precio ||
+                                0
+                            )
+                        )
+                    ),
+                0
+            );
+
+        const subtotalManoObra =
+            Number(
+                presupuesto.mano_obra ||
+                presupuesto.subtotal_mano_obra ||
+                0
+            );
+
+        const descuento =
+            Number(
+                presupuesto.descuento ||
+                0
+            );
+
+        const total =
+            Number(
+                presupuesto.total
+            ) ||
+            subtotalRepuestos +
+            subtotalManoObra -
+            descuento;
+
+        const yTotales =
+            Math.min(
+                doc.lastAutoTable.finalY + 8,
+                265
+            );
+
+        doc.setFont(
+            'helvetica',
+            'bold'
+        );
+
+        doc.setFontSize(9);
+
+        doc.setTextColor(...gris);
+
+        doc.text(
+            'Subtotal Repuestos:',
+            130,
+            yTotales
+        );
+
+        doc.text(
+            dineroPDF(subtotalRepuestos),
+            196,
+            yTotales,
+            {
+                align: 'right'
+            }
+        );
+
+        doc.text(
+            'Subtotal Mano de Obra:',
+            130,
+            yTotales + 6
+        );
+
+        doc.text(
+            dineroPDF(subtotalManoObra),
+            196,
+            yTotales + 6,
+            {
+                align: 'right'
+            }
+        );
+
+        doc.text(
+            'Descuento / Ajuste:',
+            130,
+            yTotales + 12
+        );
+
+        doc.text(
+            dineroPDF(descuento),
+            196,
+            yTotales + 12,
+            {
+                align: 'right'
+            }
+        );
+
+        doc.setTextColor(...azul);
+
+        doc.setFontSize(11);
+
+        doc.text(
+            'TOTAL ESTIMADO:',
+            130,
+            yTotales + 20
+        );
+
+        doc.setTextColor(...celeste);
+
+        doc.text(
+            dineroPDF(total),
+            196,
+            yTotales + 20,
+            {
+                align: 'right'
+            }
+        );
+
+        // =========================
+        // CONDICIONES
+        // =========================
+
+        const yCond =
+            yTotales + 29;
+
+        doc.setTextColor(...azul);
+
+        doc.setFontSize(8);
+
+        doc.text(
+            'TÉRMINOS Y CONDICIONES DEL SERVICIO',
+            18,
+            yCond
+        );
+
+        doc.setFont(
+            'helvetica',
+            'normal'
+        );
+
+        doc.setTextColor(...gris);
+
+        doc.setFontSize(7);
+
+        const condiciones = [
+            '• Presupuesto válido por 15 días corridos a partir de la fecha de emisión.',
+            '• Los trabajos ejecutados cuentan con garantía sobre la mano de obra realizada.',
+            '• Precios de repuestos e insumos sujetos a disponibilidad y variación de mercado.',
+            '• Se requiere la confirmación y firma de conformidad para el inicio de las tareas.'
+        ];
+
+        doc.text(
+            condiciones,
+            18,
+            yCond + 6
+        );
+
+        // =========================
+        // FIRMAS
+        // =========================
+
+        const yFirma =
+            282;
+
+        doc.setDrawColor(
+            170,
+            180,
+            195
+        );
+
+        doc.line(
+            30,
+            yFirma,
+            90,
+            yFirma
+        );
+
+        doc.line(
+            120,
+            yFirma,
+            180,
+            yFirma
+        );
+
+        doc.setTextColor(...gris);
+
+        doc.setFontSize(8);
+
+        doc.text(
+            'Firma y Aclaración - Taller',
+            60,
+            yFirma + 5,
+            {
+                align: 'center'
+            }
+        );
+
+        doc.text(
+            'Firma y Aclaración - Cliente',
+            150,
+            yFirma + 5,
+            {
+                align: 'center'
+            }
+        );
+
+        doc.line(
+            14,
+            290,
+            196,
+            290
+        );
+
+        doc.setFontSize(7);
+
+        doc.text(
+            'Electro Mec - Service • Tel: 341 653-9187 • Email: tecnicosumimaq@gmail.com',
+            105,
+            296,
+            {
+                align: 'center'
+            }
+        );
+
+        // =========================
+        // DESCARGAR
+        // =========================
+
+        const nombreArchivo =
+            `Presupuesto-${numero || presupuestoId}.pdf`;
+
+        doc.save(nombreArchivo);
+
+        console.log(
+            '✅ PDF generado:',
+            nombreArchivo
+        );
+
+    } catch (error) {
+
+        console.error(
+            'Error generando PDF:',
+            error
+        );
+
+        alert(
+            'No se pudo generar el PDF.\n\n' +
+            error.message
+        );
+    }
+}
+    function renderDashboard(){let open=db.ots.filter(o=>o.estado!=='Entregado').length, pending=db.ots.filter(o=>o.estado==='Esperando autorización').length, low=db.repuestos.filter(p=>p.stock<=p.min).length, ing=db.movimientos.filter(m=>m.tipo==='Ingreso').reduce((a,m)=>a+m.importe,0), egr=db.movimientos.filter(m=>m.tipo==='Egreso').reduce((a,m)=>a+m.importe,0);document.getElementById('kpis').innerHTML=[['👤 Clientes',db.clientes.length,''],['🏍️ Motos',db.motos.length,''],['🔧 OT abiertas',open,open?'Revisar':'OK'],['🟡 Autorizaciones',pending,pending?'Atención':'OK'],['📦 Stock bajo',low,low?'Comprar':'OK'],['💵 Saldo','$ '+(ing-egr).toLocaleString('es-AR'),''],].map(x=>`<div class="card"><div class="label">${x[0]}</div><div class="num">${x[1]}</div><div class="label">${x[2]}</div></div>`).join('');let a=[];if(pending)a.push('🟡 '+pending+' OT esperando autorización.');if(low)a.push('🔴 '+low+' repuestos están en stock mínimo.');document.getElementById('alerts').innerHTML=a.length?a.map(x=>`<div style="padding:10px 0">${x}</div>`).join(''):'<div class="empty">🟢 Sin alertas importantes.</div>'}
 function renderAll(){renderDashboard();renderClients();renderMotos();renderOT();renderParts();renderQuotes();renderCash()}renderAll();
 </script>
 </body></html>
