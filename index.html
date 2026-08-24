@@ -2414,10 +2414,7 @@ async function renderQuotes() {
         const { data, error } =
             await supabaseClient
                 .from('ordenes_trabajo')
-                .select('*')
-                .order('fecha_alta', {
-                    ascending: false
-                });
+                .select('*');
 
         if (error) {
 
@@ -2434,6 +2431,11 @@ async function renderQuotes() {
 
         const presupuestos =
             data || [];
+
+        console.log(
+            '✅ Presupuestos recibidos:',
+            presupuestos
+        );
 
         if (!presupuestos.length) {
 
@@ -2458,18 +2460,14 @@ async function renderQuotes() {
                 ${presupuestos.map(o => {
 
                     const numero =
-                        String(o.id).length > 3
-                            ? String(o.id).slice(-6)
-                            : String(o.id);
+                        String(o.id).slice(-6);
 
                     return `
 
                         <tr>
 
                             <td>
-                                <b>
-                                    PRE-${numero}
-                                </b>
+                                <b>PRE-${numero}</b>
                             </td>
 
                             <td>
@@ -2509,11 +2507,6 @@ async function renderQuotes() {
 
             </table>
         `;
-
-        console.log(
-            '✅ Presupuestos cargados:',
-            presupuestos.length
-        );
 
     } catch (error) {
 
