@@ -2399,78 +2399,132 @@ function renderCash(){
  let ing=db.movimientos.filter(m=>m.tipo==='Ingreso').reduce((a,m)=>a+m.importe,0),egr=db.movimientos.filter(m=>m.tipo==='Egreso').reduce((a,m)=>a+m.importe,0);
  document.getElementById('cashPanel').innerHTML=`<div class="cards"><div class="card"><div class="label">Ingresos</div><div class="num ok">$ ${ing.toLocaleString('es-AR')}</div></div><div class="card"><div class="label">Egresos</div><div class="num danger">$ ${egr.toLocaleString('es-AR')}</div></div><div class="card"><div class="label">Saldo</div><div class="num">$ ${(ing-egr).toLocaleString('es-AR')}</div></div></div><div class="section"><table class="table"><tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th>Método</th><th>Importe</th></tr>${db.movimientos.map(m=>`<tr><td>${m.fecha}</td><td>${m.tipo}</td><td>${m.concepto}</td><td>${m.metodo}</td><td>$ ${m.importe.toLocaleString('es-AR')}</td></tr>`).join('')}</table></div>`
 }
-function renderQuotes() {
+async function renderQuotes() {
 
     const container =
         document.getElementById('quoteTable');
 
     if (!container) return;
 
-    if (!db.ots.length) {
+    container.innerHTML =
+        '<div class="empty">Cargando presupuestos...</div>';
 
-        container.innerHTML =
-            '<div class="empty">No hay presupuestos disponibles.</div>';
+    try {
 
-        return;
-    }
+        const { data, error } =
+            await supabaseClient
+                .from('ordenes_trabajo')
+                .select('*')
+                .order('fecha_alta', {
+                    ascending: false
+                });
 
-    container.innerHTML = `
+        if (error) {
 
-        <table class="table">
+            console.error(
+                'Error cargando presupuestos:',
+                error
+            );
 
-            <tr>
-                <th>Presupuesto</th>
-                <th>OT</th>
-                <th>Total</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-            </tr>
+            container.innerHTML =
+                '<div class="empty">Error al cargar presupuestos.</div>';
 
-            ${db.ots.map(o => `
+            return;
+        }
+
+        const presupuestos =
+            data || [];
+
+        if (!presupuestos.length) {
+
+            container.innerHTML =
+                '<div class="empty">No hay presupuestos disponibles.</div>';
+
+            return;
+        }
+
+        container.innerHTML = `
+
+            <table class="table">
 
                 <tr>
-
-                    <td>
-                        <b>
-                            PRE-${String(o.id).slice(3)}
-                        </b>
-                    </td>
-
-                    <td>
-                        ${o.id}
-                    </td>
-
-                    <td>
-                        $ ${
-                            Number(o.total || 0)
-                                .toLocaleString('es-AR')
-                        }
-                    </td>
-
-                    <td>
-                        <span class="badge">
-                            ${o.estado || 'Pendiente'}
-                        </span>
-                    </td>
-
-                    <td>
-
-                        <button
-                            class="btn secondary"
-                            onclick="descargarPresupuestoPDF('${o.id}')">
-
-                            📄 Descargar PDF
-
-                        </button>
-
-                    </td>
-
+                    <th>Presupuesto</th>
+                    <th>OT</th>
+                    <th>Total</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
                 </tr>
 
-            `).join('')}
+                ${presupuestos.map(o => {
 
-        </table>
-    `;
+                    const numero =
+                        String(o.id).length > 3
+                            ? String(o.id).slice(-6)
+                            : String(o.id);
+
+                    return `
+
+                        <tr>
+
+                            <td>
+                                <b>
+                                    PRE-${numero}
+                                </b>
+                            </td>
+
+                            <td>
+                                ${o.id}
+                            </td>
+
+                            <td>
+                                $ ${
+                                    Number(o.total || 0)
+                                        .toLocaleString('es-AR')
+                                }
+                            </td>
+
+                            <td>
+                                <span class="badge">
+                                    ${o.estado || 'Pendiente'}
+                                </span>
+                            </td>
+
+                            <td>
+
+                                <button
+                                    class="btn secondary"
+                                    onclick="descargarPresupuestoPDF('${o.id}')">
+
+                                    📄 Descargar PDF
+
+                                </button>
+
+                            </td>
+
+                        </tr>
+
+                    `;
+
+                }).join('')}
+
+            </table>
+        `;
+
+        console.log(
+            '✅ Presupuestos cargados:',
+            presupuestos.length
+        );
+
+    } catch (error) {
+
+        console.error(
+            'Error inesperado en presupuestos:',
+            error
+        );
+
+        container.innerHTML =
+            '<div class="empty">Error inesperado.</div>';
+    }
 }
 function descargarPresupuestoPDF(otId) {
 
