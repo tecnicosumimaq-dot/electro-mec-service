@@ -1643,7 +1643,7 @@ console.log('❌ Error repuestos:', error);
         </div>
     `;
 }
- async function agregarRepuestoOT(otId) {
+async function agregarRepuestoOT(otId) {
 
     const repuestoId =
         f('otRepuestoSelect');
@@ -1653,23 +1653,21 @@ console.log('❌ Error repuestos:', error);
 
     if (!repuestoId) {
 
-        alert(
-            'Seleccioná un repuesto.'
-        );
+        alert('Seleccioná un repuesto.');
 
         return;
     }
 
     if (cantidad <= 0) {
 
-        alert(
-            'Ingresá una cantidad válida.'
-        );
+        alert('Ingresá una cantidad válida.');
 
         return;
     }
 
     try {
+
+        // Obtener repuesto y stock actual
 
         const { data: repuesto, error: errorRepuesto } =
             await supabaseClient
@@ -1677,27 +1675,33 @@ console.log('❌ Error repuestos:', error);
                 .select('*')
                 .eq('id', repuestoId)
                 .single();
-const stockActual =
-    Number(repuesto.stock) || 0;
 
-if (stockActual < cantidad) {
-
-    alert(
-        'Stock insuficiente.\n\n' +
-        'Disponible: ' + stockActual +
-        '\nSolicitado: ' + cantidad
-    );
-
-    return;
-}
         if (errorRepuesto) {
 
             console.error(
+                'Error obteniendo repuesto:',
                 errorRepuesto
             );
 
             alert(
-                'No se pudo obtener el repuesto.'
+                'No se pudo obtener el repuesto:\n\n' +
+                errorRepuesto.message
+            );
+
+            return;
+        }
+
+        const stockActual =
+            Number(repuesto.stock) || 0;
+
+        if (stockActual < cantidad) {
+
+            alert(
+                'Stock insuficiente.\n\n' +
+                'Disponible: ' +
+                stockActual +
+                '\nSolicitado: ' +
+                cantidad
             );
 
             return;
@@ -1705,215 +1709,171 @@ if (stockActual < cantidad) {
 
         const precio =
             Number(repuesto.precio_venta) || 0;
-const stockActual =
-    Number(repuesto.stock) || 0;
 
-if (stockActual < cantidad) {
-
-    alert(
-        'Stock insuficiente.\n\n' +
-        'Disponible: ' +
-        stockActual +
-        '\nSolicitado: ' +
-        cantidad
-    );
-
-    return;
-}
         const subtotal =
             precio * cantidad;
 
-        const { error } =
+        // Verificar si el repuesto ya existe en la OT
+
+        const { data: existente, error: errorExistente } =
             await supabaseClient
-            const { data: existente, error: errorExistente } =
-    await supabaseClient
-        .from('ot_repuestos')
-        .select('*')
-        .eq('ot_id', otId)
-        .eq('repuesto_id', repuestoId)
-        .maybeSingle();
-
-if (errorExistente) {
-
-    console.error(
-        'Error verificando repuesto existente:',
-        errorExistente
-    );
-
-    alert(
-        'No se pudo verificar el repuesto.'
-    );
-
-    return;
-}
                 .from('ot_repuestos')
-                let error;
+                .select('*')
+                .eq('ot_id', otId)
+                .eq('repuesto_id', repuestoId)
+                .maybeSingle();
 
-if (existente) {
+        if (errorExistente) {
 
-    const nuevaCantidad =
-        Number(existente.cantidad || 0) +
-        cantidad;
+            console.error(
+                'Error verificando repuesto:',
+                errorExistente
+            );
 
-    const nuevoSubtotal =
-        precio * nuevaCantidad;
+            alert(
+                'No se pudo verificar el repuesto:\n\n' +
+                errorExistente.message
+            );
 
-    const resultado =
-        await supabaseClient
-            .from('ot_repuestos')
-            .update({
+            return;
+        }
 
-                cantidad:
-                    nuevaCantidad,
+        // Guardar o actualizar detalle de OT
 
-                precio_unitario:
-                    precio,
+        let error;
 
-                subtotal:
-                    nuevoSubtotal
+        if (existente) {
 
-            })
-            .eq('id', existente.id);
+            const nuevaCantidad =
+                Number(existente.cantidad || 0) +
+                cantidad;
 
-    error = resultado.error;
+            const nuevoSubtotal =
+                precio * nuevaCantidad;
 
-} else {
+            const resultado =
+                await supabaseClient
+                    .from('ot_repuestos')
+                    .update({
 
-    const resultado =
-        await supabaseClient
-            .from('ot_repuestos')
-            .insert({
+                        cantidad:
+                            nuevaCantidad,
 
-                ot_id:
-                    otId,
+                        precio_unitario:
+                            precio,
 
-                repuesto_id:
-                    repuestoId,
+                        subtotal:
+                            nuevoSubtotal
 
-                cantidad:
-                    cantidad,
+                    })
+                    .eq('id', existente.id);
 
-                precio_unitario:
-                    precio,
+            error = resultado.error;
 
-                subtotal:
-                    subtotal
+        } else {
 
-            });
+            const resultado =
+                await supabaseClient
+                    .from('ot_repuestos')
+                    .insert({
 
-    error = resultado.error;
-}
+                        ot_id:
+                            otId,
 
-if (error) {
+                        repuesto_id:
+                            repuestoId,
 
-    console.error(
-        'Error guardando repuesto:',
-        error
-    );
+                        cantidad:
+                            cantidad,
 
-    alert(
-        'No se pudo guardar el repuesto:\n\n' +
-        error.message
-    );
+                        precio_unitario:
+                            precio,
 
-    return;
-}
+                        subtotal:
+                            subtotal
 
-                    ot_id: otId,
+                    });
 
-                    repuesto_id:
-                        repuestoId,
+            error = resultado.error;
+        }
 
-                    cantidad:
-                        cantidad,
-
-                    precio_unitario:
-                        precio,
-
-                    subtotal:
-                        subtotal
-
-                });
-const nuevoStock =
-    stockActual - cantidad;
-
-const { error: errorStock } =
-    await supabaseClient
-        .from('repuestos')
-        .update({
-            stock: nuevoStock
-        })
-        .eq('id', repuestoId);
-
-if (errorStock) {
-
-    console.error(
-        'Error actualizando stock:',
-        errorStock
-    );
-
-    alert(
-        'El repuesto fue agregado a la OT, ' +
-        'pero no se pudo actualizar el stock.'
-    );
-
-    return;
-}
-
-console.log(
-    '✅ Stock actualizado:',
-    stockActual,
-    '→',
-    nuevoStock
-);
         if (error) {
 
             console.error(
-                'Error agregando repuesto:',
+                'Error guardando repuesto:',
                 error
             );
 
             alert(
-                'No se pudo agregar el repuesto:\n\n' +
+                'No se pudo guardar el repuesto:\n\n' +
                 error.message
             );
 
             return;
         }
-const stockActualizado =
-    await actualizarStockRepuesto(
-        repuestoId,
-        cantidad
-    );
 
-if (!stockActualizado) {
+        // Descontar stock
 
-    await supabaseClient
-        .from('ot_repuestos')
-        .delete()
-        .eq('ot_id', otId)
-        .eq('repuesto_id', repuestoId)
-        .eq('cantidad', cantidad);
+        const nuevoStock =
+            stockActual - cantidad;
 
-    return;
-}
+        const { error: errorStock } =
+            await supabaseClient
+                .from('repuestos')
+                .update({
+
+                    stock:
+                        nuevoStock
+
+                })
+                .eq('id', repuestoId);
+
+        if (errorStock) {
+
+            console.error(
+                'Error actualizando stock:',
+                errorStock
+            );
+
+            alert(
+                'El repuesto se agregó a la OT, ' +
+                'pero no se pudo actualizar el stock:\n\n' +
+                errorStock.message
+            );
+
+            return;
+        }
+
+        // Actualizar total de la OT
+
+        await actualizarTotalRepuestosOT(otId);
+
+        // Actualizar pantalla
+
+        await renderOTRepuestos(otId);
+
+        await renderParts();
+
         console.log(
             '✅ Repuesto agregado a la OT'
         );
 
-        await actualizarTotalRepuestosOT(otId);
+        console.log(
+            'Stock:',
+            stockActual,
+            '→',
+            nuevoStock
+        );
 
-        await renderOTRepuestos(otId);
-await renderParts();
-     console.log(
-    '✅ Inventario actualizado'
-);
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            'Error inesperado:',
+            error
+        );
 
         alert(
-            'Ocurrió un error agregando el repuesto.'
+            'Ocurrió un error al agregar el repuesto.'
         );
     }
 }
