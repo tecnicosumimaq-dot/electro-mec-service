@@ -2395,9 +2395,216 @@ function openMove(tipo){
  document.getElementById('modalbox').innerHTML=`<h2>Registrar ${tipo}</h2><div class="form"><label>Concepto<input id="mvConcepto"></label><label>Método de pago<select id="mvMetodo"><option>Efectivo</option><option>Transferencia</option><option>Débito</option><option>Crédito</option></select></label><label>Importe ($)<input id="mvImporte" type="number"></label></div><div class="actions"><button class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn" onclick="saveMove('${tipo}')">Guardar</button></div>`;document.getElementById('modal').classList.add('show')
 }
 function saveMove(tipo){db.movimientos.push({id:nextId(db.movimientos,'MOV-'),fecha:new Date().toLocaleDateString('es-AR'),tipo,concepto:f('mvConcepto'),metodo:f('mvMetodo'),importe:+f('mvImporte')||0});closeModal();save()}
-function renderCash(){
- let ing=db.movimientos.filter(m=>m.tipo==='Ingreso').reduce((a,m)=>a+m.importe,0),egr=db.movimientos.filter(m=>m.tipo==='Egreso').reduce((a,m)=>a+m.importe,0);
- document.getElementById('cashPanel').innerHTML=`<div class="cards"><div class="card"><div class="label">Ingresos</div><div class="num ok">$ ${ing.toLocaleString('es-AR')}</div></div><div class="card"><div class="label">Egresos</div><div class="num danger">$ ${egr.toLocaleString('es-AR')}</div></div><div class="card"><div class="label">Saldo</div><div class="num">$ ${(ing-egr).toLocaleString('es-AR')}</div></div></div><div class="section"><table class="table"><tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th>Método</th><th>Importe</th></tr>${db.movimientos.map(m=>`<tr><td>${m.fecha}</td><td>${m.tipo}</td><td>${m.concepto}</td><td>${m.metodo}</td><td>$ ${m.importe.toLocaleString('es-AR')}</td></tr>`).join('')}</table></div>`
+async function renderCash() {
+
+    const container =
+        document.getElementById('cashPanel');
+
+    if (!container) return;
+
+    container.innerHTML =
+        '<div class="empty">Cargando caja...</div>';
+
+    try {
+
+        const { data, error } =
+            await supabaseClient
+                .from('movimientos_caja')
+                .select('*');
+
+        if (error) {
+
+            console.error(
+                'Error cargando caja:',
+                error
+            );
+
+            container.innerHTML =
+                '<div class="empty">Error al cargar caja.</div>';
+
+            return;
+        }
+
+        const movimientos =
+            data || [];
+
+        console.log(
+            '💰 Movimientos de caja recibidos:',
+            movimientos
+        );
+
+        let ingresos = 0;
+        let egresos = 0;
+
+        movimientos.forEach(m => {
+
+            const importe =
+                Number(m.importe || 0);
+
+            if (
+                String(m.tipo || '')
+                    .toLowerCase() === 'ingreso'
+            ) {
+
+                ingresos += importe;
+
+            } else if (
+                String(m.tipo || '')
+                    .toLowerCase() === 'egreso'
+            ) {
+
+                egresos += importe;
+            }
+        });
+
+        const saldo =
+            ingresos - egresos;
+
+        container.innerHTML = `
+
+            <div class="cards">
+
+                <div class="card">
+
+                    <div class="label">
+                        Ingresos
+                    </div>
+
+                    <div class="num ok">
+                        $ ${ingresos.toLocaleString('es-AR')}
+                    </div>
+
+                </div>
+
+
+                <div class="card">
+
+                    <div class="label">
+                        Egresos
+                    </div>
+
+                    <div class="num danger">
+                        $ ${egresos.toLocaleString('es-AR')}
+                    </div>
+
+                </div>
+
+
+                <div class="card">
+
+                    <div class="label">
+                        Saldo
+                    </div>
+
+                    <div class="num">
+                        $ ${saldo.toLocaleString('es-AR')}
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="section">
+
+                <div class="section-title">
+                    Movimientos de caja
+                </div>
+
+
+                ${
+                    movimientos.length
+
+                    ?
+
+                    `
+
+                    <table class="table">
+
+                        <tr>
+
+                            <th>Fecha</th>
+                            <th>Tipo</th>
+                            <th>Concepto</th>
+                            <th>Método</th>
+                            <th>Importe</th>
+
+                        </tr>
+
+
+                        ${movimientos.map(m => `
+
+                            <tr>
+
+                                <td>
+                                    ${
+                                        m.fecha ||
+                                        m.fecha_movimiento ||
+                                        m.created_at ||
+                                        ''
+                                    }
+                                </td>
+
+                                <td>
+                                    ${m.tipo || ''}
+                                </td>
+
+                                <td>
+                                    ${
+                                        m.concepto ||
+                                        m.descripcion ||
+                                        ''
+                                    }
+                                </td>
+
+                                <td>
+                                    ${
+                                        m.metodo ||
+                                        m.medio_pago ||
+                                        ''
+                                    }
+                                </td>
+
+                                <td>
+                                    $ ${
+                                        Number(
+                                            m.importe || 0
+                                        ).toLocaleString('es-AR')
+                                    }
+                                </td>
+
+                            </tr>
+
+                        `).join('')}
+
+                    </table>
+
+                    `
+
+                    :
+
+                    `
+
+                    <div class="empty">
+                        No hay movimientos de caja.
+                    </div>
+
+                    `
+                }
+
+            </div>
+        `;
+
+    } catch (error) {
+
+        console.error(
+            'Error inesperado en caja:',
+            error
+        );
+
+        container.innerHTML =
+            '<div class="empty">Error inesperado.</div>';
+    }
 }
 async function renderQuotes() {
 
