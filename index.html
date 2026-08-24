@@ -4072,11 +4072,11 @@ function textoDatoPDF(
         // =========================
 
         const { data: presupuesto, error: errorPresupuesto } =
-            await supabaseClient
-                .from('presupuestos')
-                .select('*')
-                .eq('id', presupuestoId)
-                .single();
+    await supabaseClient
+        .from('ordenes_trabajo')
+        .select('*')
+        .eq('id', presupuestoId)
+        .single();
 
         if (errorPresupuesto) {
 
@@ -4134,11 +4134,17 @@ function textoDatoPDF(
         // =========================
 
         const { data: detalles, error: errorDetalles } =
-            await supabaseClient
-                .from('presupuesto_detalles')
-                .select('*')
-                .eq('presupuesto_id', presupuestoId);
-
+    await supabaseClient
+        .from('ot_repuestos')
+        .select(`
+            *,
+            repuestos (
+                descripcion,
+                codigo,
+                precio_venta
+            )
+        `)
+        .eq('ot_id', presupuestoId);
         if (errorDetalles) {
 
             console.error(
