@@ -2541,7 +2541,29 @@ function descargarPresupuestoPDF(otId) {
                 unit: 'mm',
                 format: 'a4'
             });
+const logoPDF =
+    await cargarLogoPDF();
 
+const canvasLogo =
+    document.createElement('canvas');
+
+const contextoLogo =
+    canvasLogo.getContext('2d');
+
+canvasLogo.width =
+    logoPDF.naturalWidth;
+
+canvasLogo.height =
+    logoPDF.naturalHeight;
+
+contextoLogo.drawImage(
+    logoPDF,
+    0,
+    0
+);
+
+const logoData =
+    canvasLogo.toDataURL('image/png');
         const azul =
             [15, 23, 42];
 
@@ -2557,22 +2579,14 @@ function descargarPresupuestoPDF(otId) {
         // ENCABEZADO
         // ==========================
 
-        doc.setFillColor(
-            79,
-            211,
-            220
-        );
-
-        doc.roundedRect(
-            margen,
-            12,
-            25,
-            25,
-            2,
-            2,
-            'F'
-        );
-
+       doc.addImage(
+    logoData,
+    'PNG',
+    14,
+    10,
+    32,
+    31
+);
         doc.setTextColor(...azul);
 
         doc.setFont(
@@ -3457,7 +3471,25 @@ function textoDatoPDF(
             44,
             34
         );
+function cargarLogoPDF() {
 
+    return new Promise((resolve, reject) => {
+
+        const img = new Image();
+
+        img.onload = function () {
+            resolve(img);
+        };
+
+        img.onerror = function () {
+            reject(
+                new Error('No se pudo cargar LOGO ELEC.png')
+            );
+        };
+
+        img.src = 'LOGO%20ELEC.png';
+    });
+}
         // =========================
         // TITULO PRESUPUESTO
         // =========================
