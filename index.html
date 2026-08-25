@@ -2394,7 +2394,60 @@ async function renderParts() {
 function openMove(tipo){
  document.getElementById('modalbox').innerHTML=`<h2>Registrar ${tipo}</h2><div class="form"><label>Concepto<input id="mvConcepto"></label><label>Método de pago<select id="mvMetodo"><option>Efectivo</option><option>Transferencia</option><option>Débito</option><option>Crédito</option></select></label><label>Importe ($)<input id="mvImporte" type="number"></label></div><div class="actions"><button class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn" onclick="saveMove('${tipo}')">Guardar</button></div>`;document.getElementById('modal').classList.add('show')
 }
-function saveMove(tipo){db.movimientos.push({id:nextId(db.movimientos,'MOV-'),fecha:new Date().toLocaleDateString('es-AR'),tipo,concepto:f('mvConcepto'),metodo:f('mvMetodo'),importe:+f('mvImporte')||0});closeModal();save()}
+async function saveMove(tipo) {
+
+    const concepto = f('mvConcepto');
+    const metodo = f('mvMetodo');
+    const importe = Number(f('mvImporte')) || 0;
+
+    if (!concepto) {
+        alert('Ingresá un concepto.');
+        return;
+    }
+
+    if (!importe || importe <= 0) {
+        alert('Ingresá un importe válido.');
+        return;
+    }
+
+    const { data, error } = await supabaseClient
+        .from('movimientos_caja')
+        .insert({
+            fecha: new Date().toISOString(),
+            tipo: tipo,
+            concepto: concepto,
+            metodo: metodo,
+            importe: importe
+        })
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Error guardando movimiento:', error);
+
+        alert(
+            'No se pudo guardar el movimiento en Supabase.\n\n' +
+            error.message
+        );
+
+        return;
+    }
+
+    console.log('Movimiento guardado:', data);
+
+    closeModal();
+
+    // Actualizar la vista de caja
+    if (typeof renderCaja === 'function') {
+        await renderCaja();
+    }
+
+    // Si tu sistema tiene un guardado local,
+    // lo dejamos funcionando también.
+    if (typeof save === 'function') {
+        save();
+    }
+}
 async function renderCash() {
 
     const container =
