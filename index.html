@@ -2593,7 +2593,6 @@ async function renderCash() {
                             <th>Fecha</th>
                             <th>Tipo</th>
                             <th>Concepto</th>
-                            <th>Método</th>
                             <th>Importe</th>
 
                         </tr>
@@ -2624,13 +2623,7 @@ async function renderCash() {
                                     }
                                 </td>
 
-                                <td>
-                                    ${
-                                        m.metodo ||
-                                        m.medio_pago ||
-                                        ''
-                                    }
-                                </td>
+                               
 
                                 <td>
                                     $ ${
