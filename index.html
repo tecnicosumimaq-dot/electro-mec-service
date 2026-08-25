@@ -2416,8 +2416,7 @@ async function saveMove(tipo) {
             fecha: new Date().toISOString(),
             tipo: tipo,
             concepto: concepto,
-            metodo: metodo,
-            importe: importe
+           importe: importe
         })
         .select()
         .single();
