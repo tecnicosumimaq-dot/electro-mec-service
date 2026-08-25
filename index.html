@@ -2455,19 +2455,23 @@ async function renderCash() {
 
     if (!container) return;
 
-    container.innerHTML =
-        <div class="toolbar">
+    container.innerHTML = `
+    <div class="toolbar">
 
-    <button
-        class="btn"
-        onclick="nuevoMovimientoCaja()">
+        <button
+            class="btn"
+            onclick="nuevoMovimientoCaja()">
 
-        ＋ Nuevo movimiento
+            ＋ Nuevo movimiento
 
-    </button>
+        </button>
 
-</div>
-        '<div class="empty">Cargando caja...</div>';
+    </div>
+
+    <div class="empty">
+        Cargando caja...
+    </div>
+`;
 
     try {
 
