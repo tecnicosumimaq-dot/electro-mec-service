@@ -1077,6 +1077,12 @@ async function renderOT() {
         Repuestos
     </button>
 
+    <button
+        class="btn"
+        onclick='openOTPago("${ot.id}")'>
+        💰 Pago
+    </button>
+
 </td>
 
                         </tr>
@@ -1099,7 +1105,321 @@ async function renderOT() {
             '<div class="empty">Error inesperado.</div>';
     }
 }
-async function openOTEdit(ot) {
+async function openOTPago(otId) {
+
+    try {
+
+        const { data: ot, error } =
+            await supabaseClient
+                .from('ordenes_trabajo')
+                .select('*')
+                .eq('id', otId)
+                .single();
+
+        if (error) {
+
+            console.error(
+                'Error cargando OT para pago:',
+                error
+            );
+
+            alert(
+                'No se pudo cargar la OT.'
+            );
+
+            return;
+        }
+
+
+        const { data: pagos, error: errorPagos } =
+            await supabaseClient
+                .from('movimientos_caja')
+                .select('importe, tipo')
+                .eq('orden_trabajo_id', otId)
+                .eq('tipo', 'Ingreso');
+
+
+        if (errorPagos) {
+
+            console.error(
+                'Error cargando pagos:',
+                errorPagos
+            );
+
+            alert(
+                'No se pudieron cargar los pagos de la OT.'
+            );
+
+            return;
+        }
+
+
+        const total =
+            Number(ot.total || 0);
+
+        const pagado =
+            (pagos || []).reduce(
+                (suma, pago) =>
+                    suma + Number(pago.importe || 0),
+                0
+            );
+
+        const pendiente =
+            Math.max(
+                total - pagado,
+                0
+            );
+
+
+        document.getElementById('modalbox').innerHTML = `
+
+            <h2>
+                💰 Pago de OT
+                ${ot.numero_ot || ot.id}
+            </h2>
+
+
+            <div class="cards">
+
+                <div class="card">
+
+                    <div class="label">
+                        Total OT
+                    </div>
+
+                    <div class="num">
+                        $ ${total.toLocaleString('es-AR')}
+                    </div>
+
+                </div>
+
+
+                <div class="card">
+
+                    <div class="label">
+                        Pagado
+                    </div>
+
+                    <div class="num ok">
+                        $ ${pagado.toLocaleString('es-AR')}
+                    </div>
+
+                </div>
+
+
+                <div class="card">
+
+                    <div class="label">
+                        Pendiente
+                    </div>
+
+                    <div class="num danger">
+                        $ ${pendiente.toLocaleString('es-AR')}
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            ${
+                pendiente > 0
+
+                ?
+
+                `
+
+                <div class="form">
+
+                    <label>
+                        Importe a pagar
+
+                        <input
+                            id="otPagoImporte"
+                            type="number"
+                            min="0"
+                            max="${pendiente}"
+                            step="0.01"
+                            value="${pendiente}">
+                    </label>
+
+
+                    <label>
+                        Concepto
+
+                        <input
+                            id="otPagoConcepto"
+                            type="text"
+                            value="Pago OT ${ot.numero_ot || ot.id}">
+                    </label>
+
+                </div>
+
+
+                <div class="actions">
+
+                    <button
+                        class="btn secondary"
+                        onclick="closeModal()">
+
+                        Cancelar
+
+                    </button>
+
+
+                    <button
+                        class="btn"
+                        onclick='guardarPagoOT("${otId}")'>
+
+                        💾 Registrar pago
+
+                    </button>
+
+                </div>
+
+                `
+
+                :
+
+                `
+
+                <div class="empty">
+
+                    ✅ Esta OT está completamente pagada.
+
+                </div>
+
+                <div class="actions">
+
+                    <button
+                        class="btn secondary"
+                        onclick="closeModal()">
+
+                        Cerrar
+
+                    </button>
+
+                </div>
+
+                `
+            }
+
+        `;
+
+        document
+            .getElementById('modal')
+            .classList.add('show');
+
+
+    } catch (error) {
+
+        console.error(
+            'Error inesperado:',
+            error
+        );
+
+        alert(
+            'Ocurrió un error al cargar el pago.'
+        );
+    }
+}
+  async function guardarPagoOT(otId) {
+
+    const importe =
+        Number(
+            document.getElementById(
+                'otPagoImporte'
+            )?.value
+        ) || 0;
+
+    const concepto =
+        document.getElementById(
+            'otPagoConcepto'
+        )?.value.trim();
+
+
+    if (!importe || importe <= 0) {
+
+        alert(
+            'Ingresá un importe válido.'
+        );
+
+        return;
+    }
+
+
+    try {
+
+        const { data, error } =
+            await supabaseClient
+                .from('movimientos_caja')
+                .insert({
+
+                    fecha:
+                        new Date().toISOString(),
+
+                    tipo:
+                        'Ingreso',
+
+                    concepto:
+                        concepto ||
+                        `Pago OT ${otId}`,
+
+                    importe:
+                        importe,
+
+                    orden_trabajo_id:
+                        otId
+
+                })
+                .select()
+                .single();
+
+
+        if (error) {
+
+            console.error(
+                'Error registrando pago:',
+                error
+            );
+
+            alert(
+                'No se pudo registrar el pago:\n\n' +
+                error.message
+            );
+
+            return;
+        }
+
+
+        console.log(
+            '✅ Pago registrado:',
+            data
+        );
+
+
+        closeModal();
+
+        await renderOT();
+
+        await renderCash();
+
+        await renderDashboard();
+
+
+    } catch (error) {
+
+        console.error(
+            'Error inesperado registrando pago:',
+            error
+        );
+
+        alert(
+            'Ocurrió un error al registrar el pago.'
+        );
+    }
+}
+    async function openOTEdit(ot) {
 
     const cliente = ot.clientes || {};
     const moto = ot.motos || {};
