@@ -2422,13 +2422,28 @@ const { data, error } =
             <label>
     Orden de trabajo
 
-    <select id="cajaOT">
+   <select id="cajaOT">
 
-        <option value="">
-            Sin OT
-        </option>
+    <option value="">
+        Sin OT
+    </option>
 
-    </select>
+    ${
+        (ots || []).map(ot => `
+
+            <option value="${ot.id}">
+
+                OT ${String(ot.id).slice(-6)}
+                -
+                $ ${Number(ot.total || 0)
+                    .toLocaleString('es-AR')}
+
+            </option>
+
+        `).join('')
+    }
+
+</select>
 </label>
             concepto: concepto,
             importe: importe,
@@ -2685,7 +2700,20 @@ async function renderCash() {
     }
 }
 async function nuevoMovimientoCaja() {
+const { data: ots, error: errorOT } =
+    await supabaseClient
+        .from('ordenes_trabajo')
+        .select('id, total, estado')
+        .order('id');
 
+if (errorOT) {
+
+    console.error(
+        'Error cargando OT para caja:',
+        errorOT
+    );
+
+}
     const modal =
         document.getElementById('modalbox');
 
