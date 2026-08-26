@@ -2410,14 +2410,32 @@ async function saveMove(tipo) {
         return;
     }
 
-    const { data, error } = await supabaseClient
+    const ordenTrabajoId =
+    document.getElementById('cajaOT')?.value || null;
+
+const { data, error } =
+    await supabaseClient
         .from('movimientos_caja')
         .insert({
             fecha: new Date().toISOString(),
             tipo: tipo,
+            <label>
+    Orden de trabajo
+
+    <select id="cajaOT">
+
+        <option value="">
+            Sin OT
+        </option>
+
+    </select>
+</label>
             concepto: concepto,
-           importe: importe
+            importe: importe,
+            orden_trabajo_id: ordenTrabajoId
         })
+        .select()
+        .single();
         .select()
         .single();
 
