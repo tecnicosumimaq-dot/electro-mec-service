@@ -2391,93 +2391,156 @@ async function renderParts() {
             '<div class="empty">Error inesperado.</div>';
     }
 }
-function openMove(tipo){
- document.getElementById('modalbox').innerHTML=`<h2>Registrar ${tipo}</h2><div class="form"><label>Concepto<input id="mvConcepto"></label><label>Método de pago<select id="mvMetodo"><option>Efectivo</option><option>Transferencia</option><option>Débito</option><option>Crédito</option></select></label><label>Importe ($)<input id="mvImporte" type="number"></label></div><div class="actions"><button class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn" onclick="saveMove('${tipo}')">Guardar</button></div>`;document.getElementById('modal').classList.add('show')
+function openMove(tipo) {
+
+    document.getElementById('modalbox').innerHTML = `
+
+        <h2>Registrar ${tipo}</h2>
+
+        <div class="form">
+
+            <label>
+                Concepto
+
+                <input
+                    id="mvConcepto"
+                    type="text"
+                    placeholder="Ej: Pago OT">
+            </label>
+
+
+            <label>
+                Importe ($)
+
+                <input
+                    id="mvImporte"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0">
+            </label>
+
+        </div>
+
+
+        <div class="actions">
+
+            <button
+                class="btn secondary"
+                onclick="closeModal()">
+
+                Cancelar
+
+            </button>
+
+
+            <button
+                class="btn"
+                onclick="saveMove('${tipo}')">
+
+                Guardar
+
+            </button>
+
+        </div>
+
+    `;
+
+    document
+        .getElementById('modal')
+        .classList.add('show');
 }
+
+
 async function saveMove(tipo) {
 
-    const concepto = f('mvConcepto');
-    const metodo = f('mvMetodo');
-    const importe = Number(f('mvImporte')) || 0;
+    const concepto =
+        f('mvConcepto');
+
+    const importe =
+        Number(f('mvImporte')) || 0;
+
 
     if (!concepto) {
-        alert('Ingresá un concepto.');
-        return;
-    }
-
-    if (!importe || importe <= 0) {
-        alert('Ingresá un importe válido.');
-        return;
-    }
-
-    const ordenTrabajoId =
-    document.getElementById('cajaOT')?.value || null;
-
-const { data, error } =
-    await supabaseClient
-        .from('movimientos_caja')
-        .insert({
-            fecha: new Date().toISOString(),
-            tipo: tipo,
-            <label>
-    Orden de trabajo
-
-   <select id="cajaOT">
-
-    <option value="">
-        Sin OT
-    </option>
-
-    ${
-        (ots || []).map(ot => `
-
-            <option value="${ot.id}">
-
-                OT ${String(ot.id).slice(-6)}
-                -
-                $ ${Number(ot.total || 0)
-                    .toLocaleString('es-AR')}
-
-            </option>
-
-        `).join('')
-    }
-
-</select>
-</label>
-            concepto: concepto,
-            importe: importe,
-            orden_trabajo_id: ordenTrabajoId
-        })
-        .select()
-        .single();
-        .select()
-        .single();
-
-    if (error) {
-        console.error('Error guardando movimiento:', error);
 
         alert(
-            'No se pudo guardar el movimiento en Supabase.\n\n' +
-            error.message
+            'Ingresá un concepto.'
         );
 
         return;
     }
 
-    console.log('Movimiento guardado:', data);
 
-    closeModal();
+    if (!importe || importe <= 0) {
 
-    // Actualizar la vista de caja
-    if (typeof renderCaja === 'function') {
-        await renderCaja();
+        alert(
+            'Ingresá un importe válido.'
+        );
+
+        return;
     }
 
-    // Si tu sistema tiene un guardado local,
-    // lo dejamos funcionando también.
-    if (typeof save === 'function') {
-        save();
+
+    try {
+
+        const { data, error } =
+            await supabaseClient
+                .from('movimientos_caja')
+                .insert({
+
+                    fecha:
+                        new Date().toISOString(),
+
+                    tipo:
+                        tipo,
+
+                    concepto:
+                        concepto,
+
+                    importe:
+                        importe
+
+                })
+                .select()
+                .single();
+
+
+        if (error) {
+
+            console.error(
+                'Error guardando movimiento:',
+                error
+            );
+
+            alert(
+                'No se pudo guardar el movimiento:\n\n' +
+                error.message
+            );
+
+            return;
+        }
+
+
+        console.log(
+            'Movimiento guardado:',
+            data
+        );
+
+
+        closeModal();
+
+        await renderCash();
+
+    } catch (error) {
+
+        console.error(
+            'Error inesperado:',
+            error
+        );
+
+        alert(
+            'Ocurrió un error al guardar el movimiento.'
+        );
     }
 }
 async function renderCash() {
