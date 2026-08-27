@@ -1156,7 +1156,7 @@ if (errorPagos) {
 const pagos =
     (todosLosMovimientos || []).filter(m =>
 
-        m.orden_trabajo_id === otId &&
+        m.ot_id === otId
         m.tipo === 'Ingreso'
 
     );
@@ -1391,9 +1391,8 @@ const pagos =
                     importe:
                         importe,
 
-                    orden_trabajo_id:
-                        otId
-
+                    ot_id:
+    otId
                 })
                 .select()
                 .single();
