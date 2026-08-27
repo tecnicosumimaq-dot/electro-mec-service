@@ -1131,12 +1131,35 @@ async function openOTPago(otId) {
         }
 
 
-        const { data: pagos, error: errorPagos } =
-            await supabaseClient
-                .from('movimientos_caja')
-                .select('importe, tipo')
-                .eq('orden_trabajo_id', otId)
-                .eq('tipo', 'Ingreso');
+       const { data: todosLosMovimientos, error: errorPagos } =
+    await supabaseClient
+        .from('movimientos_caja')
+        .select('*');
+
+
+if (errorPagos) {
+
+    console.error(
+        'Error cargando movimientos de caja:',
+        errorPagos
+    );
+
+    alert(
+        'No se pudieron cargar los movimientos de caja:\n\n' +
+        errorPagos.message
+    );
+
+    return;
+}
+
+
+const pagos =
+    (todosLosMovimientos || []).filter(m =>
+
+        m.orden_trabajo_id === otId &&
+        m.tipo === 'Ingreso'
+
+    );
 
 
         if (errorPagos) {
