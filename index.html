@@ -1131,61 +1131,48 @@ async function openOTPago(otId) {
         }
 
 
-       const { data: todosLosMovimientos, error: errorPagos } =
-    await supabaseClient
-        .from('movimientos_caja')
-        .select('*');
-
-
-if (errorPagos) {
-
-    console.error(
-        'Error cargando movimientos de caja:',
-        errorPagos
-    );
-
-    alert(
-        'No se pudieron cargar los movimientos de caja:\n\n' +
-        errorPagos.message
-    );
-
-    return;
-}
-
-
-const pagos =
-    (todosLosMovimientos || []).filter(m =>
-
-        m.ot_id === otId
-        m.tipo === 'Ingreso'
-
-    );
+        const { data: movimientos, error: errorPagos } =
+            await supabaseClient
+                .from('movimientos_caja')
+                .select('*');
 
 
         if (errorPagos) {
 
             console.error(
-                'Error cargando pagos:',
+                'Error cargando movimientos:',
                 errorPagos
             );
 
             alert(
-                'No se pudieron cargar los pagos de la OT.'
+                'No se pudieron cargar los movimientos de caja:\n\n' +
+                errorPagos.message
             );
 
             return;
         }
 
 
+        const pagos =
+            (movimientos || []).filter(m =>
+
+                m.ot_id === otId &&
+                m.tipo === 'Ingreso'
+
+            );
+
+
         const total =
             Number(ot.total || 0);
 
+
         const pagado =
-            (pagos || []).reduce(
+            pagos.reduce(
                 (suma, pago) =>
                     suma + Number(pago.importe || 0),
                 0
             );
+
 
         const pendiente =
             Math.max(
@@ -1200,7 +1187,6 @@ const pagos =
                 💰 Pago de OT
                 ${ot.numero_ot || ot.id}
             </h2>
-
 
             <div class="cards">
 
@@ -1247,82 +1233,77 @@ const pagos =
 
             ${
                 pendiente > 0
+                ? `
 
-                ?
+                    <div class="form">
 
-                `
+                        <label>
+                            Importe a pagar
 
-                <div class="form">
-
-                    <label>
-                        Importe a pagar
-
-                        <input
-                            id="otPagoImporte"
-                            type="number"
-                            min="0"
-                            max="${pendiente}"
-                            step="0.01"
-                            value="${pendiente}">
-                    </label>
+                            <input
+                                id="otPagoImporte"
+                                type="number"
+                                min="0"
+                                max="${pendiente}"
+                                step="0.01"
+                                value="${pendiente}">
+                        </label>
 
 
-                    <label>
-                        Concepto
+                        <label>
+                            Concepto
 
-                        <input
-                            id="otPagoConcepto"
-                            type="text"
-                            value="Pago OT ${ot.numero_ot || ot.id}">
-                    </label>
+                            <input
+                                id="otPagoConcepto"
+                                type="text"
+                                value="Pago OT ${ot.numero_ot || ot.id}">
+                        </label>
 
-                </div>
-
-
-                <div class="actions">
-
-                    <button
-                        class="btn secondary"
-                        onclick="closeModal()">
-
-                        Cancelar
-
-                    </button>
+                    </div>
 
 
-                    <button
-                        class="btn"
-                        onclick='guardarPagoOT("${otId}")'>
+                    <div class="actions">
 
-                        💾 Registrar pago
+                        <button
+                            class="btn secondary"
+                            onclick="closeModal()">
 
-                    </button>
+                            Cancelar
 
-                </div>
+                        </button>
+
+
+                        <button
+                            class="btn"
+                            onclick='guardarPagoOT("${otId}")'>
+
+                            💾 Registrar pago
+
+                        </button>
+
+                    </div>
 
                 `
+                : `
 
-                :
+                    <div class="empty">
 
-                `
+                        ✅ Esta OT está completamente pagada.
 
-                <div class="empty">
+                    </div>
 
-                    ✅ Esta OT está completamente pagada.
 
-                </div>
+                    <div class="actions">
 
-                <div class="actions">
+                        <button
+                            class="btn secondary"
+                            onclick="closeModal()">
 
-                    <button
-                        class="btn secondary"
-                        onclick="closeModal()">
+                            Cerrar
 
-                        Cerrar
+                        </button>
 
-                    </button>
-
-                </div>
+                    </div>
 
                 `
             }
@@ -1346,6 +1327,7 @@ const pagos =
         );
     }
 }
+
   async function guardarPagoOT(otId) {
 
     const importe =
