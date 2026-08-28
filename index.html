@@ -697,7 +697,7 @@ async function eliminarCliente(clienteId) {
     if (!container) return;
 
     container.innerHTML =
-        '<div class="empty">Cargando motos...</div>';
+        '<div class="empty">Cargando motos / equipos...</div>';
 
     try {
 
@@ -719,12 +719,12 @@ async function eliminarCliente(clienteId) {
         if (error) {
 
             console.error(
-                'Error cargando motos:',
+                'Error cargando motos / equipos:',
                 error
             );
 
             container.innerHTML =
-                '<div class="empty">Error al cargar motos.</div>';
+                '<div class="empty">Error al cargar motos / equipos.</div>';
 
             return;
         }
@@ -755,21 +755,25 @@ async function eliminarCliente(clienteId) {
         if (!rows.length) {
 
             container.innerHTML =
-                '<div class="empty">No hay motos cargadas.</div>';
+                '<div class="empty">No hay motos / equipos cargados.</div>';
 
             return;
         }
 
         container.innerHTML = `
+
             <table class="table">
 
                 <tr>
-                    <th>Dominio</th>
-                    <th>Moto</th>
+
+                    <th>Dominio / Identificación</th>
+                    <th>Moto / Equipo</th>
                     <th>Cliente</th>
                     <th>KM</th>
-                    <th></th>
+                    <th>Acciones</th>
+
                 </tr>
+
 
                 ${rows.map(m => {
 
@@ -788,53 +792,137 @@ async function eliminarCliente(clienteId) {
                     };
 
                     return `
+
                         <tr>
 
                             <td>
                                 <b>
-                                    ${m.dominio || ''}
+                                    ${m.dominio || '-'}
                                 </b>
                             </td>
+
 
                             <td>
                                 ${m.marca || ''}
                                 ${m.modelo || ''}
                             </td>
 
+
                             <td>
                                 ${cliente.nombre || ''}
                                 ${cliente.apellido || ''}
                             </td>
 
-                            <td>
-                                ${m.kilometraje || ''}
-                            </td>
 
                             <td>
+                                ${m.kilometraje || '-'}
+                            </td>
+
+
+                            <td>
+
                                 <button
                                     class="btn secondary"
                                     onclick='openMoto(${JSON.stringify(motoParaEditar)})'>
+
                                     Editar
+
                                 </button>
+
+
+                                <button
+                                    class="btn secondary"
+                                    onclick="eliminarMoto('${m.id}')">
+
+                                    🗑️ Eliminar
+
+                                </button>
+
                             </td>
 
                         </tr>
+
                     `;
 
                 }).join('')}
 
             </table>
+
         `;
 
-       } catch (error) {
+    } catch (error) {
+
         console.error(error);
 
         container.innerHTML =
             '<div class="empty">Error inesperado.</div>';
     }
-
 }
-async function openOT() {
+async function eliminarMoto(motoId) {
+
+    const confirmar =
+        confirm(
+            '¿Seguro que querés eliminar esta moto / equipo?\n\n' +
+            'El registro dejará de aparecer en la lista.\n' +
+            'Las OT y demás registros históricos se conservarán.'
+        );
+
+    if (!confirmar) return;
+
+
+    try {
+
+        const { error } =
+            await supabaseClient
+                .from('motos')
+                .update({
+                    activo: false
+                })
+                .eq('id', motoId);
+
+
+        if (error) {
+
+            console.error(
+                'Error eliminando moto / equipo:',
+                error
+            );
+
+            alert(
+                'No se pudo eliminar:\n\n' +
+                error.message
+            );
+
+            return;
+        }
+
+
+        console.log(
+            '🗑️ Moto / equipo desactivado:',
+            motoId
+        );
+
+
+        await renderMotos();
+
+        await renderOT();
+
+        await renderDashboard();
+
+
+    } catch (error) {
+
+        console.error(
+            'Error inesperado eliminando moto / equipo:',
+            error
+        );
+
+        alert(
+            'Ocurrió un error al eliminar el registro.'
+        );
+    }
+}
+    async function openOT() {
 
     try {
 
