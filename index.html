@@ -506,6 +506,7 @@ async function renderClients() {
                 });
 
         if (error) {
+
             console.error(
                 'Error cargando clientes:',
                 error
@@ -518,15 +519,19 @@ async function renderClients() {
         }
 
         const q =
-            (document.getElementById('clientSearch')?.value || '')
-            .toLowerCase();
+            (
+                document.getElementById('clientSearch')?.value ||
+                ''
+            ).toLowerCase();
 
         const rows = (data || []).filter(c => {
 
             const texto =
                 `${c.nombre || ''} ${c.apellido || ''} ${c.telefono || ''} ${c.email || ''}`;
 
-            return texto.toLowerCase().includes(q);
+            return texto
+                .toLowerCase()
+                .includes(q);
         });
 
         if (!rows.length) {
@@ -538,14 +543,19 @@ async function renderClients() {
         }
 
         container.innerHTML = `
+
             <table class="table">
+
                 <tr>
+
                     <th>Cliente</th>
                     <th>Teléfono</th>
                     <th>Email</th>
                     <th>Motos</th>
-                    <th></th>
+                    <th>Acciones</th>
+
                 </tr>
+
 
                 ${rows.map(c => `
 
@@ -558,26 +568,45 @@ async function renderClients() {
                             </b>
                         </td>
 
+
                         <td>
                             ${c.telefono || ''}
                         </td>
+
 
                         <td>
                             ${c.email || ''}
                         </td>
 
+
                         <td>
+
                             <span class="badge">
                                 -
                             </span>
+
                         </td>
 
+
                         <td>
+
                             <button
                                 class="btn secondary"
                                 onclick='openClient(${JSON.stringify(c)})'>
+
                                 Editar
+
                             </button>
+
+
+                            <button
+                                class="btn secondary"
+                                onclick="eliminarCliente('${c.id}')">
+
+                                🗑️ Eliminar
+
+                            </button>
+
                         </td>
 
                     </tr>
@@ -595,7 +624,72 @@ async function renderClients() {
             '<div class="empty">Error inesperado.</div>';
     }
 }
-async function renderMotos() {
+async function eliminarCliente(clienteId) {
+
+    const confirmar =
+        confirm(
+            '¿Seguro que querés eliminar este cliente?\n\n' +
+            'El cliente dejará de aparecer en la lista, ' +
+            'pero se conservarán sus motos, OT y demás historial.\n\n' +
+            'Esta acción se puede revertir posteriormente.'
+        );
+
+    if (!confirmar) return;
+
+
+    try {
+
+        const { error } =
+            await supabaseClient
+                .from('clientes')
+                .update({
+                    activo: false
+                })
+                .eq('id', clienteId);
+
+
+        if (error) {
+
+            console.error(
+                'Error eliminando cliente:',
+                error
+            );
+
+            alert(
+                'No se pudo eliminar el cliente:\n\n' +
+                error.message
+            );
+
+            return;
+        }
+
+
+        console.log(
+            '🗑️ Cliente desactivado:',
+            clienteId
+        );
+
+
+        await renderClients();
+
+        await renderMotos();
+
+        await renderDashboard();
+
+
+    } catch (error) {
+
+        console.error(
+            'Error inesperado eliminando cliente:',
+            error
+        );
+
+        alert(
+            'Ocurrió un error al eliminar el cliente.'
+        );
+    }
+}
+    async function renderMotos() {
 
     const container =
         document.getElementById('motoTable');
