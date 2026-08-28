@@ -2875,29 +2875,34 @@ async function renderCash() {
     if (!container) return;
 
     container.innerHTML = `
-    <div class="toolbar">
+        <div class="toolbar">
 
-        <button
-            class="btn"
-            onclick="nuevoMovimientoCaja()">
+            <button
+                class="btn"
+                onclick="nuevoMovimientoCaja()">
 
-            ＋ Nuevo movimiento
+                ＋ Nuevo movimiento
 
-        </button>
+            </button>
 
-    </div>
+        </div>
 
-    <div class="empty">
-        Cargando caja...
-    </div>
-`;
+        <div class="empty">
+            Cargando caja...
+        </div>
+    `;
+
 
     try {
 
         const { data, error } =
             await supabaseClient
                 .from('movimientos_caja')
-                .select('*');
+                .select('*')
+                .order('fecha', {
+                    ascending: false
+                });
+
 
         if (error) {
 
@@ -2912,21 +2917,26 @@ async function renderCash() {
             return;
         }
 
+
         const movimientos =
             data || [];
+
 
         console.log(
             '💰 Movimientos de caja recibidos:',
             movimientos
         );
 
+
         let ingresos = 0;
         let egresos = 0;
+
 
         movimientos.forEach(m => {
 
             const importe =
                 Number(m.importe || 0);
+
 
             if (
                 String(m.tipo || '')
@@ -2942,10 +2952,13 @@ async function renderCash() {
 
                 egresos += importe;
             }
+
         });
+
 
         const saldo =
             ingresos - egresos;
+
 
         container.innerHTML = `
 
@@ -3014,6 +3027,7 @@ async function renderCash() {
                             <th>Tipo</th>
                             <th>Concepto</th>
                             <th>Importe</th>
+                            <th>Acciones</th>
 
                         </tr>
 
@@ -3031,9 +3045,11 @@ async function renderCash() {
                                     }
                                 </td>
 
+
                                 <td>
                                     ${m.tipo || ''}
                                 </td>
+
 
                                 <td>
                                     ${
@@ -3043,7 +3059,6 @@ async function renderCash() {
                                     }
                                 </td>
 
-                               
 
                                 <td>
                                     $ ${
@@ -3051,6 +3066,19 @@ async function renderCash() {
                                             m.importe || 0
                                         ).toLocaleString('es-AR')
                                     }
+                                </td>
+
+
+                                <td>
+
+                                    <button
+                                        class="btn secondary"
+                                        onclick="eliminarMovimientoCaja('${m.id}')">
+
+                                        🗑️ Eliminar
+
+                                    </button>
+
                                 </td>
 
                             </tr>
@@ -3073,7 +3101,9 @@ async function renderCash() {
                 }
 
             </div>
+
         `;
+
 
     } catch (error) {
 
@@ -3086,7 +3116,67 @@ async function renderCash() {
             '<div class="empty">Error inesperado.</div>';
     }
 }
-async function nuevoMovimientoCaja() {
+async function eliminarMovimientoCaja(id) {
+
+    const confirmar =
+        confirm(
+            '¿Seguro que querés eliminar este movimiento de caja?\n\n' +
+            'Esta acción no se puede deshacer.'
+        );
+
+
+    if (!confirmar) return;
+
+
+    try {
+
+        const { error } =
+            await supabaseClient
+                .from('movimientos_caja')
+                .delete()
+                .eq('id', id);
+
+
+        if (error) {
+
+            console.error(
+                'Error eliminando movimiento:',
+                error
+            );
+
+            alert(
+                'No se pudo eliminar el movimiento:\n\n' +
+                error.message
+            );
+
+            return;
+        }
+
+
+        console.log(
+            '🗑️ Movimiento eliminado:',
+            id
+        );
+
+
+        await renderCash();
+
+        await renderDashboard();
+
+
+    } catch (error) {
+
+        console.error(
+            'Error inesperado eliminando movimiento:',
+            error
+        );
+
+        alert(
+            'Ocurrió un error al eliminar el movimiento.'
+        );
+    }
+}
+    async function nuevoMovimientoCaja() {
 
     try {
 
