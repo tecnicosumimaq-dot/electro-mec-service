@@ -997,7 +997,7 @@ async function verFichaCliente(clienteId) {
         );
     }
 }
-    async function renderMotos() {
+   async function renderMotos() {
 
     const container =
         document.getElementById('motoTable');
@@ -1037,28 +1037,43 @@ async function verFichaCliente(clienteId) {
             return;
         }
 
+        const registros =
+            data || [];
+
+        console.log(
+            '🏍️ Motos / equipos recibidos:',
+            registros
+        );
+
+
         const q =
             (
                 document.getElementById('motoSearch')?.value ||
                 ''
             ).toLowerCase();
 
-        const rows = (data || []).filter(m => {
 
-            const cliente =
-                m.clientes || {};
+        const rows =
+            registros.filter(m => {
 
-            const texto =
-                `${m.dominio || ''}
-                 ${m.marca || ''}
-                 ${m.modelo || ''}
-                 ${cliente.nombre || ''}
-                 ${cliente.apellido || ''}`;
+                const cliente =
+                    m.clientes || {};
 
-            return texto
-                .toLowerCase()
-                .includes(q);
-        });
+                const texto = `
+                    ${m.dominio || ''}
+                    ${m.marca || ''}
+                    ${m.modelo || ''}
+                    ${m.anio || ''}
+                    ${m.kilometraje || ''}
+                    ${cliente.nombre || ''}
+                    ${cliente.apellido || ''}
+                `;
+
+                return texto
+                    .toLowerCase()
+                    .includes(q);
+            });
+
 
         if (!rows.length) {
 
@@ -1068,16 +1083,21 @@ async function verFichaCliente(clienteId) {
             return;
         }
 
+
         container.innerHTML = `
 
             <table class="table">
 
                 <tr>
 
-                    <th>Dominio / Identificación</th>
+                    <th>Dominio</th>
+
                     <th>Moto / Equipo</th>
+
                     <th>Cliente</th>
+
                     <th>KM</th>
+
                     <th>Acciones</th>
 
                 </tr>
@@ -1088,65 +1108,113 @@ async function verFichaCliente(clienteId) {
                     const cliente =
                         m.clientes || {};
 
+
                     const motoParaEditar = {
+
                         id: m.id,
+
                         cliente: m.cliente_id,
+
                         dominio: m.dominio || '',
+
                         marca: m.marca || '',
+
                         modelo: m.modelo || '',
+
                         anio: m.anio || '',
+
                         km: m.kilometraje || '',
+
                         color: m.color || ''
+
                     };
+
 
                     return `
 
                         <tr>
 
+
                             <td>
+
                                 <b>
                                     ${m.dominio || '-'}
                                 </b>
-                            </td>
 
-
-                            <td>
-                                ${m.marca || ''}
-                                ${m.modelo || ''}
-                            </td>
-
-
-                            <td>
-                                ${cliente.nombre || ''}
-                                ${cliente.apellido || ''}
-                            </td>
-
-
-                            <td>
-                                ${m.kilometraje || '-'}
                             </td>
 
 
                             <td>
 
-                                <button
-                                    class="btn secondary"
-                                    onclick='openMoto(${JSON.stringify(motoParaEditar)})'>
+                                <b>
+                                    ${m.marca || ''}
+                                    ${m.modelo || ''}
+                                </b>
 
-                                    Editar
-
-                                </button>
-
-
-                                <button
-                                    class="btn secondary"
-                                    onclick="eliminarMoto('${m.id}')">
-
-                                    🗑️ Eliminar
-
-                                </button>
+                                ${
+                                    m.anio
+                                    ? `<br><small>Año: ${m.anio}</small>`
+                                    : ''
+                                }
 
                             </td>
+
+
+                            <td>
+
+                                ${
+                                    cliente.nombre || ''
+                                }
+
+                                ${
+                                    cliente.apellido || ''
+                                }
+
+                            </td>
+
+
+                            <td>
+
+                                ${
+                                    m.kilometraje || '-'
+                                }
+
+                            </td>
+
+
+                            <td>
+
+                                <div
+                                    style="
+                                        display:flex;
+                                        gap:6px;
+                                        flex-wrap:wrap;
+                                    "
+                                >
+
+
+                                    <button
+                                        class="btn secondary"
+                                        onclick='openMoto(${JSON.stringify(motoParaEditar)})'>
+
+                                        Editar
+
+                                    </button>
+
+
+                                    <button
+                                        class="btn secondary"
+                                        onclick="verFichaMoto('${m.id}')">
+
+                                        🔍 Ver ficha
+
+                                    </button>
+
+
+                                </div>
+
+                            </td>
+
 
                         </tr>
 
@@ -1154,19 +1222,502 @@ async function verFichaCliente(clienteId) {
 
                 }).join('')}
 
+
             </table>
 
         `;
 
+
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            'Error inesperado cargando motos / equipos:',
+            error
+        );
 
         container.innerHTML =
             '<div class="empty">Error inesperado.</div>';
     }
+
 }
-async function eliminarMoto(motoId) {
+async function verFichaMoto(motoId) {
+
+    if (!motoId) {
+
+        alert(
+            'No se encontró la moto / equipo.'
+        );
+
+        return;
+    }
+
+
+    try {
+
+        console.log(
+            '🔍 Cargando ficha de moto / equipo:',
+            motoId
+        );
+
+
+        // ==============================
+        // DATOS DE LA MOTO / EQUIPO
+        // ==============================
+
+        const { data: moto, error: errorMoto } =
+            await supabaseClient
+                .from('motos')
+                .select(`
+                    *,
+                    clientes (
+                        nombre,
+                        apellido,
+                        telefono,
+                        email
+                    )
+                `)
+                .eq('id', motoId)
+                .single();
+
+
+        if (errorMoto) {
+
+            console.error(
+                'Error cargando moto / equipo:',
+                errorMoto
+            );
+
+            alert(
+                'No se pudo cargar la ficha.'
+            );
+
+            return;
+        }
+
+
+        // ==============================
+        // HISTORIAL DE OT
+        // ==============================
+
+        const { data: ots, error: errorOT } =
+            await supabaseClient
+                .from('ordenes_trabajo')
+                .select('*')
+                .eq('moto_id', motoId)
+                .order('fecha_recepcion', {
+                    ascending: false
+                });
+
+
+        if (errorOT) {
+
+            console.error(
+                'Error cargando historial de OT:',
+                errorOT
+            );
+
+        }
+
+
+        const historial =
+            ots || [];
+
+
+        // ==============================
+        // CALCULAR TOTAL HISTÓRICO
+        // ==============================
+
+        const totalHistorico =
+            historial.reduce(
+                (total, ot) =>
+                    total +
+                    Number(ot.total || 0),
+                0
+            );
+
+
+        // ==============================
+        // CLIENTE
+        // ==============================
+
+        const cliente =
+            moto.clientes || {};
+
+
+        // ==============================
+        // MODAL
+        // ==============================
+
+        document.getElementById('modalbox').innerHTML = `
+
+            <h2>
+
+                🔍 Ficha técnica
+
+            </h2>
+
+
+            <div class="section">
+
+                <div class="section-title">
+
+                    🏍️ Moto / Equipo
+
+                </div>
+
+
+                <div
+                    style="
+                        display:grid;
+                        grid-template-columns:
+                            repeat(auto-fit,minmax(180px,1fr));
+                        gap:12px;
+                    "
+                >
+
+
+                    <div>
+
+                        <b>Marca</b>
+
+                        <br>
+
+                        ${moto.marca || '-'}
+
+                    </div>
+
+
+                    <div>
+
+                        <b>Modelo</b>
+
+                        <br>
+
+                        ${moto.modelo || '-'}
+
+                    </div>
+
+
+                    <div>
+
+                        <b>Año</b>
+
+                        <br>
+
+                        ${moto.anio || '-'}
+
+                    </div>
+
+
+                    <div>
+
+                        <b>Dominio</b>
+
+                        <br>
+
+                        ${moto.dominio || '-'}
+
+                    </div>
+
+
+                    <div>
+
+                        <b>Kilometraje</b>
+
+                        <br>
+
+                        ${moto.kilometraje || '-'}
+
+                    </div>
+
+
+                    <div>
+
+                        <b>Color</b>
+
+                        <br>
+
+                        ${moto.color || '-'}
+
+                    </div>
+
+
+                    <div>
+
+                        <b>N.º de motor</b>
+
+                        <br>
+
+                        ${moto.numero_motor || '-'}
+
+                    </div>
+
+
+                    <div>
+
+                        <b>Cilindrada</b>
+
+                        <br>
+
+                        ${moto.cilindrada || '-'}
+
+                    </div>
+
+
+                </div>
+
+            </div>
+
+
+            <div class="section">
+
+                <div class="section-title">
+
+                    👤 Cliente
+
+                </div>
+
+
+                <p>
+
+                    <b>
+                        ${cliente.nombre || ''}
+                        ${cliente.apellido || ''}
+                    </b>
+
+                </p>
+
+
+                <p>
+
+                    📞
+                    ${cliente.telefono || '-'}
+
+                </p>
+
+
+                <p>
+
+                    ✉️
+                    ${cliente.email || '-'}
+
+                </p>
+
+            </div>
+
+
+            <div class="section">
+
+                <div class="section-title">
+
+                    📊 Resumen histórico
+
+                </div>
+
+
+                <div class="cards">
+
+
+                    <div class="card">
+
+                        <div class="label">
+
+                            Órdenes de trabajo
+
+                        </div>
+
+                        <div class="num">
+
+                            ${historial.length}
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="card">
+
+                        <div class="label">
+
+                            Total histórico
+
+                        </div>
+
+                        <div class="num">
+
+                            $ ${totalHistorico.toLocaleString('es-AR')}
+
+                        </div>
+
+                    </div>
+
+
+                </div>
+
+            </div>
+
+
+            <div class="section">
+
+                <div class="section-title">
+
+                    📋 Historial de reparaciones
+
+                </div>
+
+
+                ${
+                    historial.length
+
+                    ?
+
+                    `
+
+                    <table class="table">
+
+                        <tr>
+
+                            <th>OT</th>
+
+                            <th>Fecha</th>
+
+                            <th>Estado</th>
+
+                            <th>Diagnóstico</th>
+
+                            <th>Total</th>
+
+                        </tr>
+
+
+                        ${historial.map(ot => `
+
+                            <tr>
+
+                                <td>
+
+                                    <b>
+
+                                        ${
+                                            ot.numero_ot ||
+                                            ot.id
+                                        }
+
+                                    </b>
+
+                                </td>
+
+
+                                <td>
+
+                                    ${
+                                        ot.fecha_recepcion ||
+                                        '-'
+                                    }
+
+                                </td>
+
+
+                                <td>
+
+                                    <span class="badge">
+
+                                        ${
+                                            ot.estado ||
+                                            '-'
+                                        }
+
+                                    </span>
+
+                                </td>
+
+
+                                <td>
+
+                                    ${
+                                        ot.diagnostico ||
+                                        '-'
+                                    }
+
+                                </td>
+
+
+                                <td>
+
+                                    $ ${
+                                        Number(
+                                            ot.total || 0
+                                        ).toLocaleString('es-AR')
+                                    }
+
+                                </td>
+
+                            </tr>
+
+                        `).join('')}
+
+
+                    </table>
+
+                    `
+
+                    :
+
+                    `
+
+                    <div class="empty">
+
+                        Esta moto / equipo todavía
+                        no tiene reparaciones registradas.
+
+                    </div>
+
+                    `
+                }
+
+            </div>
+
+
+            <div class="actions">
+
+                <button
+                    class="btn secondary"
+                    onclick="closeModal()">
+
+                    Cerrar
+
+                </button>
+
+            </div>
+
+        `;
+
+
+        document
+            .getElementById('modal')
+            .classList
+            .add('show');
+
+
+        console.log(
+            '✅ Ficha de moto / equipo cargada'
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            'Error inesperado en ficha de moto / equipo:',
+            error
+        );
+
+        alert(
+            'Ocurrió un error cargando la ficha.'
+        );
+    }
+
+}
+    async function eliminarMoto(motoId) {
 
     const confirmar =
         confirm(
