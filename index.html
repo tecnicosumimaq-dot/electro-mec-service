@@ -6317,7 +6317,183 @@ function cargarLogoPDF() {
         );
     }
 }
-    function renderDashboard(){let open=db.ots.filter(o=>o.estado!=='Entregado').length, pending=db.ots.filter(o=>o.estado==='Esperando autorización').length, low=db.repuestos.filter(p=>p.stock<=p.min).length, ing=db.movimientos.filter(m=>m.tipo==='Ingreso').reduce((a,m)=>a+m.importe,0), egr=db.movimientos.filter(m=>m.tipo==='Egreso').reduce((a,m)=>a+m.importe,0);document.getElementById('kpis').innerHTML=[['👤 Clientes',db.clientes.length,''],['🏍️ Motos',db.motos.length,''],['🔧 OT abiertas',open,open?'Revisar':'OK'],['🟡 Autorizaciones',pending,pending?'Atención':'OK'],['📦 Stock bajo',low,low?'Comprar':'OK'],['💵 Saldo','$ '+(ing-egr).toLocaleString('es-AR'),''],].map(x=>`<div class="card"><div class="label">${x[0]}</div><div class="num">${x[1]}</div><div class="label">${x[2]}</div></div>`).join('');let a=[];if(pending)a.push('🟡 '+pending+' OT esperando autorización.');if(low)a.push('🔴 '+low+' repuestos están en stock mínimo.');document.getElementById('alerts').innerHTML=a.length?a.map(x=>`<div style="padding:10px 0">${x}</div>`).join(''):'<div class="empty">🟢 Sin alertas importantes.</div>'}
+    function renderDashboard() {
+
+    const estadosCerrados = [
+        'Entregado',
+        'Entregada',
+        'Cerrada',
+        'Cerrado'
+    ];
+
+    const abiertas =
+        db.ots.filter(o =>
+            !estadosCerrados.includes(
+                String(o.estado || '').trim()
+            )
+        );
+
+    const cerradas =
+        db.ots.filter(o =>
+            estadosCerrados.includes(
+                String(o.estado || '').trim()
+            )
+        );
+
+    const pending =
+        db.ots.filter(o =>
+            o.estado === 'Esperando autorización'
+        );
+
+    const low =
+        db.repuestos.filter(p =>
+            Number(p.stock || 0) <=
+            Number(p.min || 0)
+        );
+
+    const ing =
+        db.movimientos
+            .filter(m => m.tipo === 'Ingreso')
+            .reduce(
+                (a, m) =>
+                    a + Number(m.importe || 0),
+                0
+            );
+
+    const egr =
+        db.movimientos
+            .filter(m => m.tipo === 'Egreso')
+            .reduce(
+                (a, m) =>
+                    a + Number(m.importe || 0),
+                0
+            );
+
+    const saldo =
+        ing - egr;
+
+    document.getElementById('kpis').innerHTML = [
+
+        [
+            '👤 Clientes',
+            db.clientes.length,
+            ''
+        ],
+
+        [
+            '🏍️ Motos / Equipos',
+            db.motos.length,
+            ''
+        ],
+
+        [
+            '🔧 OT abiertas',
+            abiertas.length,
+            abiertas.length
+                ? 'Revisar'
+                : 'OK'
+        ],
+
+        [
+            '✅ OT cerradas',
+            cerradas.length,
+            ''
+        ],
+
+        [
+            '📦 Stock bajo',
+            low.length,
+            low.length
+                ? 'Comprar'
+                : 'OK'
+        ],
+
+        [
+            '💵 Saldo',
+            '$ ' +
+            saldo.toLocaleString('es-AR'),
+            ''
+        ]
+
+    ]
+    .map(x => `
+
+        <div class="card">
+
+            <div class="label">
+                ${x[0]}
+            </div>
+
+            <div class="num">
+                ${x[1]}
+            </div>
+
+            <div class="label">
+                ${x[2]}
+            </div>
+
+        </div>
+
+    `)
+    .join('');
+
+    let alertas = [];
+
+    if (abiertas.length) {
+
+        alertas.push(
+            '🔧 ' +
+            abiertas.length +
+            ' OT abiertas.'
+        );
+
+    }
+
+    if (pending.length) {
+
+        alertas.push(
+            '🟡 ' +
+            pending.length +
+            ' OT esperando autorización.'
+        );
+
+    }
+
+    if (low.length) {
+
+        alertas.push(
+            '🔴 ' +
+            low.length +
+            ' repuestos están en stock mínimo.'
+        );
+
+    }
+
+    document.getElementById('alerts').innerHTML =
+
+        alertas.length
+
+        ?
+
+        alertas
+            .map(x => `
+                <div
+                    style="
+                        padding:10px 0;
+                    ">
+                    ${x}
+                </div>
+            `)
+            .join('')
+
+        :
+
+        `
+            <div class="empty">
+                🟢 Sin alertas importantes.
+            </div>
+        `;
+}
 function renderAll(){renderDashboard();renderClients();renderMotos();renderOT();renderParts();renderQuotes();renderCash()}renderAll();
 function cajaPDF(
     doc,
