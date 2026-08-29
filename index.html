@@ -3009,8 +3009,11 @@ async function renderParts() {
 
     if (!container) return;
 
-    container.innerHTML =
-        '<div class="empty">Cargando inventario...</div>';
+    container.innerHTML = `
+        <div class="empty">
+            Cargando inventario...
+        </div>
+    `;
 
     try {
 
@@ -3018,7 +3021,10 @@ async function renderParts() {
             await supabaseClient
                 .from('repuestos')
                 .select('*')
-                .order('descripcion');
+                .eq('activo', true)
+                .order('descripcion', {
+                    ascending: true
+                });
 
         if (error) {
 
@@ -3027,11 +3033,22 @@ async function renderParts() {
                 error
             );
 
-            container.innerHTML =
-                '<div class="empty">Error al cargar inventario.</div>';
+            container.innerHTML = `
+                <div class="empty">
+                    Error al cargar inventario.
+                </div>
+            `;
 
             return;
         }
+
+        const repuestos =
+            data || [];
+
+        console.log(
+            '📦 Repuestos recibidos:',
+            repuestos
+        );
 
         const q =
             (
@@ -3040,24 +3057,28 @@ async function renderParts() {
             ).toLowerCase();
 
         const rows =
-            (data || []).filter(r => {
+            repuestos.filter(p => {
 
                 const texto = `
-                    ${r.codigo || ''}
-                    ${r.descripcion || ''}
-                    ${r.proveedor || ''}
+                    ${p.descripcion || ''}
+                    ${p.codigo || ''}
+                    ${p.proveedor || ''}
+                    ${p.marca || ''}
+                    ${p.categoria || ''}
                 `;
 
                 return texto
                     .toLowerCase()
                     .includes(q);
-
             });
 
         if (!rows.length) {
 
-            container.innerHTML =
-                '<div class="empty">No hay repuestos cargados.</div>';
+            container.innerHTML = `
+                <div class="empty">
+                    No hay repuestos en el inventario.
+                </div>
+            `;
 
             return;
         }
@@ -3067,70 +3088,106 @@ async function renderParts() {
             <table class="table">
 
                 <tr>
+
+                    <th>Descripción</th>
+
                     <th>Código</th>
-                    <th>Repuesto</th>
-                    <th>Proveedor</th>
+
                     <th>Stock</th>
-                    <th>Mínimo</th>
-                    <th>Estado</th>
+
+                    <th>Costo</th>
+
+                    <th>Precio venta</th>
+
                     <th>Acciones</th>
+
                 </tr>
 
-                ${rows.map(r => {
+                ${rows.map(p => {
 
                     const stock =
-                        Number(r.stock) || 0;
+                        Number(p.stock || 0);
 
-                    const minimo =
-                        Number(r.stock_minimo) || 0;
+                    const costo =
+                        Number(p.precio_compra || 0);
+
+                    const precioVenta =
+                        Number(p.precio_venta || 0);
 
                     return `
 
                         <tr>
 
                             <td>
-                                ${r.codigo || ''}
-                            </td>
 
-                            <td>
                                 <b>
-                                    ${r.descripcion || ''}
+                                    ${p.descripcion || ''}
                                 </b>
+
                             </td>
 
-                            <td>
-                                ${r.proveedor || ''}
-                            </td>
 
                             <td>
-                                ${stock}
+
+                                ${p.codigo || '-'}
+
                             </td>
 
-                            <td>
-                                ${minimo}
-                            </td>
 
                             <td>
 
                                 <span class="badge">
 
-                                    ${stock <= minimo
-                                        ? '🔴 COMPRAR'
-                                        : '🟢 OK'}
+                                    ${stock}
 
                                 </span>
 
                             </td>
 
+
                             <td>
 
-                                <div style="display:flex;gap:6px;">
+                                $ ${costo.toLocaleString('es-AR')}
+
+                            </td>
+
+
+                            <td>
+
+                                $ ${precioVenta.toLocaleString('es-AR')}
+
+                            </td>
+
+
+                            <td>
+
+                                <div
+                                    style="
+                                        display:flex;
+                                        gap:6px;
+                                        flex-wrap:wrap;
+                                    "
+                                >
 
                                     <button
                                         class="btn secondary"
-                                        style="color:#c62828;"
-                                        onclick="eliminarRepuesto('${r.id}')">
-                                        🗑️
+                                        onclick='openPart(${JSON.stringify(p)})'>
+
+                                        Editar
+
+                                    </button>
+
+
+                                    <button
+                                        class="btn secondary"
+                                        style="
+                                            color:#c62828;
+                                            border-color:#c62828;
+                                        "
+                                        onclick="eliminarRepuesto('${p.id}')">
+
+                                        🗑️ Eliminar
+
                                     </button>
 
                                 </div>
@@ -3144,29 +3201,46 @@ async function renderParts() {
                 }).join('')}
 
             </table>
+
         `;
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            'Error inesperado en inventario:',
+            error
+        );
 
-        container.innerHTML =
-            '<div class="empty">Error inesperado.</div>';
+        container.innerHTML = `
+            <div class="empty">
+                Error inesperado al cargar inventario.
+            </div>
+        `;
     }
 }
 async function eliminarRepuesto(id) {
 
-    if (!id) return;
+    if (!id) {
 
-    const confirmar = confirm(
-        '¿Seguro que querés eliminar este repuesto del inventario?\n\n' +
-        'El repuesto dejará de aparecer en el inventario, ' +
-        'pero se conservará la información histórica.'
-    );
+        alert('No se encontró el repuesto.');
+
+        return;
+    }
+
+    const confirmar =
+        confirm(
+            '¿Querés eliminar este repuesto del inventario?\n\n' +
+            'El repuesto dejará de aparecer en el inventario.'
+        );
 
     if (!confirmar) return;
 
     try {
+
+        console.log(
+            '🗑️ Eliminando repuesto:',
+            id
+        );
 
         const { error } =
             await supabaseClient
@@ -3179,7 +3253,7 @@ async function eliminarRepuesto(id) {
         if (error) {
 
             console.error(
-                'Error eliminando repuesto:',
+                '❌ Error eliminando repuesto:',
                 error
             );
 
@@ -3192,8 +3266,12 @@ async function eliminarRepuesto(id) {
         }
 
         console.log(
-            '🗑️ Repuesto eliminado:',
+            '✅ Repuesto eliminado correctamente:',
             id
+        );
+
+        alert(
+            'Repuesto eliminado correctamente.'
         );
 
         await renderParts();
@@ -3201,7 +3279,7 @@ async function eliminarRepuesto(id) {
     } catch (error) {
 
         console.error(
-            'Error inesperado eliminando repuesto:',
+            '❌ Error inesperado eliminando repuesto:',
             error
         );
 
@@ -3210,67 +3288,6 @@ async function eliminarRepuesto(id) {
         );
     }
 }
-    function openMove(tipo) {
-
-    document.getElementById('modalbox').innerHTML = `
-
-        <h2>Registrar ${tipo}</h2>
-
-        <div class="form">
-
-            <label>
-                Concepto
-
-                <input
-                    id="mvConcepto"
-                    type="text"
-                    placeholder="Ej: Pago OT">
-            </label>
-
-
-            <label>
-                Importe ($)
-
-                <input
-                    id="mvImporte"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder="0">
-            </label>
-
-        </div>
-
-
-        <div class="actions">
-
-            <button
-                class="btn secondary"
-                onclick="closeModal()">
-
-                Cancelar
-
-            </button>
-
-
-            <button
-                class="btn"
-                onclick="saveMove('${tipo}')">
-
-                Guardar
-
-            </button>
-
-        </div>
-
-    `;
-
-    document
-        .getElementById('modal')
-        .classList.add('show');
-}
-
-
 async function saveMove(tipo) {
 
     const concepto =
