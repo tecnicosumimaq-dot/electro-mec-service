@@ -524,15 +524,19 @@ async function renderClients() {
                 ''
             ).toLowerCase();
 
-        const rows = (data || []).filter(c => {
+        const rows =
+            (data || []).filter(c => {
 
-            const texto =
-                `${c.nombre || ''} ${c.apellido || ''} ${c.telefono || ''} ${c.email || ''}`;
+                const texto =
+                    `${c.nombre || ''}
+                     ${c.apellido || ''}
+                     ${c.telefono || ''}
+                     ${c.email || ''}`;
 
-            return texto
-                .toLowerCase()
-                .includes(q);
-        });
+                return texto
+                    .toLowerCase()
+                    .includes(q);
+            });
 
         if (!rows.length) {
 
@@ -549,63 +553,80 @@ async function renderClients() {
                 <tr>
 
                     <th>Cliente</th>
+
                     <th>Teléfono</th>
+
                     <th>Email</th>
-                    <th>Motos</th>
+
                     <th>Acciones</th>
 
                 </tr>
-
 
                 ${rows.map(c => `
 
                     <tr>
 
                         <td>
+
                             <b>
                                 ${c.nombre || ''}
                                 ${c.apellido || ''}
                             </b>
-                        </td>
-
-
-                        <td>
-                            ${c.telefono || ''}
-                        </td>
-
-
-                        <td>
-                            ${c.email || ''}
-                        </td>
-
-
-                        <td>
-
-                            <span class="badge">
-                                -
-                            </span>
 
                         </td>
 
 
                         <td>
-
-                            <button
-                                class="btn secondary"
-                                onclick='openClient(${JSON.stringify(c)})'>
-
-                                Editar
-
-                            </button>
+                            ${c.telefono || '-'}
+                        </td>
 
 
-                            <button
-                                class="btn secondary"
-                                onclick="eliminarCliente('${c.id}')">
+                        <td>
+                            ${c.email || '-'}
+                        </td>
 
-                                🗑️ Eliminar
 
-                            </button>
+                        <td>
+
+                            <div
+                                style="
+                                    display:flex;
+                                    gap:6px;
+                                    flex-wrap:wrap;
+                                "
+                            >
+
+                                <button
+                                    class="btn secondary"
+                                    onclick='openClient(${JSON.stringify(c)})'>
+
+                                    Editar
+
+                                </button>
+
+
+                                <button
+                                    class="btn secondary"
+                                    onclick="verFichaCliente('${c.id}')">
+
+                                    👤 Ver ficha
+
+                                </button>
+
+
+                                <button
+                                    class="btn secondary"
+                                    style="
+                                        color:#c62828;
+                                        border-color:#c62828;
+                                    "
+                                    onclick="eliminarCliente('${c.id}')">
+
+                                    🗑️
+
+                                </button>
+
+                            </div>
 
                         </td>
 
@@ -614,17 +635,304 @@ async function renderClients() {
                 `).join('')}
 
             </table>
+
         `;
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            'Error inesperado:',
+            error
+        );
 
         container.innerHTML =
             '<div class="empty">Error inesperado.</div>';
     }
 }
-async function eliminarCliente(clienteId) {
+async function verFichaCliente(clienteId) {
+
+    if (!clienteId) return;
+
+    try {
+
+        console.log(
+            '👤 Cargando ficha del cliente:',
+            clienteId
+        );
+
+        const { data: cliente, error: errorCliente } =
+            await supabaseClient
+                .from('clientes')
+                .select('*')
+                .eq('id', clienteId)
+                .single();
+
+        if (errorCliente) {
+
+            console.error(
+                'Error cargando cliente:',
+                errorCliente
+            );
+
+            alert(
+                'No se pudo cargar la ficha del cliente.'
+            );
+
+            return;
+        }
+
+
+        const { data: motos, error: errorMotos } =
+            await supabaseClient
+                .from('motos')
+                .select('*')
+                .eq('cliente_id', clienteId)
+                .eq('activo', true)
+                .order('fecha_alta', {
+                    ascending: false
+                });
+
+
+        if (errorMotos) {
+
+            console.error(
+                'Error cargando motos del cliente:',
+                errorMotos
+            );
+
+        }
+
+
+        const { data: ots, error: errorOT } =
+            await supabaseClient
+                .from('ordenes_trabajo')
+                .select('*')
+                .eq('cliente_id', clienteId)
+                .order('fecha_recepcion', {
+                    ascending: false
+                });
+
+
+        if (errorOT) {
+
+            console.error(
+                'Error cargando OT del cliente:',
+                errorOT
+            );
+
+        }
+
+
+        const listaMotos =
+            motos || [];
+
+        const listaOT =
+            ots || [];
+
+
+        document.getElementById('modalbox').innerHTML = `
+
+            <h2>
+                👤 ${cliente.nombre || ''}
+                ${cliente.apellido || ''}
+            </h2>
+
+
+            <div class="section">
+
+                <div class="section-title">
+                    Datos del cliente
+                </div>
+
+                <p>
+                    <b>Teléfono:</b>
+                    ${cliente.telefono || '-'}
+                </p>
+
+                <p>
+                    <b>Email:</b>
+                    ${cliente.email || '-'}
+                </p>
+
+                <p>
+                    <b>Dirección:</b>
+                    ${cliente.direccion || '-'}
+                </p>
+
+                <p>
+                    <b>Observaciones:</b>
+                    ${cliente.observaciones || '-'}
+                </p>
+
+            </div>
+
+
+            <div class="section">
+
+                <div class="section-title">
+                    🏍️ Motos / Equipos
+                </div>
+
+
+                ${
+                    listaMotos.length
+
+                    ?
+
+                    listaMotos.map(m => `
+
+                        <div
+                            style="
+                                padding:10px;
+                                margin-bottom:8px;
+                                border:1px solid #ddd;
+                                border-radius:8px;
+                            "
+                        >
+
+                            <b>
+                                ${m.marca || ''}
+                                ${m.modelo || ''}
+                            </b>
+
+                            ${
+                                m.dominio
+                                ? ` · ${m.dominio}`
+                                : ''
+                            }
+
+                            <br>
+
+                            <small>
+                                KM:
+                                ${m.kilometraje || '-'}
+                            </small>
+
+                        </div>
+
+                    `).join('')
+
+                    :
+
+                    '<div class="empty">No hay motos/equipos asociados.</div>'
+                }
+
+            </div>
+
+
+            <div class="section">
+
+                <div class="section-title">
+                    📋 Historial de trabajos
+                </div>
+
+
+                ${
+                    listaOT.length
+
+                    ?
+
+                    `
+
+                    <table class="table">
+
+                        <tr>
+
+                            <th>OT</th>
+
+                            <th>Fecha</th>
+
+                            <th>Estado</th>
+
+                            <th>Total</th>
+
+                        </tr>
+
+
+                        ${listaOT.map(ot => `
+
+                            <tr>
+
+                                <td>
+                                    <b>
+                                        ${ot.numero_ot || ot.id}
+                                    </b>
+                                </td>
+
+                                <td>
+                                    ${
+                                        ot.fecha_recepcion
+                                        || '-'
+                                    }
+                                </td>
+
+                                <td>
+                                    <span class="badge">
+                                        ${ot.estado || '-'}
+                                    </span>
+                                </td>
+
+                                <td>
+                                    $ ${
+                                        Number(
+                                            ot.total || 0
+                                        ).toLocaleString('es-AR')
+                                    }
+                                </td>
+
+                            </tr>
+
+                        `).join('')}
+
+                    </table>
+
+                    `
+
+                    :
+
+                    '<div class="empty">No hay órdenes de trabajo.</div>'
+                }
+
+            </div>
+
+
+            <div class="actions">
+
+                <button
+                    class="btn secondary"
+                    onclick="closeModal()">
+
+                    Cerrar
+
+                </button>
+
+            </div>
+
+        `;
+
+        document
+            .getElementById('modal')
+            .classList
+            .add('show');
+
+
+        console.log(
+            '✅ Ficha del cliente cargada'
+        );
+
+    } catch (error) {
+
+        console.error(
+            'Error inesperado en ficha:',
+            error
+        );
+
+        alert(
+            'Ocurrió un error cargando la ficha del cliente.'
+        );
+    }
+}
+    async function eliminarCliente(clienteId) {
 
     const confirmar =
         confirm(
