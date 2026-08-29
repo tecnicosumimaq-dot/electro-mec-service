@@ -3154,7 +3154,63 @@ async function renderParts() {
             '<div class="empty">Error inesperado.</div>';
     }
 }
-function openMove(tipo) {
+async function eliminarRepuesto(id) {
+
+    if (!id) return;
+
+    const confirmar = confirm(
+        '¿Seguro que querés eliminar este repuesto del inventario?\n\n' +
+        'El repuesto dejará de aparecer en el inventario, ' +
+        'pero se conservará la información histórica.'
+    );
+
+    if (!confirmar) return;
+
+    try {
+
+        const { error } =
+            await supabaseClient
+                .from('repuestos')
+                .update({
+                    activo: false
+                })
+                .eq('id', id);
+
+        if (error) {
+
+            console.error(
+                'Error eliminando repuesto:',
+                error
+            );
+
+            alert(
+                'No se pudo eliminar el repuesto:\n\n' +
+                error.message
+            );
+
+            return;
+        }
+
+        console.log(
+            '🗑️ Repuesto eliminado:',
+            id
+        );
+
+        await renderParts();
+
+    } catch (error) {
+
+        console.error(
+            'Error inesperado eliminando repuesto:',
+            error
+        );
+
+        alert(
+            'Ocurrió un error al eliminar el repuesto.'
+        );
+    }
+}
+    function openMove(tipo) {
 
     document.getElementById('modalbox').innerHTML = `
 
@@ -3871,7 +3927,21 @@ async function eliminarMovimientoCaja(id) {
         const { data, error } =
             await supabaseClient
                 .from('ordenes_trabajo')
-                .select('*');
+                .select(`
+                    *,
+                    clientes (
+                        nombre,
+                        apellido
+                    ),
+                    motos (
+                        dominio,
+                        marca,
+                        modelo
+                    )
+                `)
+                .order('fecha_recepcion', {
+                    ascending: false
+                });
 
         if (error) {
 
@@ -3886,18 +3956,21 @@ async function eliminarMovimientoCaja(id) {
             return;
         }
 
+        console.log(
+            '✅ Presupuestos recibidos:',
+            data
+        );
+
         const presupuestos =
             data || [];
 
-        console.log(
-            '✅ Presupuestos recibidos:',
-            presupuestos
-        );
-
         if (!presupuestos.length) {
 
-            container.innerHTML =
-                '<div class="empty">No hay presupuestos disponibles.</div>';
+            container.innerHTML = `
+                <div class="empty">
+                    No hay presupuestos disponibles.
+                </div>
+            `;
 
             return;
         }
@@ -3907,50 +3980,127 @@ async function eliminarMovimientoCaja(id) {
             <table class="table">
 
                 <tr>
+
                     <th>Presupuesto</th>
+
+                    <th>Cliente</th>
+
                     <th>OT</th>
+
+                    <th>Moto / Equipo</th>
+
                     <th>Total</th>
+
                     <th>Estado</th>
+
                     <th>Acciones</th>
+
                 </tr>
 
-                ${presupuestos.map(o => {
+                ${presupuestos.map(ot => {
 
-                    const numero =
-                        String(o.id).slice(-6);
+                    const cliente =
+                        ot.clientes || {};
+
+                    const moto =
+                        ot.motos || {};
+
+                    const total =
+                        Number(ot.total) || 0;
+
+                    const nombreCliente =
+                        `${cliente.nombre || ''}
+                         ${cliente.apellido || ''}`
+                            .trim();
+
+                    const nombreMoto =
+                        `${moto.marca || ''}
+                         ${moto.modelo || ''}`
+                            .trim();
 
                     return `
 
                         <tr>
 
                             <td>
-                                <b>PRE-${numero}</b>
+
+                                <b>
+                                    PRE-${String(
+                                        ot.numero_ot ||
+                                        ot.id
+                                    ).slice(-6)}
+                                </b>
+
                             </td>
 
-                            <td>
-                                ${o.id}
-                            </td>
 
                             <td>
-                                $ ${
-                                    Number(o.total || 0)
-                                        .toLocaleString('es-AR')
+
+                                ${
+                                    nombreCliente
+                                    ||
+                                    '<span style="color:#999;">Sin cliente</span>'
                                 }
+
                             </td>
 
+
                             <td>
-                                <span class="badge">
-                                    ${o.estado || 'Pendiente'}
-                                </span>
+
+                                <b>
+                                    ${ot.numero_ot || ot.id}
+                                </b>
+
                             </td>
+
+
+                            <td>
+
+                                ${
+                                    nombreMoto
+                                    ||
+                                    '<span style="color:#999;">Sin moto/equipo</span>'
+                                }
+
+                                ${
+                                    moto.dominio
+                                    ? `<br>
+                                       <small>
+                                           ${moto.dominio}
+                                       </small>`
+                                    : ''
+                                }
+
+                            </td>
+
+
+                            <td>
+
+                                <b>
+                                    $ ${total.toLocaleString('es-AR')}
+                                </b>
+
+                            </td>
+
+
+                            <td>
+
+                                <span class="badge">
+
+                                    ${ot.estado || 'Pendiente'}
+
+                                </span>
+
+                            </td>
+
 
                             <td>
 
                                 <button
                                     class="btn secondary"
-                                    onclick="descargarPresupuestoPDF('${o.id}')">
+                                    onclick="descargarPresupuestoPDF('${ot.id}')">
 
-                                    📄 Descargar PDF
+                                    📄 PDF
 
                                 </button>
 
@@ -3963,12 +4113,13 @@ async function eliminarMovimientoCaja(id) {
                 }).join('')}
 
             </table>
+
         `;
 
     } catch (error) {
 
         console.error(
-            'Error inesperado en presupuestos:',
+            'Error inesperado cargando presupuestos:',
             error
         );
 
