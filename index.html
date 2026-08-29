@@ -1130,7 +1130,8 @@ async function saveOT() {
 }
 async function renderOT() {
 
-    const container = document.getElementById('otTable');
+    const container =
+        document.getElementById('otTable');
 
     if (!container) return;
 
@@ -1139,26 +1140,31 @@ async function renderOT() {
 
     try {
 
-        const { data, error } = await supabaseClient
-            .from('ordenes_trabajo')
-            .select(`
-                *,
-                clientes (
-                    nombre,
-                    apellido
-                ),
-                motos (
-                    dominio,
-                    marca,
-                    modelo
-                )
-            `)
-            .order('fecha_recepcion', {
-                ascending: false
-            });
+        const { data, error } =
+            await supabaseClient
+                .from('ordenes_trabajo')
+                .select(`
+                    *,
+                    clientes (
+                        nombre,
+                        apellido
+                    ),
+                    motos (
+                        dominio,
+                        marca,
+                        modelo
+                    )
+                `)
+                .order('fecha_recepcion', {
+                    ascending: false
+                });
 
         if (error) {
-            console.error('Error cargando OT:', error);
+
+            console.error(
+                'Error cargando OT:',
+                error
+            );
 
             container.innerHTML =
                 '<div class="empty">Error al cargar órdenes de trabajo.</div>';
@@ -1166,11 +1172,13 @@ async function renderOT() {
             return;
         }
 
-        const q = (
-            document.getElementById('otSearch')?.value || ''
-        ).toLowerCase();
+        const q =
+            (
+                document.getElementById('otSearch')?.value ||
+                ''
+            ).toLowerCase();
 
-        const rows = (data || []).filter(ot => {
+        const todas = (data || []).filter(ot => {
 
             const cliente = ot.clientes || {};
             const moto = ot.motos || {};
@@ -1186,94 +1194,289 @@ async function renderOT() {
                 ${ot.estado || ''}
             `;
 
-            return texto.toLowerCase().includes(q);
+            return texto
+                .toLowerCase()
+                .includes(q);
         });
 
-        if (!rows.length) {
+        /*
+         * ============================
+         * ESTADOS
+         * ============================
+         */
+
+        const estadosCerrados = [
+            'Entregado',
+            'Cerrada',
+            'Cerrado',
+            'Entregada'
+        ];
+
+        const otCerradas = todas.filter(ot =>
+            estadosCerrados.includes(
+                String(ot.estado || '').trim()
+            )
+        );
+
+        const otAbiertas = todas.filter(ot =>
+            !estadosCerrados.includes(
+                String(ot.estado || '').trim()
+            )
+        );
+
+        /*
+         * ============================
+         * FUNCIÓN PARA CREAR FILA
+         * ============================
+         */
+
+        function crearFila(ot, cerrada = false) {
+
+            const cliente =
+                ot.clientes || {};
+
+            const moto =
+                ot.motos || {};
+
+            const total =
+                Number(ot.total) || 0;
+
+            let estado =
+                String(ot.estado || 'Pendiente de diagnóstico');
+
+            let estadoClase = '';
+
+            if (cerrada) {
+
+                estadoClase =
+                    'style="background:#e8f5e9;color:#2e7d32;font-weight:600;"';
+
+            } else {
+
+                if (estado === 'Pendiente de diagnóstico') {
+                    estadoClase =
+                        'style="background:#fff8e1;color:#9a6700;font-weight:600;"';
+                }
+
+                if (estado === 'En diagnóstico') {
+                    estadoClase =
+                        'style="background:#e3f2fd;color:#1565c0;font-weight:600;"';
+                }
+
+                if (estado === 'Esperando repuesto') {
+                    estadoClase =
+                        'style="background:#fff3e0;color:#e65100;font-weight:600;"';
+                }
+
+                if (estado === 'En reparación') {
+                    estadoClase =
+                        'style="background:#f3e5f5;color:#7b1fa2;font-weight:600;"';
+                }
+
+                if (estado === 'Listo') {
+                    estadoClase =
+                        'style="background:#e8f5e9;color:#2e7d32;font-weight:600;"';
+                }
+            }
+
+            return `
+
+                <tr>
+
+                    <td>
+                        <b>
+                            ${ot.numero_ot || ot.id}
+                        </b>
+                    </td>
+
+                    <td>
+                        ${cliente.nombre || ''}
+                        ${cliente.apellido || ''}
+                    </td>
+
+                    <td>
+                        ${moto.dominio || ''}
+                        ${
+                            moto.marca || moto.modelo
+                            ? ' · ' +
+                              (moto.marca || '') +
+                              ' ' +
+                              (moto.modelo || '')
+                            : ''
+                        }
+                    </td>
+
+                    <td>
+                        <span
+                            class="badge"
+                            ${estadoClase}>
+                            ${estado}
+                        </span>
+                    </td>
+
+                    <td>
+                        $ ${total.toLocaleString('es-AR')}
+                    </td>
+
+                    <td>
+
+                        <button
+                            class="btn secondary"
+                            onclick='openOTEdit(${JSON.stringify(ot)})'>
+                            Editar
+                        </button>
+
+                        <button
+                            class="btn secondary"
+                            onclick='openOTRepuestos("${ot.id}")'>
+                            Repuestos
+                        </button>
+
+                        <button
+                            class="btn secondary"
+                            onclick='openOTPago("${ot.id}")'>
+                            Pago
+                        </button>
+
+                    </td>
+
+                </tr>
+
+            `;
+        }
+
+        /*
+         * ============================
+         * SIN RESULTADOS
+         * ============================
+         */
+
+        if (!todas.length) {
+
             container.innerHTML =
                 '<div class="empty">No hay órdenes de trabajo cargadas.</div>';
 
             return;
         }
 
+        /*
+         * ============================
+         * TABLA
+         * ============================
+         */
+
         container.innerHTML = `
 
-            <table class="table">
+            ${
+                otAbiertas.length
+                ? `
 
-                <tr>
-                    <th>OT</th>
-                    <th>Cliente</th>
-                    <th>Moto</th>
-                    <th>Estado</th>
-                    <th>Total</th>
-                    <th>Acciones</th>
-                </tr>
+                    <div
+                        style="
+                            margin-bottom:15px;
+                            font-size:18px;
+                            font-weight:700;
+                        ">
 
-                ${rows.map(ot => {
+                        🔧 OT ABIERTAS
+                        <span
+                            style="
+                                font-size:13px;
+                                opacity:.7;
+                                margin-left:6px;
+                            ">
 
-                    const cliente = ot.clientes || {};
-                    const moto = ot.motos || {};
-                    const total = Number(ot.total) || 0;
+                            (${otAbiertas.length})
 
-                    return `
+                        </span>
+
+                    </div>
+
+                    <table class="table">
 
                         <tr>
 
-                            <td>
-                                <b>${ot.numero_ot || ot.id}</b>
-                            </td>
-
-                            <td>
-                                ${cliente.nombre || ''}
-                                ${cliente.apellido || ''}
-                            </td>
-
-                            <td>
-                                ${moto.dominio || ''}
-                                ·
-                                ${moto.marca || ''}
-                                ${moto.modelo || ''}
-                            </td>
-
-                            <td>
-                                <span class="badge">
-                                    ${ot.estado || ''}
-                                </span>
-                            </td>
-
-                            <td>
-                                $ ${total.toLocaleString('es-AR')}
-                            </td>
-
-                           <td>
-
-    <button
-        class="btn secondary"
-        onclick='openOTEdit(${JSON.stringify(ot)})'>
-        Editar
-    </button>
-
-    <button
-        class="btn secondary"
-        onclick='openOTRepuestos("${ot.id}")'>
-        Repuestos
-    </button>
-
-    <button
-        class="btn"
-        onclick='openOTPago("${ot.id}")'>
-        💰 Pago
-    </button>
-
-</td>
+                            <th>OT</th>
+                            <th>Cliente</th>
+                            <th>Moto / Equipo</th>
+                            <th>Estado</th>
+                            <th>Total</th>
+                            <th>Acciones</th>
 
                         </tr>
 
-                    `;
+                        ${
+                            otAbiertas
+                                .map(ot =>
+                                    crearFila(ot, false)
+                                )
+                                .join('')
+                        }
 
-                }).join('')}
+                    </table>
 
-            </table>
+                `
+                : ''
+            }
+
+
+            ${
+                otCerradas.length
+                ? `
+
+                    <div
+                        style="
+                            margin-top:30px;
+                            margin-bottom:15px;
+                            padding-top:20px;
+                            border-top:2px solid #ddd;
+                            font-size:18px;
+                            font-weight:700;
+                            color:#2e7d32;
+                        ">
+
+                        ✅ OT CERRADAS / ENTREGADAS
+
+                        <span
+                            style="
+                                font-size:13px;
+                                opacity:.7;
+                                margin-left:6px;
+                            ">
+
+                            (${otCerradas.length})
+
+                        </span>
+
+                    </div>
+
+                    <table class="table">
+
+                        <tr>
+
+                            <th>OT</th>
+                            <th>Cliente</th>
+                            <th>Moto / Equipo</th>
+                            <th>Estado</th>
+                            <th>Total</th>
+                            <th>Acciones</th>
+
+                        </tr>
+
+                        ${
+                            otCerradas
+                                .map(ot =>
+                                    crearFila(ot, true)
+                                )
+                                .join('')
+                        }
+
+                    </table>
+
+                `
+                : ''
+            }
+
         `;
 
     } catch (error) {
