@@ -367,45 +367,208 @@ async function saveClient(id) {
 }
 function f(id){return document.getElementById(id).value.trim()}
 function closeModal(){document.getElementById('modal').classList.remove('show')}
-async function openMoto(edit=null){
-let m=edit||{id:nextId(db.motos,'MOT-'),cliente:'',dominio:'',marca:'',modelo:'',anio:'',km:'',color:''};
-let opts = [];
+async function openMoto(edit = null) {
 
-try {
+    let m = edit || {
+        id: nextId(db.motos, 'MOT-'),
+        cliente: '',
+        dominio: '',
+        marca: '',
+        modelo: '',
+        anio: '',
+        cilindrada: '',
+        km: '',
+        color: ''
+    };
 
-    const { data, error } =
-        await supabaseClient
-            .from('clientes')
-            .select('id,nombre,apellido')
-            .eq('activo', true)
-            .order('nombre');
+    let opts = [];
 
-    if (error) {
+    try {
+
+        const { data, error } =
+            await supabaseClient
+                .from('clientes')
+                .select('id,nombre,apellido')
+                .eq('activo', true)
+                .order('nombre');
+
+        if (error) {
+
+            console.error(error);
+
+            alert(
+                'No se pudieron cargar los clientes.'
+            );
+
+            return;
+        }
+
+        opts = (data || []).map(c => `
+
+            <option
+                value="${c.id}"
+                ${c.id === m.cliente ? 'selected' : ''}>
+
+                ${c.nombre}
+                ${c.apellido || ''}
+
+            </option>
+
+        `).join('');
+
+    } catch (error) {
+
         console.error(error);
-        alert('No se pudieron cargar los clientes.');
+
+        alert(
+            'Error cargando clientes.'
+        );
+
         return;
     }
 
-    opts = (data || []).map(c => `
-        <option
-            value="${c.id}"
-            ${c.id === m.cliente ? 'selected' : ''}>
-            ${c.nombre} ${c.apellido || ''}
-        </option>
-    `);
 
-} catch (error) {
+    document.getElementById('modalbox').innerHTML = `
 
-    console.error(error);
-    alert('Error cargando clientes.');
-    return; }
+        <h2>
+            ${edit ? 'Editar' : 'Nueva'} moto / equipo
+        </h2>
 
-document.getElementById('modalbox').innerHTML=`<h2>${edit?'Editar':'Nueva'} moto</h2><div class="form">
-<label>Cliente<select id="mCliente"><option value="">Seleccionar</option>${opts}</select></label>
-<label>Dominio<input id="mDominio" value="${m.dominio}"></label><label>Marca<input id="mMarca" value="${m.marca}"></label><label>Modelo<input id="mModelo" value="${m.modelo}"></label>
-<label>Año<input id="mAnio" value="${m.anio}"></label><label>Kilometraje<input id="mKm" value="${m.km}"></label><label>Color<input id="mColor" value="${m.color}"></label></div>
-<div class="actions"><button class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn" onclick="saveMoto('${m.id}')">Guardar</button></div>`;
-document.getElementById('modal').classList.add('show')}
+
+        <div class="form">
+
+            <label>
+
+                Cliente
+
+                <select id="mCliente">
+
+                    <option value="">
+                        Seleccionar
+                    </option>
+
+                    ${opts}
+
+                </select>
+
+            </label>
+
+
+            <label>
+
+                Dominio
+
+                <input
+                    id="mDominio"
+                    value="${m.dominio || ''}">
+
+            </label>
+
+
+            <label>
+
+                Marca
+
+                <input
+                    id="mMarca"
+                    value="${m.marca || ''}">
+
+            </label>
+
+
+            <label>
+
+                Modelo
+
+                <input
+                    id="mModelo"
+                    value="${m.modelo || ''}">
+
+            </label>
+
+
+            <label>
+
+                Año
+
+                <input
+                    id="mAnio"
+                    type="number"
+                    value="${m.anio || ''}">
+
+            </label>
+
+
+            <label>
+
+                Cilindrada (cc)
+
+                <input
+                    id="mCilindrada"
+                    type="number"
+                    min="0"
+                    placeholder="Ej: 125"
+                    value="${m.cilindrada || ''}">
+
+            </label>
+
+
+            <label>
+
+                Kilometraje
+
+                <input
+                    id="mKm"
+                    type="number"
+                    min="0"
+                    value="${m.km || ''}">
+
+            </label>
+
+
+            <label>
+
+                Color
+
+                <input
+                    id="mColor"
+                    value="${m.color || ''}">
+
+            </label>
+
+        </div>
+
+
+        <div class="actions">
+
+            <button
+                class="btn secondary"
+                onclick="closeModal()">
+
+                Cancelar
+
+            </button>
+
+
+            <button
+                class="btn"
+                onclick="saveMoto('${m.id}')">
+
+                Guardar
+
+            </button>
+
+        </div>
+
+    `;
+
+
+    document
+        .getElementById('modal')
+        .classList
+        .add('show');
+
+}
 async function saveMoto(id) {
 
     const clienteId = f('mCliente');
@@ -898,15 +1061,15 @@ async function verFichaCliente(clienteId) {
 
             <div class="actions">
 
-                <button
-                    class="btn secondary"
-                    onclick="closeModal()">
+    <button
+        class="btn secondary"
+        onclick="closeModal()">
 
-                    Cerrar
+        ← Volver
 
-                </button>
+    </button>
 
-            </div>
+</div>
 
         `;
 
