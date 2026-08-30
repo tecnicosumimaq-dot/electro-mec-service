@@ -1415,14 +1415,9 @@ async function verFichaCliente(clienteId) {
 async function verFichaMoto(motoId) {
 
     if (!motoId) {
-
-        alert(
-            'No se encontró la moto / equipo.'
-        );
-
+        alert('No se encontró la moto / equipo.');
         return;
     }
-
 
     try {
 
@@ -1430,7 +1425,6 @@ async function verFichaMoto(motoId) {
             '🔍 Cargando ficha de moto / equipo:',
             motoId
         );
-
 
         // ==============================
         // DATOS DE LA MOTO / EQUIPO
@@ -1451,7 +1445,6 @@ async function verFichaMoto(motoId) {
                 .eq('id', motoId)
                 .single();
 
-
         if (errorMoto) {
 
             console.error(
@@ -1459,13 +1452,9 @@ async function verFichaMoto(motoId) {
                 errorMoto
             );
 
-            alert(
-                'No se pudo cargar la ficha.'
-            );
-
+            alert('No se pudo cargar la ficha.');
             return;
         }
-
 
         // ==============================
         // HISTORIAL DE OT
@@ -1480,41 +1469,32 @@ async function verFichaMoto(motoId) {
                     ascending: false
                 });
 
-
         if (errorOT) {
 
             console.error(
                 'Error cargando historial de OT:',
                 errorOT
             );
-
         }
 
-
-        const historial =
-            ots || [];
-
+        const historial = ots || [];
 
         // ==============================
-        // CALCULAR TOTAL HISTÓRICO
+        // TOTAL HISTÓRICO
         // ==============================
 
         const totalHistorico =
             historial.reduce(
                 (total, ot) =>
-                    total +
-                    Number(ot.total || 0),
+                    total + Number(ot.total || 0),
                 0
             );
-
 
         // ==============================
         // CLIENTE
         // ==============================
 
-        const cliente =
-            moto.clientes || {};
-
+        const cliente = moto.clientes || {};
 
         // ==============================
         // MODAL
@@ -1523,18 +1503,14 @@ async function verFichaMoto(motoId) {
         document.getElementById('modalbox').innerHTML = `
 
             <h2>
-
                 🔍 Ficha técnica
-
             </h2>
 
 
             <div class="section">
 
                 <div class="section-title">
-
                     🏍️ Moto / Equipo
-
                 </div>
 
 
@@ -1547,94 +1523,60 @@ async function verFichaMoto(motoId) {
                     "
                 >
 
-
                     <div>
-
                         <b>Marca</b>
-
                         <br>
-
                         ${moto.marca || '-'}
-
                     </div>
 
 
                     <div>
-
                         <b>Modelo</b>
-
                         <br>
-
                         ${moto.modelo || '-'}
-
                     </div>
 
 
                     <div>
-
                         <b>Año</b>
-
                         <br>
-
                         ${moto.anio || '-'}
-
                     </div>
 
 
                     <div>
-
                         <b>Dominio</b>
-
                         <br>
-
                         ${moto.dominio || '-'}
-
                     </div>
 
 
                     <div>
-
                         <b>Kilometraje</b>
-
                         <br>
-
                         ${moto.kilometraje || '-'}
-
                     </div>
 
 
                     <div>
-
                         <b>Color</b>
-
                         <br>
-
                         ${moto.color || '-'}
-
                     </div>
 
 
                     <div>
-
                         <b>N.º de motor</b>
-
                         <br>
-
                         ${moto.numero_motor || '-'}
-
                     </div>
 
 
                     <div>
-
                         <b>Cilindrada</b>
-
                         <br>
-
                         ${moto.cilindrada || '-'}
-
                     </div>
-
 
                 </div>
 
@@ -1644,35 +1586,25 @@ async function verFichaMoto(motoId) {
             <div class="section">
 
                 <div class="section-title">
-
                     👤 Cliente
-
                 </div>
 
 
                 <p>
-
                     <b>
                         ${cliente.nombre || ''}
                         ${cliente.apellido || ''}
                     </b>
-
                 </p>
 
 
                 <p>
-
-                    📞
-                    ${cliente.telefono || '-'}
-
+                    📞 ${cliente.telefono || '-'}
                 </p>
 
 
                 <p>
-
-                    ✉️
-                    ${cliente.email || '-'}
-
+                    ✉️ ${cliente.email || '-'}
                 </p>
 
             </div>
@@ -1681,27 +1613,20 @@ async function verFichaMoto(motoId) {
             <div class="section">
 
                 <div class="section-title">
-
                     📊 Resumen histórico
-
                 </div>
 
 
                 <div class="cards">
 
-
                     <div class="card">
 
                         <div class="label">
-
                             Órdenes de trabajo
-
                         </div>
 
                         <div class="num">
-
                             ${historial.length}
-
                         </div>
 
                     </div>
@@ -1710,19 +1635,14 @@ async function verFichaMoto(motoId) {
                     <div class="card">
 
                         <div class="label">
-
                             Total histórico
-
                         </div>
 
                         <div class="num">
-
                             $ ${totalHistorico.toLocaleString('es-AR')}
-
                         </div>
 
                     </div>
-
 
                 </div>
 
@@ -1732,9 +1652,7 @@ async function verFichaMoto(motoId) {
             <div class="section">
 
                 <div class="section-title">
-
                     📋 Historial de reparaciones
-
                 </div>
 
 
@@ -1750,13 +1668,9 @@ async function verFichaMoto(motoId) {
                         <tr>
 
                             <th>OT</th>
-
                             <th>Fecha</th>
-
                             <th>Estado</th>
-
                             <th>Diagnóstico</th>
-
                             <th>Total</th>
 
                         </tr>
@@ -1767,67 +1681,54 @@ async function verFichaMoto(motoId) {
                             <tr>
 
                                 <td>
-
                                     <b>
-
                                         ${
                                             ot.numero_ot ||
                                             ot.id
                                         }
-
                                     </b>
-
                                 </td>
 
 
                                 <td>
-
                                     ${
                                         ot.fecha_recepcion ||
                                         '-'
                                     }
-
                                 </td>
 
 
                                 <td>
 
                                     <span class="badge">
-
                                         ${
                                             ot.estado ||
                                             '-'
                                         }
-
                                     </span>
 
                                 </td>
 
 
                                 <td>
-
                                     ${
                                         ot.diagnostico ||
                                         '-'
                                     }
-
                                 </td>
 
 
                                 <td>
-
                                     $ ${
                                         Number(
                                             ot.total || 0
                                         ).toLocaleString('es-AR')
                                     }
-
                                 </td>
 
                             </tr>
 
                         `).join('')}
-
 
                     </table>
 
@@ -1850,13 +1751,45 @@ async function verFichaMoto(motoId) {
             </div>
 
 
+            <!-- ============================== -->
+            <!-- ACCIONES -->
+            <!-- ============================== -->
+
             <div class="actions">
 
                 <button
                     class="btn secondary"
                     onclick="closeModal()">
 
-                    Cerrar
+                    ↩️ Volver
+
+                </button>
+
+
+                <button
+                    class="btn secondary"
+                    onclick='openMoto(${JSON.stringify({
+                        id: moto.id,
+                        cliente: moto.cliente_id,
+                        dominio: moto.dominio || '',
+                        marca: moto.marca || '',
+                        modelo: moto.modelo || '',
+                        anio: moto.anio || '',
+                        km: moto.kilometraje || '',
+                        color: moto.color || '',
+                        cilindrada: moto.cilindrada || ''
+                    })})'>
+
+                    ✏️ Editar
+
+                </button>
+
+
+                <button
+                    class="btn danger"
+                    onclick="eliminarMoto('${moto.id}')">
+
+                    🗑️ Eliminar
 
                 </button>
 
@@ -1887,7 +1820,79 @@ async function verFichaMoto(motoId) {
             'Ocurrió un error cargando la ficha.'
         );
     }
+}
+    async function eliminarMoto(motoId) {
 
+    if (!motoId) {
+        alert('No se encontró la moto / equipo.');
+        return;
+    }
+
+    const confirmar = confirm(
+        '¿Estás seguro de que querés eliminar esta moto / equipo?\n\n' +
+        'El registro dejará de aparecer en Motos / Equipos, ' +
+        'pero su historial de reparaciones se conservará.'
+    );
+
+    if (!confirmar) {
+        return;
+    }
+
+    try {
+
+        console.log(
+            '🗑️ Eliminando moto / equipo:',
+            motoId
+        );
+
+        const { error } =
+            await supabaseClient
+                .from('motos')
+                .update({
+                    activo: false
+                })
+                .eq('id', motoId);
+
+        if (error) {
+
+            console.error(
+                'Error eliminando moto / equipo:',
+                error
+            );
+
+            alert(
+                'No se pudo eliminar el registro:\n' +
+                error.message
+            );
+
+            return;
+        }
+
+        console.log(
+            '✅ Moto / equipo eliminado correctamente'
+        );
+
+        closeModal();
+
+        await renderMotos();
+
+        await renderDashboard();
+
+        alert(
+            'Moto / equipo eliminado correctamente.'
+        );
+
+    } catch (error) {
+
+        console.error(
+            'Error inesperado eliminando moto / equipo:',
+            error
+        );
+
+        alert(
+            'Ocurrió un error al eliminar el registro.'
+        );
+    }
 }
     async function eliminarMoto(motoId) {
 
