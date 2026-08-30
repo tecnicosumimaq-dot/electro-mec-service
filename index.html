@@ -127,6 +127,97 @@
     }
 
 }
+/* ==========================================
+   ESTADOS DE ORDEN DE TRABAJO
+   ========================================== */
+
+.ot-estado {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+
+/* Pendiente */
+
+.ot-estado-pendiente {
+    background: #fff8e1;
+    color: #9a6700;
+}
+
+
+/* Diagnóstico */
+
+.ot-estado-diagnostico {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+
+/* Esperando repuesto */
+
+.ot-estado-repuesto {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+
+/* Reparación */
+
+.ot-estado-reparacion {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+
+/* Listo */
+
+.ot-estado-listo {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+
+/* Entregado */
+
+.ot-estado-entregado {
+    background: #dcedc8;
+    color: #33691e;
+}
+
+
+/* Estado desconocido */
+
+.ot-estado-default {
+    background: #eeeeee;
+    color: #555555;
+}
+
+
+/* Separador */
+
+.ot-separador {
+    margin-top: 30px;
+    margin-bottom: 15px;
+    padding: 15px 0;
+    border-top: 2px solid #ddd;
+}
+
+
+/* Filtros */
+
+.ot-filtros {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+}
+
+.ot-filtro-activo {
+    font-weight: 700;
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head>
 <body>
@@ -2311,7 +2402,45 @@ async function saveOT() {
 
     alert('✅ Orden de trabajo creada correctamente.');
 }
-async function renderOT() {
+function obtenerClaseEstadoOT(estado) {
+
+    const e =
+        String(estado || '')
+            .trim()
+            .toLowerCase();
+
+    if (e === 'pendiente de diagnóstico') {
+        return 'ot-estado-pendiente';
+    }
+
+    if (e === 'en diagnóstico') {
+        return 'ot-estado-diagnostico';
+    }
+
+    if (e === 'esperando repuesto') {
+        return 'ot-estado-repuesto';
+    }
+
+    if (e === 'en reparación') {
+        return 'ot-estado-reparacion';
+    }
+
+    if (e === 'listo') {
+        return 'ot-estado-listo';
+    }
+
+    if (
+        e === 'entregado' ||
+        e === 'entregada' ||
+        e === 'cerrada' ||
+        e === 'cerrado'
+    ) {
+        return 'ot-estado-entregado';
+    }
+
+    return 'ot-estado-default';
+}
+    async function renderOT() {
 
     const container =
         document.getElementById('otTable');
@@ -2505,10 +2634,11 @@ const pendiente =
 
                     <td>
                         <span
-                            class="badge"
-                            ${estadoClase}>
-                            ${estado}
-                        </span>
+    class="ot-estado ${obtenerClaseEstadoOT(estado)}">
+
+    ${estado}
+
+</span>
                     </td>
 
                   <td>
@@ -2558,7 +2688,13 @@ const pendiente =
                             onclick='openOTPago("${ot.id}")'>
                             Pago
                         </button>
+<button
+    class="btn secondary"
+    onclick="eliminarOT('${ot.id}')">
 
+    🗑️ Eliminar
+
+</button>
                     </td>
 
                 </tr>
@@ -2711,7 +2847,64 @@ const pendiente =
             '<div class="empty">Error inesperado.</div>';
     }
 }
-async function openOTPago(otId) {
+async function eliminarOT(otId) {
+
+    if (!otId) {
+        alert('No se encontró la OT.');
+        return;
+    }
+
+    const confirmar =
+        confirm(
+            '¿Seguro que querés eliminar esta Orden de Trabajo?\n\n' +
+            'La OT dejará de aparecer en el sistema.'
+        );
+
+    if (!confirmar) return;
+
+    try {
+
+        const { error } =
+            await supabaseClient
+                .from('ordenes_trabajo')
+                .update({
+                    activo: false
+                })
+                .eq('id', otId);
+
+        if (error) {
+
+            console.error(
+                'Error eliminando OT:',
+                error
+            );
+
+            alert(
+                'No se pudo eliminar la OT:\n\n' +
+                error.message
+            );
+
+            return;
+        }
+
+        console.log(
+            '🗑️ OT eliminada:',
+            otId
+        );
+
+        await renderOT();
+        await renderDashboard();
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            'Ocurrió un error eliminando la OT.'
+        );
+    }
+}
+    async function openOTPago(otId) {
 
     try {
 
