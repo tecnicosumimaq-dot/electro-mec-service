@@ -584,6 +584,10 @@ async function saveMoto(id) {
         marca: f('mMarca'),
         modelo: f('mModelo'),
         anio: parseInt(f('mAnio')) || null,
+
+        // NUEVO
+        cilindrada: parseInt(f('mCilindrada')) || null,
+
         kilometraje: parseInt(f('mKm')) || null,
         color: f('mColor'),
         observaciones: ''
@@ -600,23 +604,26 @@ async function saveMoto(id) {
 
         if (id && id.length > 20) {
 
-            const resultado = await supabaseClient
-                .from('motos')
-                .update(moto)
-                .eq('id', id);
+            const resultado =
+                await supabaseClient
+                    .from('motos')
+                    .update(moto)
+                    .eq('id', id);
 
             error = resultado.error;
 
         } else {
 
-            const resultado = await supabaseClient
-                .from('motos')
-                .insert(moto);
+            const resultado =
+                await supabaseClient
+                    .from('motos')
+                    .insert(moto);
 
             error = resultado.error;
         }
 
         if (error) {
+
             console.error(
                 'Error guardando moto:',
                 error
@@ -636,7 +643,9 @@ async function saveMoto(id) {
 
         await renderDashboard();
 
-        console.log('✅ Moto guardada en Supabase');
+        console.log(
+            '✅ Moto guardada en Supabase'
+        );
 
     } catch (error) {
 
