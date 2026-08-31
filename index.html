@@ -218,6 +218,88 @@
 .ot-filtro-activo {
     font-weight: 700;
 }
+/* ================================
+   FICHA OT - DISEÑO RESPONSIVE
+================================ */
+
+#modalbox {
+    box-sizing: border-box;
+    width: min(1100px, 94vw);
+    max-width: 1100px;
+    max-height: 90vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Evita que tablas o contenido interno rompan el modal */
+#modalbox table {
+    width: 100%;
+    max-width: 100%;
+    table-layout: fixed;
+}
+
+#modalbox td,
+#modalbox th {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+/* Las tarjetas económicas se adaptan */
+#modalbox .cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+/* Información de la OT */
+#modalbox .section {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Botones */
+#modalbox .actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+/* Pantallas medianas */
+@media (max-width: 900px) {
+
+    #modalbox {
+        width: 94vw;
+        max-width: 94vw;
+    }
+
+    #modalbox .cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* Celulares */
+@media (max-width: 600px) {
+
+    #modalbox {
+        width: 96vw;
+        max-width: 96vw;
+        max-height: 92vh;
+        padding: 16px;
+    }
+
+    #modalbox .cards {
+        grid-template-columns: 1fr;
+    }
+
+    #modalbox .actions {
+        justify-content: stretch;
+    }
+
+    #modalbox .actions .btn {
+        flex: 1 1 100%;
+    }
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head>
 <body>
