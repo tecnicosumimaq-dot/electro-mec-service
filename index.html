@@ -2948,8 +2948,8 @@ async function verFichaOT(otId) {
     try {
 
         /* ==========================================
-           CARGAR OT
-           ========================================== */
+           OT
+        ========================================== */
 
         const { data: ot, error: errorOT } =
             await supabaseClient
@@ -2991,19 +2991,28 @@ async function verFichaOT(otId) {
 
 
         /* ==========================================
-           CARGAR REPUESTOS
-           ========================================== */
+           REPUESTOS
+        ========================================== */
 
         const { data: repuestos, error: errorRepuestos } =
             await supabaseClient
                 .from('ot_repuestos')
                 .select(`
-                    *,
+                    id,
+                    cantidad,
+                    precio_unitario,
+                    subtotal,
+                    repuesto_id,
                     repuestos (
-                        nombre
+                        descripcion,
+                        codigo,
+                        precio_venta,
+                        costo
                     )
                 `)
-                .eq('ot_id', otId);
+                .eq('ot_id', otId)
+                .order('id');
+
 
         if (errorRepuestos) {
 
@@ -3011,12 +3020,13 @@ async function verFichaOT(otId) {
                 'Error cargando repuestos:',
                 errorRepuestos
             );
+
         }
 
 
         /* ==========================================
-           CARGAR PAGOS
-           ========================================== */
+           PAGOS
+        ========================================== */
 
         const { data: pagos, error: errorPagos } =
             await supabaseClient
@@ -3028,12 +3038,14 @@ async function verFichaOT(otId) {
                     ascending: false
                 });
 
+
         if (errorPagos) {
 
             console.error(
                 'Error cargando pagos:',
                 errorPagos
             );
+
         }
 
 
@@ -3045,14 +3057,19 @@ async function verFichaOT(otId) {
 
 
         /* ==========================================
-           DATOS
-           ========================================== */
+           CLIENTE / MOTO
+        ========================================== */
 
         const cliente =
             ot.clientes || {};
 
         const moto =
             ot.motos || {};
+
+
+        /* ==========================================
+           TOTALES
+        ========================================== */
 
         const total =
             Number(ot.total || 0);
@@ -3070,26 +3087,81 @@ async function verFichaOT(otId) {
                 0
             );
 
+
+        /* ==========================================
+           COSTO DE REPUESTOS
+        ========================================== */
+
+        const costoRepuestos =
+            listaRepuestos.reduce(
+                (sum, item) => {
+
+                    const cantidad =
+                        Number(item.cantidad || 0);
+
+                    const costo =
+                        Number(
+                            item.repuestos?.costo || 0
+                        );
+
+                    return sum +
+                        (cantidad * costo);
+
+                },
+                0
+            );
+
+
+        /* ==========================================
+           MANO DE OBRA
+        ========================================== */
+
+        const manoObra =
+            Number(ot.mano_obra || 0);
+
+
+        /* ==========================================
+           COSTO TOTAL
+        ========================================== */
+
+        const costoTotal =
+            costoRepuestos;
+
+
+        /* ==========================================
+           GANANCIA ESTIMADA
+        ========================================== */
+
+        const ganancia =
+            total - costoTotal;
+
+
+        /* ==========================================
+           ESTADO
+        ========================================== */
+
         const estado =
             ot.estado ||
             'Pendiente de diagnóstico';
 
 
         /* ==========================================
-           MODAL APASADO
-           ========================================== */
+           MODAL
+        ========================================== */
 
         document.getElementById('modalbox').innerHTML = `
 
             <div
                 style="
-                    width: min(1100px, 96vw);
-                    max-height: 90vh;
-                    overflow-y: auto;
-                    box-sizing: border-box;
-                    padding: 8px;
+                    width:min(1100px,94vw);
+                    max-height:88vh;
+                    overflow-y:auto;
+                    overflow-x:hidden;
+                    box-sizing:border-box;
                 "
             >
+
+                <!-- CABECERA -->
 
                 <div
                     style="
@@ -3097,20 +3169,18 @@ async function verFichaOT(otId) {
                         justify-content:space-between;
                         align-items:center;
                         gap:15px;
-                        margin-bottom:18px;
+                        margin-bottom:15px;
                     "
                 >
 
                     <h2 style="margin:0;">
-                        🔧 Orden de Trabajo
+                        🔧 OT
                         ${ot.numero_ot || ot.id}
                     </h2>
 
                     <span
-                        class="
-                            ot-estado
-                            ${obtenerClaseEstadoOT(estado)}
-                        "
+                        class="badge"
+                        style="font-size:14px;"
                     >
                         ${estado}
                     </span>
@@ -3118,18 +3188,16 @@ async function verFichaOT(otId) {
                 </div>
 
 
-                <!-- ==================================
-                     CLIENTE + MOTO + ESTADO
-                     ================================== -->
+                <!-- CLIENTE / MOTO -->
 
-                <div style="
-    display:grid;
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:20px;
-    width:100%;
-">
-                  
-                    <!-- CLIENTE -->
+                <div
+                    style="
+                        display:grid;
+                        grid-template-columns:
+                            repeat(2,minmax(0,1fr));
+                        gap:12px;
+                    "
+                >
 
                     <div class="section">
 
@@ -3137,25 +3205,21 @@ async function verFichaOT(otId) {
                             👤 Cliente
                         </div>
 
-                        <p style="margin:6px 0;">
-                            <b>
-                                ${cliente.nombre || ''}
-                                ${cliente.apellido || ''}
-                            </b>
-                        </p>
+                        <b>
+                            ${cliente.nombre || ''}
+                            ${cliente.apellido || ''}
+                        </b>
 
-                        <p style="margin:6px 0;">
+                        <p>
                             📞 ${cliente.telefono || '-'}
                         </p>
 
-                        <p style="margin:6px 0;">
+                        <p>
                             ✉️ ${cliente.email || '-'}
                         </p>
 
                     </div>
 
-
-                    <!-- MOTO -->
 
                     <div class="section">
 
@@ -3167,7 +3231,7 @@ async function verFichaOT(otId) {
                             style="
                                 display:grid;
                                 grid-template-columns:
-                                    repeat(2,minmax(0,1fr));
+                                    repeat(3,minmax(0,1fr));
                                 gap:8px;
                             "
                         >
@@ -3206,48 +3270,10 @@ async function verFichaOT(otId) {
 
                     </div>
 
-
-                    <!-- ESTADO -->
-
-                    <div class="section">
-
-                        <div class="section-title">
-                            🟢 Estado
-                        </div>
-
-                        <div
-                            style="
-                                display:flex;
-                                align-items:center;
-                                justify-content:center;
-                                height:70px;
-                                text-align:center;
-                            "
-                        >
-
-                            <span
-                                class="
-                                    ot-estado
-                                    ${obtenerClaseEstadoOT(estado)}
-                                "
-                                style="
-                                    font-size:16px;
-                                    padding:10px 16px;
-                                "
-                            >
-                                ${estado}
-                            </span>
-
-                        </div>
-
-                    </div>
-
                 </div>
 
 
-                <!-- ==================================
-                     INFORMACIÓN DEL TRABAJO
-                     ================================== -->
+                <!-- INFORMACIÓN -->
 
                 <div class="section">
 
@@ -3266,9 +3292,7 @@ async function verFichaOT(otId) {
 
                         <div>
 
-                            <p>
-                                <b>Problema informado</b>
-                            </p>
+                            <b>Problema informado</b>
 
                             <div class="empty">
                                 ${ot.problema ||
@@ -3281,9 +3305,7 @@ async function verFichaOT(otId) {
 
                         <div>
 
-                            <p>
-                                <b>Diagnóstico</b>
-                            </p>
+                            <b>Diagnóstico</b>
 
                             <div class="empty">
                                 ${ot.diagnostico || '-'}
@@ -3294,14 +3316,10 @@ async function verFichaOT(otId) {
 
                         <div>
 
-                            <p>
-                                <b>Trabajo realizado</b>
-                            </p>
+                            <b>Trabajo realizado</b>
 
                             <div class="empty">
-                                ${ot.trabajos ||
-                                  ot.trabajo_realizado ||
-                                  '-'}
+                                ${ot.trabajos || '-'}
                             </div>
 
                         </div>
@@ -3311,182 +3329,180 @@ async function verFichaOT(otId) {
                 </div>
 
 
-                <!-- ==================================
-                     REPUESTOS + PAGOS
-                     ================================== -->
+                <!-- REPUESTOS -->
 
-                <div
-                    style="
-                        display:grid;
-                        grid-template-columns:
-                            repeat(2,minmax(0,1fr));
-                        gap:12px;
-                        margin-top:12px;
-                    "
-                >
+                <div class="section">
 
-                    <!-- REPUESTOS -->
+                    <div class="section-title">
+                        📦 Repuestos utilizados
+                    </div>
 
-                    <div class="section">
+                    ${
+                        listaRepuestos.length
 
-                        <div class="section-title">
-                            📦 Repuestos utilizados
-                        </div>
+                        ?
 
-                        ${
-                            listaRepuestos.length
+                        `
 
-                            ?
+                        <div style="overflow-x:auto;">
 
-                            `
+                            <table class="table">
 
-                            <div
-                                style="
-                                    overflow-x:auto;
-                                "
-                            >
+                                <tr>
 
-                                <table class="table">
+                                    <th>Código</th>
+                                    <th>Repuesto</th>
+                                    <th>Cantidad</th>
+                                    <th>Precio</th>
+                                    <th>Subtotal</th>
+
+                                </tr>
+
+
+                                ${listaRepuestos.map(r => `
 
                                     <tr>
-                                        <th>Repuesto</th>
-                                        <th>Cantidad</th>
-                                        <th>Importe</th>
-                                    </tr>
 
-                                    ${listaRepuestos.map(r => `
+                                        <td>
+                                            ${r.repuestos?.codigo || '-'}
+                                        </td>
 
-                                        <tr>
-
-                                            <td>
+                                        <td>
+                                            <b>
                                                 ${
-                                                    r.repuestos?.nombre ||
-                                                    r.nombre ||
+                                                    r.repuestos?.descripcion ||
                                                     '-'
                                                 }
-                                            </td>
+                                            </b>
+                                        </td>
 
-                                            <td>
-                                                ${r.cantidad || 1}
-                                            </td>
+                                        <td>
+                                            ${r.cantidad || 0}
+                                        </td>
 
-                                            <td>
-                                                $ ${
-                                                    Number(
-                                                        r.subtotal ||
-                                                        r.total ||
-                                                        r.importe ||
-                                                        0
-                                                    ).toLocaleString(
-                                                        'es-AR'
-                                                    )
-                                                }
-                                            </td>
+                                        <td>
+                                            $ ${
+                                                Number(
+                                                    r.precio_unitario || 0
+                                                ).toLocaleString(
+                                                    'es-AR'
+                                                )
+                                            }
+                                        </td>
 
-                                        </tr>
+                                        <td>
+                                            $ ${
+                                                Number(
+                                                    r.subtotal || 0
+                                                ).toLocaleString(
+                                                    'es-AR'
+                                                )
+                                            }
+                                        </td>
 
-                                    `).join('')}
-
-                                </table>
-
-                            </div>
-
-                            `
-
-                            :
-
-                            `
-
-                            <div class="empty">
-                                No hay repuestos registrados.
-                            </div>
-
-                            `
-                        }
-
-                    </div>
-
-
-                    <!-- PAGOS -->
-
-                    <div class="section">
-
-                        <div class="section-title">
-                            💳 Pagos
-                        </div>
-
-                        ${
-                            listaPagos.length
-
-                            ?
-
-                            `
-
-                            <div
-                                style="
-                                    overflow-x:auto;
-                                "
-                            >
-
-                                <table class="table">
-
-                                    <tr>
-                                        <th>Fecha</th>
-                                        <th>Concepto</th>
-                                        <th>Importe</th>
                                     </tr>
 
-                                    ${listaPagos.map(p => `
+                                `).join('')}
 
-                                        <tr>
+                            </table>
 
-                                            <td>
-                                                ${p.fecha || '-'}
-                                            </td>
+                        </div>
 
-                                            <td>
-                                                ${p.concepto || '-'}
-                                            </td>
+                        `
 
-                                            <td>
-                                                $ ${
-                                                    Number(
-                                                        p.importe || 0
-                                                    ).toLocaleString(
-                                                        'es-AR'
-                                                    )
-                                                }
-                                            </td>
+                        :
 
-                                        </tr>
+                        `
 
-                                    `).join('')}
+                        <div class="empty">
+                            Esta OT todavía no tiene repuestos.
+                        </div>
 
-                                </table>
-
-                            </div>
-
-                            `
-
-                            :
-
-                            `
-
-                            <div class="empty">
-                                No hay pagos registrados.
-                            </div>
-
-                            `
-                        }
-
-                    </div>
+                        `
+                    }
 
                 </div>
 
 
-                <!-- ==================================
-                     RESUMEN ECONÓMICO
-                     ================================== -->
+                <!-- PAGOS -->
+
+                <div class="section">
+
+                    <div class="section-title">
+                        💳 Pagos registrados
+                    </div>
+
+                    ${
+                        listaPagos.length
+
+                        ?
+
+                        `
+
+                        <div style="overflow-x:auto;">
+
+                            <table class="table">
+
+                                <tr>
+
+                                    <th>Fecha</th>
+                                    <th>Concepto</th>
+                                    <th>Método</th>
+                                    <th>Importe</th>
+
+                                </tr>
+
+                                ${listaPagos.map(p => `
+
+                                    <tr>
+
+                                        <td>
+                                            ${p.fecha || '-'}
+                                        </td>
+
+                                        <td>
+                                            ${p.concepto || '-'}
+                                        </td>
+
+                                        <td>
+                                            ${p.metodo_pago || '-'}
+                                        </td>
+
+                                        <td>
+                                            $ ${
+                                                Number(
+                                                    p.importe || 0
+                                                ).toLocaleString(
+                                                    'es-AR'
+                                                )
+                                            }
+                                        </td>
+
+                                    </tr>
+
+                                `).join('')}
+
+                            </table>
+
+                        </div>
+
+                        `
+
+                        :
+
+                        `
+
+                        <div class="empty">
+                            No hay pagos registrados.
+                        </div>
+
+                        `
+                    }
+
+                </div>
+
+
+                <!-- RESUMEN -->
 
                 <div class="section">
 
@@ -3498,7 +3514,7 @@ async function verFichaOT(otId) {
                         class="cards"
                         style="
                             grid-template-columns:
-                                repeat(3,1fr);
+                                repeat(4,minmax(0,1fr));
                         "
                     >
 
@@ -3540,14 +3556,25 @@ async function verFichaOT(otId) {
 
                         </div>
 
+
+                        <div class="card">
+
+                            <div class="label">
+                                Ganancia estimada
+                            </div>
+
+                            <div class="num ok">
+                                $ ${ganancia.toLocaleString('es-AR')}
+                            </div>
+
+                        </div>
+
                     </div>
 
                 </div>
 
 
-                <!-- ==================================
-                     BOTONES
-                     ================================== -->
+                <!-- BOTONES -->
 
                 <div
                     class="actions"
@@ -3555,7 +3582,7 @@ async function verFichaOT(otId) {
                         display:flex;
                         justify-content:flex-end;
                         flex-wrap:wrap;
-                        gap:10px;
+                        gap:8px;
                     "
                 >
 
@@ -4404,134 +4431,209 @@ console.log('❌ Error repuestos:', error);
         );
     }
 }
-   async function renderOTRepuestos(otId) {
+  async function renderOTRepuestos(otId) {
 
     const container =
         document.getElementById('otRepuestosLista');
 
     if (!container) return;
 
-    const { data, error } =
-        await supabaseClient
-            .from('ot_repuestos')
-            .select(`
-                id,
-                cantidad,
-                precio_unitario,
-                subtotal,
-                repuesto_id,
-                repuestos (
-                    descripcion,
-                    codigo
-                )
-            `)
-            .eq('ot_id', otId)
-            .order('id');
 
-    if (error) {
+    container.innerHTML =
+        '<div class="empty">Cargando repuestos...</div>';
+
+
+    try {
+
+        const { data, error } =
+            await supabaseClient
+                .from('ot_repuestos')
+                .select(`
+                    id,
+                    cantidad,
+                    precio_unitario,
+                    subtotal,
+                    repuesto_id,
+                    repuestos (
+                        descripcion,
+                        codigo
+                    )
+                `)
+                .eq('ot_id', otId)
+                .order('id');
+
+
+        if (error) {
+
+            console.error(
+                'Error cargando repuestos OT:',
+                error
+            );
+
+            container.innerHTML =
+                '<div class="empty">Error cargando repuestos.</div>';
+
+            return;
+        }
+
+
+        if (!data || !data.length) {
+
+            container.innerHTML = `
+                <div class="empty">
+                    Esta OT todavía no tiene repuestos.
+                </div>
+            `;
+
+            return;
+        }
+
+
+        const total =
+            data.reduce(
+                (sum, r) =>
+                    sum + Number(r.subtotal || 0),
+                0
+            );
+
+
+        container.innerHTML = `
+
+            <div
+                style="
+                    overflow-x:auto;
+                "
+            >
+
+                <table class="table">
+
+                    <tr>
+
+                        <th>Código</th>
+                        <th>Repuesto</th>
+                        <th>Cantidad</th>
+                        <th>Precio</th>
+                        <th>Subtotal</th>
+                        <th></th>
+
+                    </tr>
+
+
+                    ${data.map(r => `
+
+                        <tr>
+
+                            <td>
+                                ${r.repuestos?.codigo || '-'}
+                            </td>
+
+
+                            <td>
+
+                                <b>
+                                    ${
+                                        r.repuestos?.descripcion ||
+                                        'Repuesto'
+                                    }
+                                </b>
+
+                            </td>
+
+
+                            <td>
+                                ${r.cantidad || 0}
+                            </td>
+
+
+                            <td>
+                                $ ${
+                                    Number(
+                                        r.precio_unitario || 0
+                                    ).toLocaleString(
+                                        'es-AR'
+                                    )
+                                }
+                            </td>
+
+
+                            <td>
+
+                                <b>
+                                    $ ${
+                                        Number(
+                                            r.subtotal || 0
+                                        ).toLocaleString(
+                                            'es-AR'
+                                        )
+                                    }
+                                </b>
+
+                            </td>
+
+
+                            <td>
+
+                                <button
+                                    class="btn secondary"
+                                    onclick="
+                                        eliminarRepuestoOT(
+                                            '${r.id}',
+                                            '${otId}'
+                                        )
+                                    "
+                                >
+                                    🗑️
+                                </button>
+
+                            </td>
+
+                        </tr>
+
+                    `).join('')}
+
+
+                    <tr>
+
+                        <td
+                            colspan="4"
+                            style="text-align:right;"
+                        >
+                            <b>
+                                TOTAL REPUESTOS
+                            </b>
+                        </td>
+
+                        <td colspan="2">
+
+                            <b>
+                                $ ${
+                                    total.toLocaleString(
+                                        'es-AR'
+                                    )
+                                }
+                            </b>
+
+                        </td>
+
+                    </tr>
+
+                </table>
+
+            </div>
+
+        `;
+
+
+    } catch (error) {
 
         console.error(
-            'Error cargando repuestos OT:',
+            'Error inesperado cargando repuestos OT:',
             error
         );
 
         container.innerHTML =
-            '<div class="empty">Error cargando repuestos.</div>';
-
-        return;
+            '<div class="empty">Error inesperado.</div>';
     }
-
-    if (!data || !data.length) {
-
-        container.innerHTML =
-            '<div class="empty">Esta OT todavía no tiene repuestos.</div>';
-
-        return;
-    }
-
-    let total = 0;
-
-    const filas = data.map(r => {
-
-        const repuesto =
-            r.repuestos || {};
-
-        const subtotal =
-            Number(r.subtotal) ||
-            (
-                Number(r.precio_unitario || 0) *
-                Number(r.cantidad || 0)
-            );
-
-        total += subtotal;
-
-        return `
-
-            <tr>
-
-                <td>
-                    ${repuesto.descripcion || ''}
-                </td>
-
-                <td>
-                    ${r.cantidad}
-                </td>
-
-                <td>
-                    $ ${Number(
-                        r.precio_unitario || 0
-                    ).toLocaleString('es-AR')}
-                </td>
-
-                <td>
-                    $ ${subtotal.toLocaleString('es-AR')}
-                </td>
-
-                <td>
-
-                    <button
-                        class="btn secondary"
-                        onclick="eliminarRepuestoOT('${r.id}','${otId}')">
-
-                        Eliminar
-
-                    </button>
-
-                </td>
-
-            </tr>
-        `;
-
-    }).join('');
-
-    container.innerHTML = `
-
-        <table class="table">
-
-            <tr>
-                <th>Repuesto</th>
-                <th>Cantidad</th>
-                <th>Precio</th>
-                <th>Subtotal</th>
-                <th></th>
-            </tr>
-
-            ${filas}
-
-        </table>
-
-        <div style="
-            margin-top:15px;
-            text-align:right;
-            font-size:20px;
-            font-weight:800;
-        ">
-
-            Total repuestos:
-            $ ${total.toLocaleString('es-AR')}
-
-        </div>
-    `;
 }
 async function agregarRepuestoOT(otId) {
 
