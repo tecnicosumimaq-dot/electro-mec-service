@@ -2963,24 +2963,14 @@ async function verFichaOT(otId) {
 
 
         /* ==========================================
-           DATOS CLIENTE
+           DATOS
            ========================================== */
 
         const cliente =
             ot.clientes || {};
 
-
-        /* ==========================================
-           DATOS MOTO / EQUIPO
-           ========================================== */
-
         const moto =
             ot.motos || {};
-
-
-        /* ==========================================
-           CALCULOS
-           ========================================== */
 
         const total =
             Number(ot.total || 0);
@@ -2998,361 +2988,522 @@ async function verFichaOT(otId) {
                 0
             );
 
-
-        /* ==========================================
-           ESTADO
-           ========================================== */
-
         const estado =
-            ot.estado || 'Pendiente de diagnóstico';
+            ot.estado ||
+            'Pendiente de diagnóstico';
 
 
         /* ==========================================
-           MODAL
+           MODAL APASADO
            ========================================== */
 
         document.getElementById('modalbox').innerHTML = `
 
-            <h2>
-                🔧 Orden de Trabajo
-                ${ot.numero_ot || ot.id}
-            </h2>
+            <div
+                style="
+                    width: min(1100px, 96vw);
+                    max-height: 90vh;
+                    overflow-y: auto;
+                    box-sizing: border-box;
+                    padding: 8px;
+                "
+            >
 
+                <div
+                    style="
+                        display:flex;
+                        justify-content:space-between;
+                        align-items:center;
+                        gap:15px;
+                        margin-bottom:18px;
+                    "
+                >
 
-            <div class="section">
+                    <h2 style="margin:0;">
+                        🔧 Orden de Trabajo
+                        ${ot.numero_ot || ot.id}
+                    </h2>
 
-                <div class="section-title">
-                    👤 Cliente
+                    <span
+                        class="
+                            ot-estado
+                            ${obtenerClaseEstadoOT(estado)}
+                        "
+                    >
+                        ${estado}
+                    </span>
+
                 </div>
 
-                <p>
-                    <b>
-                        ${cliente.nombre || ''}
-                        ${cliente.apellido || ''}
-                    </b>
-                </p>
 
-                <p>
-                    📞 ${cliente.telefono || '-'}
-                </p>
-
-                <p>
-                    ✉️ ${cliente.email || '-'}
-                </p>
-
-            </div>
-
-
-            <div class="section">
-
-                <div class="section-title">
-                    🏍️ Moto / Equipo
-                </div>
+                <!-- ==================================
+                     CLIENTE + MOTO + ESTADO
+                     ================================== -->
 
                 <div
                     style="
                         display:grid;
                         grid-template-columns:
-                        repeat(auto-fit,minmax(180px,1fr));
+                            repeat(3,minmax(0,1fr));
                         gap:12px;
+                        margin-bottom:12px;
                     "
                 >
 
-                    <div>
-                        <b>Marca</b>
-                        <br>
-                        ${moto.marca || '-'}
-                    </div>
+                    <!-- CLIENTE -->
 
-                    <div>
-                        <b>Modelo</b>
-                        <br>
-                        ${moto.modelo || '-'}
-                    </div>
+                    <div class="section">
 
-                    <div>
-                        <b>Dominio</b>
-                        <br>
-                        ${moto.dominio || '-'}
-                    </div>
-
-                    <div>
-                        <b>Año</b>
-                        <br>
-                        ${moto.anio || '-'}
-                    </div>
-
-                    <div>
-                        <b>Cilindrada</b>
-                        <br>
-                        ${moto.cilindrada || '-'}
-                    </div>
-
-                    <div>
-                        <b>Kilometraje</b>
-                        <br>
-                        ${moto.kilometraje || '-'}
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div class="section">
-
-                <div class="section-title">
-                    🟢 Estado
-                </div>
-
-                <span class="
-                    ot-estado
-                    ${obtenerClaseEstadoOT(estado)}
-                ">
-                    ${estado}
-                </span>
-
-            </div>
-
-
-            <div class="section">
-
-                <div class="section-title">
-                    📋 Información del trabajo
-                </div>
-
-                <p>
-                    <b>Problema informado</b>
-                </p>
-
-                <div class="empty">
-                    ${ot.problema || ot.descripcion || '-'}
-                </div>
-
-
-                <p>
-                    <b>Diagnóstico</b>
-                </p>
-
-                <div class="empty">
-                    ${ot.diagnostico || '-'}
-                </div>
-
-
-                <p>
-                    <b>Trabajo realizado</b>
-                </p>
-
-                <div class="empty">
-                    ${ot.trabajos || ot.trabajo_realizado || '-'}
-                </div>
-
-            </div>
-
-
-            <div class="section">
-
-                <div class="section-title">
-                    📦 Repuestos utilizados
-                </div>
-
-                ${
-                    listaRepuestos.length
-
-                    ?
-
-                    `
-                    <table class="table">
-
-                        <tr>
-                            <th>Repuesto</th>
-                            <th>Cantidad</th>
-                            <th>Importe</th>
-                        </tr>
-
-                        ${listaRepuestos.map(r => `
-
-                            <tr>
-
-                                <td>
-                                    ${
-                                        r.repuestos?.nombre ||
-                                        r.nombre ||
-                                        '-'
-                                    }
-                                </td>
-
-                                <td>
-                                    ${r.cantidad || 1}
-                                </td>
-
-                                <td>
-                                    $ ${
-                                        Number(
-                                            r.subtotal ||
-                                            r.total ||
-                                            r.importe ||
-                                            0
-                                        ).toLocaleString('es-AR')
-                                    }
-                                </td>
-
-                            </tr>
-
-                        `).join('')}
-
-                    </table>
-                    `
-
-                    :
-
-                    `
-                    <div class="empty">
-                        No hay repuestos registrados.
-                    </div>
-                    `
-                }
-
-            </div>
-
-
-            <div class="section">
-
-                <div class="section-title">
-                    💰 Resumen económico
-                </div>
-
-                <div class="cards">
-
-                    <div class="card">
-
-                        <div class="label">
-                            Total
+                        <div class="section-title">
+                            👤 Cliente
                         </div>
 
-                        <div class="num">
-                            $ ${total.toLocaleString('es-AR')}
+                        <p style="margin:6px 0;">
+                            <b>
+                                ${cliente.nombre || ''}
+                                ${cliente.apellido || ''}
+                            </b>
+                        </p>
+
+                        <p style="margin:6px 0;">
+                            📞 ${cliente.telefono || '-'}
+                        </p>
+
+                        <p style="margin:6px 0;">
+                            ✉️ ${cliente.email || '-'}
+                        </p>
+
+                    </div>
+
+
+                    <!-- MOTO -->
+
+                    <div class="section">
+
+                        <div class="section-title">
+                            🏍️ Moto / Equipo
+                        </div>
+
+                        <div
+                            style="
+                                display:grid;
+                                grid-template-columns:
+                                    repeat(2,minmax(0,1fr));
+                                gap:8px;
+                            "
+                        >
+
+                            <div>
+                                <b>Marca</b><br>
+                                ${moto.marca || '-'}
+                            </div>
+
+                            <div>
+                                <b>Modelo</b><br>
+                                ${moto.modelo || '-'}
+                            </div>
+
+                            <div>
+                                <b>Dominio</b><br>
+                                ${moto.dominio || '-'}
+                            </div>
+
+                            <div>
+                                <b>Año</b><br>
+                                ${moto.anio || '-'}
+                            </div>
+
+                            <div>
+                                <b>Cilindrada</b><br>
+                                ${moto.cilindrada || '-'}
+                            </div>
+
+                            <div>
+                                <b>KM</b><br>
+                                ${moto.kilometraje || '-'}
+                            </div>
+
                         </div>
 
                     </div>
 
 
-                    <div class="card">
+                    <!-- ESTADO -->
 
-                        <div class="label">
-                            Pagado
+                    <div class="section">
+
+                        <div class="section-title">
+                            🟢 Estado
                         </div>
 
-                        <div class="num ok">
-                            $ ${pagado.toLocaleString('es-AR')}
-                        </div>
+                        <div
+                            style="
+                                display:flex;
+                                align-items:center;
+                                justify-content:center;
+                                height:70px;
+                                text-align:center;
+                            "
+                        >
 
-                    </div>
+                            <span
+                                class="
+                                    ot-estado
+                                    ${obtenerClaseEstadoOT(estado)}
+                                "
+                                style="
+                                    font-size:16px;
+                                    padding:10px 16px;
+                                "
+                            >
+                                ${estado}
+                            </span>
 
-
-                    <div class="card">
-
-                        <div class="label">
-                            Pendiente
-                        </div>
-
-                        <div class="num danger">
-                            $ ${pendiente.toLocaleString('es-AR')}
                         </div>
 
                     </div>
 
                 </div>
 
-            </div>
+
+                <!-- ==================================
+                     INFORMACIÓN DEL TRABAJO
+                     ================================== -->
+
+                <div class="section">
+
+                    <div class="section-title">
+                        📋 Información del trabajo
+                    </div>
+
+                    <div
+                        style="
+                            display:grid;
+                            grid-template-columns:
+                                repeat(3,minmax(0,1fr));
+                            gap:12px;
+                        "
+                    >
+
+                        <div>
+
+                            <p>
+                                <b>Problema informado</b>
+                            </p>
+
+                            <div class="empty">
+                                ${ot.problema ||
+                                  ot.descripcion ||
+                                  '-'}
+                            </div>
+
+                        </div>
 
 
-            <div class="section">
+                        <div>
 
-                <div class="section-title">
-                    💳 Pagos
+                            <p>
+                                <b>Diagnóstico</b>
+                            </p>
+
+                            <div class="empty">
+                                ${ot.diagnostico || '-'}
+                            </div>
+
+                        </div>
+
+
+                        <div>
+
+                            <p>
+                                <b>Trabajo realizado</b>
+                            </p>
+
+                            <div class="empty">
+                                ${ot.trabajos ||
+                                  ot.trabajo_realizado ||
+                                  '-'}
+                            </div>
+
+                        </div>
+
+                    </div>
+
                 </div>
 
-                ${
-                    listaPagos.length
 
-                    ?
+                <!-- ==================================
+                     REPUESTOS + PAGOS
+                     ================================== -->
 
-                    `
-                    <table class="table">
+                <div
+                    style="
+                        display:grid;
+                        grid-template-columns:
+                            repeat(2,minmax(0,1fr));
+                        gap:12px;
+                        margin-top:12px;
+                    "
+                >
 
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Concepto</th>
-                            <th>Importe</th>
-                        </tr>
+                    <!-- REPUESTOS -->
 
-                        ${listaPagos.map(p => `
+                    <div class="section">
 
-                            <tr>
+                        <div class="section-title">
+                            📦 Repuestos utilizados
+                        </div>
 
-                                <td>
-                                    ${p.fecha || '-'}
-                                </td>
+                        ${
+                            listaRepuestos.length
 
-                                <td>
-                                    ${p.concepto || '-'}
-                                </td>
+                            ?
 
-                                <td>
-                                    $ ${
-                                        Number(
-                                            p.importe || 0
-                                        ).toLocaleString('es-AR')
-                                    }
-                                </td>
+                            `
 
-                            </tr>
+                            <div
+                                style="
+                                    overflow-x:auto;
+                                "
+                            >
 
-                        `).join('')}
+                                <table class="table">
 
-                    </table>
-                    `
+                                    <tr>
+                                        <th>Repuesto</th>
+                                        <th>Cantidad</th>
+                                        <th>Importe</th>
+                                    </tr>
 
-                    :
+                                    ${listaRepuestos.map(r => `
 
-                    `
-                    <div class="empty">
-                        No hay pagos registrados.
+                                        <tr>
+
+                                            <td>
+                                                ${
+                                                    r.repuestos?.nombre ||
+                                                    r.nombre ||
+                                                    '-'
+                                                }
+                                            </td>
+
+                                            <td>
+                                                ${r.cantidad || 1}
+                                            </td>
+
+                                            <td>
+                                                $ ${
+                                                    Number(
+                                                        r.subtotal ||
+                                                        r.total ||
+                                                        r.importe ||
+                                                        0
+                                                    ).toLocaleString(
+                                                        'es-AR'
+                                                    )
+                                                }
+                                            </td>
+
+                                        </tr>
+
+                                    `).join('')}
+
+                                </table>
+
+                            </div>
+
+                            `
+
+                            :
+
+                            `
+
+                            <div class="empty">
+                                No hay repuestos registrados.
+                            </div>
+
+                            `
+                        }
+
                     </div>
-                    `
-                }
-
-            </div>
 
 
-            <div class="actions">
+                    <!-- PAGOS -->
 
-                <button
-                    class="btn secondary"
-                    onclick="openOTEdit('${ot.id}')">
+                    <div class="section">
 
-                    ✏️ Editar
+                        <div class="section-title">
+                            💳 Pagos
+                        </div>
 
-                </button>
+                        ${
+                            listaPagos.length
+
+                            ?
+
+                            `
+
+                            <div
+                                style="
+                                    overflow-x:auto;
+                                "
+                            >
+
+                                <table class="table">
+
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Concepto</th>
+                                        <th>Importe</th>
+                                    </tr>
+
+                                    ${listaPagos.map(p => `
+
+                                        <tr>
+
+                                            <td>
+                                                ${p.fecha || '-'}
+                                            </td>
+
+                                            <td>
+                                                ${p.concepto || '-'}
+                                            </td>
+
+                                            <td>
+                                                $ ${
+                                                    Number(
+                                                        p.importe || 0
+                                                    ).toLocaleString(
+                                                        'es-AR'
+                                                    )
+                                                }
+                                            </td>
+
+                                        </tr>
+
+                                    `).join('')}
+
+                                </table>
+
+                            </div>
+
+                            `
+
+                            :
+
+                            `
+
+                            <div class="empty">
+                                No hay pagos registrados.
+                            </div>
+
+                            `
+                        }
+
+                    </div>
+
+                </div>
 
 
-                <button
-                    class="btn secondary"
-                    onclick="openOTPago('${ot.id}')">
+                <!-- ==================================
+                     RESUMEN ECONÓMICO
+                     ================================== -->
 
-                    💳 Registrar pago
+                <div class="section">
 
-                </button>
+                    <div class="section-title">
+                        💰 Resumen económico
+                    </div>
+
+                    <div
+                        class="cards"
+                        style="
+                            grid-template-columns:
+                                repeat(3,1fr);
+                        "
+                    >
+
+                        <div class="card">
+
+                            <div class="label">
+                                Total
+                            </div>
+
+                            <div class="num">
+                                $ ${total.toLocaleString('es-AR')}
+                            </div>
+
+                        </div>
 
 
-                <button
-                    class="btn secondary"
-                    onclick="closeModal()">
+                        <div class="card">
 
-                    Cerrar
+                            <div class="label">
+                                Pagado
+                            </div>
 
-                </button>
+                            <div class="num ok">
+                                $ ${pagado.toLocaleString('es-AR')}
+                            </div>
+
+                        </div>
+
+
+                        <div class="card">
+
+                            <div class="label">
+                                Pendiente
+                            </div>
+
+                            <div class="num danger">
+                                $ ${pendiente.toLocaleString('es-AR')}
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ==================================
+                     BOTONES
+                     ================================== -->
+
+                <div
+                    class="actions"
+                    style="
+                        display:flex;
+                        justify-content:flex-end;
+                        flex-wrap:wrap;
+                        gap:10px;
+                    "
+                >
+
+                    <button
+                        class="btn secondary"
+                        onclick="openOTEdit('${ot.id}')"
+                    >
+                        ✏️ Editar
+                    </button>
+
+
+                    <button
+                        class="btn secondary"
+                        onclick="openOTPago('${ot.id}')"
+                    >
+                        💳 Registrar pago
+                    </button>
+
+
+                    <button
+                        class="btn secondary"
+                        onclick="closeModal()"
+                    >
+                        ✕ Cerrar
+                    </button>
+
+                </div>
 
             </div>
 
