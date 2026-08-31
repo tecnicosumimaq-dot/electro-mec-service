@@ -2695,6 +2695,13 @@ const pendiente =
     🗑️ Eliminar
 
 </button>
+               <button
+    class="btn secondary"
+    onclick="verFichaOT('${ot.id}')">
+
+    👁️ Ver OT
+
+</button>
                     </td>
 
                 </tr>
@@ -2847,7 +2854,535 @@ const pendiente =
             '<div class="empty">Error inesperado.</div>';
     }
 }
-async function eliminarOT(otId) {
+async function verFichaOT(otId) {
+
+    if (!otId) {
+        alert('No se encontró la Orden de Trabajo.');
+        return;
+    }
+
+    console.log('🔍 Cargando ficha OT:', otId);
+
+    try {
+
+        /* ==========================================
+           CARGAR OT
+           ========================================== */
+
+        const { data: ot, error: errorOT } =
+            await supabaseClient
+                .from('ordenes_trabajo')
+                .select(`
+                    *,
+                    clientes (
+                        nombre,
+                        apellido,
+                        telefono,
+                        email
+                    ),
+                    motos (
+                        dominio,
+                        marca,
+                        modelo,
+                        anio,
+                        cilindrada,
+                        kilometraje,
+                        color
+                    )
+                `)
+                .eq('id', otId)
+                .single();
+
+        if (errorOT) {
+
+            console.error(
+                'Error cargando OT:',
+                errorOT
+            );
+
+            alert(
+                'No se pudo cargar la Orden de Trabajo.'
+            );
+
+            return;
+        }
+
+
+        /* ==========================================
+           CARGAR REPUESTOS
+           ========================================== */
+
+        const { data: repuestos, error: errorRepuestos } =
+            await supabaseClient
+                .from('ot_repuestos')
+                .select(`
+                    *,
+                    repuestos (
+                        nombre
+                    )
+                `)
+                .eq('ot_id', otId);
+
+        if (errorRepuestos) {
+
+            console.error(
+                'Error cargando repuestos:',
+                errorRepuestos
+            );
+        }
+
+
+        /* ==========================================
+           CARGAR PAGOS
+           ========================================== */
+
+        const { data: pagos, error: errorPagos } =
+            await supabaseClient
+                .from('movimientos_caja')
+                .select('*')
+                .eq('ot_id', otId)
+                .eq('tipo', 'Ingreso')
+                .order('fecha', {
+                    ascending: false
+                });
+
+        if (errorPagos) {
+
+            console.error(
+                'Error cargando pagos:',
+                errorPagos
+            );
+        }
+
+
+        const listaRepuestos =
+            repuestos || [];
+
+        const listaPagos =
+            pagos || [];
+
+
+        /* ==========================================
+           DATOS CLIENTE
+           ========================================== */
+
+        const cliente =
+            ot.clientes || {};
+
+
+        /* ==========================================
+           DATOS MOTO / EQUIPO
+           ========================================== */
+
+        const moto =
+            ot.motos || {};
+
+
+        /* ==========================================
+           CALCULOS
+           ========================================== */
+
+        const total =
+            Number(ot.total || 0);
+
+        const pagado =
+            listaPagos.reduce(
+                (sum, pago) =>
+                    sum + Number(pago.importe || 0),
+                0
+            );
+
+        const pendiente =
+            Math.max(
+                total - pagado,
+                0
+            );
+
+
+        /* ==========================================
+           ESTADO
+           ========================================== */
+
+        const estado =
+            ot.estado || 'Pendiente de diagnóstico';
+
+
+        /* ==========================================
+           MODAL
+           ========================================== */
+
+        document.getElementById('modalbox').innerHTML = `
+
+            <h2>
+                🔧 Orden de Trabajo
+                ${ot.numero_ot || ot.id}
+            </h2>
+
+
+            <div class="section">
+
+                <div class="section-title">
+                    👤 Cliente
+                </div>
+
+                <p>
+                    <b>
+                        ${cliente.nombre || ''}
+                        ${cliente.apellido || ''}
+                    </b>
+                </p>
+
+                <p>
+                    📞 ${cliente.telefono || '-'}
+                </p>
+
+                <p>
+                    ✉️ ${cliente.email || '-'}
+                </p>
+
+            </div>
+
+
+            <div class="section">
+
+                <div class="section-title">
+                    🏍️ Moto / Equipo
+                </div>
+
+                <div
+                    style="
+                        display:grid;
+                        grid-template-columns:
+                        repeat(auto-fit,minmax(180px,1fr));
+                        gap:12px;
+                    "
+                >
+
+                    <div>
+                        <b>Marca</b>
+                        <br>
+                        ${moto.marca || '-'}
+                    </div>
+
+                    <div>
+                        <b>Modelo</b>
+                        <br>
+                        ${moto.modelo || '-'}
+                    </div>
+
+                    <div>
+                        <b>Dominio</b>
+                        <br>
+                        ${moto.dominio || '-'}
+                    </div>
+
+                    <div>
+                        <b>Año</b>
+                        <br>
+                        ${moto.anio || '-'}
+                    </div>
+
+                    <div>
+                        <b>Cilindrada</b>
+                        <br>
+                        ${moto.cilindrada || '-'}
+                    </div>
+
+                    <div>
+                        <b>Kilometraje</b>
+                        <br>
+                        ${moto.kilometraje || '-'}
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="section">
+
+                <div class="section-title">
+                    🟢 Estado
+                </div>
+
+                <span class="
+                    ot-estado
+                    ${obtenerClaseEstadoOT(estado)}
+                ">
+                    ${estado}
+                </span>
+
+            </div>
+
+
+            <div class="section">
+
+                <div class="section-title">
+                    📋 Información del trabajo
+                </div>
+
+                <p>
+                    <b>Problema informado</b>
+                </p>
+
+                <div class="empty">
+                    ${ot.problema || ot.descripcion || '-'}
+                </div>
+
+
+                <p>
+                    <b>Diagnóstico</b>
+                </p>
+
+                <div class="empty">
+                    ${ot.diagnostico || '-'}
+                </div>
+
+
+                <p>
+                    <b>Trabajo realizado</b>
+                </p>
+
+                <div class="empty">
+                    ${ot.trabajos || ot.trabajo_realizado || '-'}
+                </div>
+
+            </div>
+
+
+            <div class="section">
+
+                <div class="section-title">
+                    📦 Repuestos utilizados
+                </div>
+
+                ${
+                    listaRepuestos.length
+
+                    ?
+
+                    `
+                    <table class="table">
+
+                        <tr>
+                            <th>Repuesto</th>
+                            <th>Cantidad</th>
+                            <th>Importe</th>
+                        </tr>
+
+                        ${listaRepuestos.map(r => `
+
+                            <tr>
+
+                                <td>
+                                    ${
+                                        r.repuestos?.nombre ||
+                                        r.nombre ||
+                                        '-'
+                                    }
+                                </td>
+
+                                <td>
+                                    ${r.cantidad || 1}
+                                </td>
+
+                                <td>
+                                    $ ${
+                                        Number(
+                                            r.subtotal ||
+                                            r.total ||
+                                            r.importe ||
+                                            0
+                                        ).toLocaleString('es-AR')
+                                    }
+                                </td>
+
+                            </tr>
+
+                        `).join('')}
+
+                    </table>
+                    `
+
+                    :
+
+                    `
+                    <div class="empty">
+                        No hay repuestos registrados.
+                    </div>
+                    `
+                }
+
+            </div>
+
+
+            <div class="section">
+
+                <div class="section-title">
+                    💰 Resumen económico
+                </div>
+
+                <div class="cards">
+
+                    <div class="card">
+
+                        <div class="label">
+                            Total
+                        </div>
+
+                        <div class="num">
+                            $ ${total.toLocaleString('es-AR')}
+                        </div>
+
+                    </div>
+
+
+                    <div class="card">
+
+                        <div class="label">
+                            Pagado
+                        </div>
+
+                        <div class="num ok">
+                            $ ${pagado.toLocaleString('es-AR')}
+                        </div>
+
+                    </div>
+
+
+                    <div class="card">
+
+                        <div class="label">
+                            Pendiente
+                        </div>
+
+                        <div class="num danger">
+                            $ ${pendiente.toLocaleString('es-AR')}
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="section">
+
+                <div class="section-title">
+                    💳 Pagos
+                </div>
+
+                ${
+                    listaPagos.length
+
+                    ?
+
+                    `
+                    <table class="table">
+
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Concepto</th>
+                            <th>Importe</th>
+                        </tr>
+
+                        ${listaPagos.map(p => `
+
+                            <tr>
+
+                                <td>
+                                    ${p.fecha || '-'}
+                                </td>
+
+                                <td>
+                                    ${p.concepto || '-'}
+                                </td>
+
+                                <td>
+                                    $ ${
+                                        Number(
+                                            p.importe || 0
+                                        ).toLocaleString('es-AR')
+                                    }
+                                </td>
+
+                            </tr>
+
+                        `).join('')}
+
+                    </table>
+                    `
+
+                    :
+
+                    `
+                    <div class="empty">
+                        No hay pagos registrados.
+                    </div>
+                    `
+                }
+
+            </div>
+
+
+            <div class="actions">
+
+                <button
+                    class="btn secondary"
+                    onclick="openOTEdit('${ot.id}')">
+
+                    ✏️ Editar
+
+                </button>
+
+
+                <button
+                    class="btn secondary"
+                    onclick="openOTPago('${ot.id}')">
+
+                    💳 Registrar pago
+
+                </button>
+
+
+                <button
+                    class="btn secondary"
+                    onclick="closeModal()">
+
+                    Cerrar
+
+                </button>
+
+            </div>
+
+        `;
+
+
+        document
+            .getElementById('modal')
+            .classList
+            .add('show');
+
+
+        console.log(
+            '✅ Ficha OT cargada correctamente'
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            'Error inesperado cargando ficha OT:',
+            error
+        );
+
+        alert(
+            'Ocurrió un error cargando la ficha de la OT.'
+        );
+    }
+}
+    async function eliminarOT(otId) {
 
     if (!otId) {
         alert('No se encontró la OT.');
