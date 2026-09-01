@@ -789,43 +789,83 @@ comprobarSupabase();
 });
 
 
-const key='electroMecAppV1';
-let db=JSON.parse(localStorage.getItem(key)||'{"clientes":[],"motos":[],"ots":[],"repuestos":[],"presupuestos":[],"movimientos":[]}');
-const save=()=>{localStorage.setItem(key,JSON.stringify(db);
+const key = 'electroMecAppV1';
+
+let db = JSON.parse(
+    localStorage.getItem(key) ||
+    '{"clientes":[],"motos":[],"ots":[],"repuestos":[],"presupuestos":[],"movimientos":[]}'
+);
+
+
+function save() {
+
+    localStorage.setItem(
+        key,
+        JSON.stringify(db)
+    );
+
+    if (typeof renderAll === 'function') {
+        renderAll();
+    }
+}
 
 
 function show(id, btn) {
 
+    // Ocultar todas las vistas
     document
         .querySelectorAll('.view')
         .forEach(function(v) {
             v.style.display = 'none';
         });
 
+
+    // Mostrar la vista seleccionada
     const vista =
         document.getElementById(id);
 
     if (!vista) {
+
         console.error(
-            'No se encontró la vista:',
+            '❌ No se encontró la vista:',
             id
         );
+
         return;
     }
 
     vista.style.display = 'block';
 
+
+    // Actualizar botón activo
     document
         .querySelectorAll('.nav button')
         .forEach(function(b) {
             b.classList.remove('active');
         });
 
+
     if (btn) {
         btn.classList.add('active');
     }
 
-    renderAll();
+
+    // Actualizar información
+    if (typeof renderAll === 'function') {
+        renderAll();
+    }
+}
+
+
+function nextId(arr, prefix) {
+
+    let n =
+        (arr ? arr.length : 0) + 1;
+
+    return (
+        prefix +
+        String(n).padStart(4, '0')
+    );
 }
 function nextId(arr,prefix){let n=arr.length+1;return prefix+String(n).padStart(4,'0')}
 function openClient(edit=null){
