@@ -368,14 +368,68 @@
 </div>
 <div class="app">
 <aside class="side"><div class="brand">⚡ Electro Mec<small>Service · App V1</small></div><div class="nav">
-<button class="active" onclick="show('inicio',this)">🏠 Inicio</button>
-<button onclick="show('clientes',this)">👤 Clientes</button>
-<button onclick="show('motos',this)">🏍️ Motos</button>
-<button onclick="show('ot',this)">🔧 Órdenes de trabajo</button>
-<button onclick="show('inventario',this)">📦 Inventario</button>
-<button onclick="show('presupuestos',this)">💰 Presupuestos</button>
-<button onclick="show('caja',this)">💵 Caja</button>
-</div></aside>
+
+    <div class="nav-title">
+        TALLER
+    </div>
+
+    <button
+        class="active"
+        onclick="show('inicio',this)">
+        🏠 Inicio
+    </button>
+
+    <button
+        onclick="show('clientes',this)">
+        👤 Clientes
+    </button>
+
+    <button
+        onclick="show('motos',this)">
+        🏍️ Motos / Equipos
+    </button>
+
+    <button
+        onclick="show('ot',this)">
+        🔧 Órdenes de trabajo
+    </button>
+
+
+    <div class="nav-title">
+        ADMINISTRACIÓN
+    </div>
+
+    <button
+        onclick="show('inventario',this)">
+        📦 Inventario
+    </button>
+
+    <button
+        onclick="show('presupuestos',this)">
+        💰 Presupuestos
+    </button>
+
+    <button
+        onclick="show('caja',this)">
+        💵 Caja
+    </button>
+
+
+    <div class="nav-title">
+        INFORMACIÓN TÉCNICA
+    </div>
+
+    <button
+        onclick="show('biblioteca',this)">
+        📚 Biblioteca técnica
+    </button>
+
+    <button
+        onclick="show('estadisticas',this)">
+        📊 Estadísticas
+    </button>
+
+</div>
 <main class="main">
 <div id="inicio" class="view">
 <div class="top"><div class="title"><h1>Panel de control</h1><p>Centro de operaciones del taller</p></div></div>
@@ -387,13 +441,212 @@
 <div class="panel"><div class="toolbar"><input id="clientSearch" placeholder="Buscar por nombre o teléfono" oninput="renderClients()"></div><div id="clientTable"></div></div>
 </div>
 <div id="motos" class="view" style="display:none">
-<div class="top"><div class="title"><h1>Motos / Equipos</h1><p>Motos, equipos y máquinas asociados a clientes</p></div><button class="btn" onclick="openMoto()">＋ Nueva moto / equipo</button></div>
+<div class="top"><div class="title"><h1>Motos / Equipos</h1>
+<p>Vehículos, máquinas y equipos asociados a clientes</p></div><button class="btn" onclick="openMoto()">
+    ＋ Nuevo equipo
+</button>
+</button></div>
 <div class="panel"><div class="toolbar"><input id="motoSearch" placeholder="Buscar dominio, marca o modelo" oninput="renderMotos()"></div><div id="motoTable"></div></div>
 </div>
 <div id="ot" class="view" style="display:none"><div class="top"><div class="title"><h1>Órdenes de Trabajo</h1><p>Recepción, diagnóstico y seguimiento</p></div><button class="btn" onclick="openOT()">＋ Nueva OT</button></div><div class="panel"><div class="toolbar"><input id="otSearch" placeholder="Buscar OT, dominio o cliente" oninput="renderOT()"></div><div id="otTable"></div></div></div>
 <div id="inventario" class="view" style="display:none"><div class="top"><div class="title"><h1>Inventario</h1><p>Stock y alertas de reposición</p></div><button class="btn" onclick="openPart()">＋ Nuevo repuesto</button></div><div class="panel"><div class="toolbar"><input id="partSearch" placeholder="Buscar repuesto" oninput="renderParts()"></div><div id="partTable"></div></div></div>
 <div id="presupuestos" class="view" style="display:none"><div class="top"><div class="title"><h1>Presupuestos</h1><p>Estados y seguimiento</p></div></div><div class="panel"><div id="quoteTable"></div></div></div>
 <div id="caja" class="view" style="display:none"><div class="top"><div class="title"><h1>Caja</h1><p>Ingresos, egresos y saldo</p></div><div><button class="btn" onclick="openMove('Ingreso')">＋ Ingreso</button> <button class="btn secondary" onclick="openMove('Egreso')">＋ Egreso</button></div></div><div class="panel" id="cashPanel"></div></div>
+<div
+    id="biblioteca"
+    class="view"
+    style="display:none"
+>
+
+    <div class="top">
+
+        <div class="title">
+
+            <h1>
+                📚 Biblioteca Técnica
+            </h1>
+
+            <p>
+                Información técnica para diagnóstico y reparación
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="cards">
+
+
+        <div class="card">
+
+            <div class="label">
+                🏍️ Motos
+            </div>
+
+            <div class="num">
+                0
+            </div>
+
+            <div class="label">
+                Modelos disponibles
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <div class="label">
+                ⚡ Diagramas
+            </div>
+
+            <div class="num">
+                0
+            </div>
+
+            <div class="label">
+                Diagramas eléctricos
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <div class="label">
+                🔧 Despieces
+            </div>
+
+            <div class="num">
+                0
+            </div>
+
+            <div class="label">
+                Despieces disponibles
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+    <div class="section">
+
+        <div class="section-title">
+            🔍 Buscar información técnica
+        </div>
+
+        <div class="toolbar">
+
+            <input
+                type="text"
+                id="bibliotecaSearch"
+                placeholder="Buscar marca, modelo o sistema..."
+            >
+
+        </div>
+
+
+        <div class="empty">
+
+            📚 La biblioteca técnica será incorporada
+            progresivamente.
+
+            <br><br>
+
+            Acá vamos a construir:
+
+            <br>
+
+            🏍️ Fichas técnicas
+
+            <br>
+
+            ⚡ Diagramas eléctricos
+
+            <br>
+
+            🔧 Despieces interactivos
+
+            <br>
+
+            📐 Especificaciones
+
+            <br>
+
+            🧠 Información para diagnóstico
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<div
+    id="estadisticas"
+    class="view"
+    style="display:none"
+>
+
+    <div class="top">
+
+        <div class="title">
+
+            <h1>
+                📊 Estadísticas
+            </h1>
+
+            <p>
+                Información y rendimiento del taller
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="section">
+
+        <div class="section-title">
+            📈 Próximamente
+        </div>
+
+        <div class="empty">
+
+            Esta sección va a mostrar:
+
+            <br><br>
+
+            🔧 Trabajos realizados
+
+            <br>
+
+            💰 Facturación
+
+            <br>
+
+            📦 Repuestos utilizados
+
+            <br>
+
+            📊 Rentabilidad por OT
+
+            <br>
+
+            🏍️ Motos atendidas
+
+            <br>
+
+            👤 Clientes nuevos
+
+        </div>
+
+    </div>
+
+</div>
 </main></div>
 <div class="modal" id="modal"><div class="modalbox" id="modalbox"></div></div>
 <script>
