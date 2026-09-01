@@ -407,221 +407,392 @@
     }
 
 }
-/* =====================================================
-   LAYOUT PRINCIPAL - ELECTRO MEC SERVICE
-   ===================================================== */
-
-* {
-    box-sizing: border-box;
-}
+/* =========================================================
+   ELECTRO MEC SERVICE
+   ESTRUCTURA PRINCIPAL CORREGIDA
+   ========================================================= */
 
 html,
 body {
+    margin: 0;
+    padding: 0;
     width: 100%;
     min-height: 100%;
-    margin: 0;
 }
 
 body {
     overflow-x: hidden;
+    background: #f4f6f8;
 }
 
 
-/* CONTENEDOR PRINCIPAL */
+/* =========================================================
+   APLICACIÓN
+   ========================================================= */
 
 .app {
-    display: flex;
+    display: flex !important;
+    width: 100% !important;
+    min-height: 100vh !important;
+    align-items: stretch !important;
+}
+
+
+/* =========================================================
+   BARRA LATERAL
+   ========================================================= */
+
+.side {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+
+    width: 250px !important;
+    min-width: 250px !important;
+
+    height: 100vh !important;
+
+    background: #111827 !important;
+    color: #fff !important;
+
+    padding: 22px 16px !important;
+
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+
+    z-index: 1000 !important;
+}
+
+
+/* =========================================================
+   MARCA
+   ========================================================= */
+
+.side .brand {
     width: 100%;
-    min-height: 100vh;
-}
-
-
-/* =====================================================
-   MENU LATERAL
-   ===================================================== */
-
-.sidebar {
-    width: 250px;
-    min-width: 250px;
-    flex-shrink: 0;
-}
-
-
-/* =====================================================
-   ZONA PRINCIPAL
-   ===================================================== */
-
-.main {
-    flex: 1;
-    width: calc(100% - 250px);
-    min-width: 0;
-    padding: 28px;
-    overflow-x: hidden;
-}
-
-
-/* =====================================================
-   VISTAS
-   ===================================================== */
-
-.view {
-    width: 100%;
-    max-width: none;
-}
-
-
-/* =====================================================
-   CABECERA
-   ===================================================== */
-
-.top {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 20px;
     margin-bottom: 25px;
 }
 
 
-/* =====================================================
+/* =========================================================
+   NAVEGACIÓN
+   ========================================================= */
+
+.side .nav {
+    width: 100%;
+}
+
+.side .nav button {
+    display: block;
+    width: 100% !important;
+
+    margin: 4px 0 !important;
+    padding: 12px 14px !important;
+
+    text-align: left;
+
+    white-space: normal;
+
+    border: 0;
+    border-radius: 10px;
+
+    background: transparent;
+    color: #d1d5db;
+
+    cursor: pointer;
+}
+
+.side .nav button:hover,
+.side .nav button.active {
+    background: #263244;
+    color: #fff;
+}
+
+
+/* =========================================================
+   ÁREA DE TRABAJO
+   ========================================================= */
+
+.main {
+    display: block !important;
+
+    position: relative !important;
+
+    margin-left: 250px !important;
+
+    width: calc(100% - 250px) !important;
+    max-width: none !important;
+
+    min-width: 0 !important;
+
+    min-height: 100vh !important;
+
+    padding: 30px !important;
+
+    overflow-x: hidden !important;
+}
+
+
+/* =========================================================
+   VISTAS
+   ========================================================= */
+
+.main .view {
+    position: relative !important;
+
+    width: 100% !important;
+    max-width: none !important;
+
+    margin: 0 !important;
+}
+
+
+/* =========================================================
+   CABECERA DE CADA MÓDULO
+   ========================================================= */
+
+.main .top {
+    width: 100% !important;
+
+    display: flex !important;
+
+    justify-content: space-between !important;
+    align-items: center !important;
+
+    gap: 20px;
+
+    margin-bottom: 24px !important;
+}
+
+
+/* =========================================================
    PANELES
-   ===================================================== */
+   ========================================================= */
 
-.panel,
-.section {
-    width: 100%;
-    max-width: none;
-}
+.main .panel {
+    width: 100% !important;
+    max-width: none !important;
 
+    background: #fff;
 
-/* =====================================================
-   TABLAS
-   ===================================================== */
+    border-radius: 16px;
 
-.table {
-    width: 100%;
-    border-collapse: collapse;
-}
+    padding: 20px;
 
-
-/* =====================================================
-   TARJETAS
-   ===================================================== */
-
-.cards {
-    width: 100%;
-    display: grid;
-    grid-template-columns:
-        repeat(auto-fit, minmax(210px, 1fr));
-    gap: 18px;
-}
-
-
-/* =====================================================
-   TOOLBAR
-   ===================================================== */
-
-.toolbar {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-
-/* =====================================================
-   BUSCADORES
-   ===================================================== */
-
-.toolbar input,
-.search,
-input[type="search"] {
-    flex: 1;
-    min-width: 220px;
-}
-
-
-/* =====================================================
-   TABLA RESPONSIVA
-   ===================================================== */
-
-.table-container {
-    width: 100%;
     overflow-x: auto;
 }
 
 
-/* =====================================================
+/* =========================================================
+   SECCIONES
+   ========================================================= */
+
+.main .section {
+    width: 100% !important;
+    max-width: none !important;
+
+    margin-top: 22px;
+}
+
+
+/* =========================================================
+   TARJETAS
+   ========================================================= */
+
+.main .cards {
+    width: 100% !important;
+
+    display: grid !important;
+
+    grid-template-columns:
+        repeat(auto-fit, minmax(210px, 1fr));
+
+    gap: 16px;
+}
+
+
+/* =========================================================
+   TABLAS
+   ========================================================= */
+
+.main .table {
+    width: 100% !important;
+
+    min-width: 700px;
+
+    border-collapse: collapse;
+}
+
+
+/* =========================================================
+   TOOLBAR
+   ========================================================= */
+
+.main .toolbar {
+    width: 100% !important;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    flex-wrap: wrap;
+
+    margin-bottom: 15px;
+}
+
+
+/* =========================================================
+   BUSCADORES
+   ========================================================= */
+
+.main .toolbar input {
+    flex: 1;
+
+    min-width: 220px;
+
+    max-width: none !important;
+}
+
+
+/* =========================================================
+   TÍTULOS
+   ========================================================= */
+
+.main .title h1 {
+    margin: 0;
+
+    font-size: 28px;
+}
+
+.main .title p {
+    margin: 6px 0 0;
+
+    color: #6b7280;
+}
+
+
+/* =========================================================
+   MODALES
+   ========================================================= */
+
+.modal {
+    position: fixed !important;
+
+    inset: 0 !important;
+
+    z-index: 9999 !important;
+}
+
+
+/* =========================================================
    PANTALLAS GRANDES
-   ===================================================== */
+   ========================================================= */
 
 @media (min-width: 1400px) {
 
-    .main {
-        padding: 35px 45px;
+    .side {
+        width: 270px !important;
+        min-width: 270px !important;
     }
 
-    .cards {
-        grid-template-columns:
-            repeat(4, minmax(220px, 1fr));
+    .main {
+        margin-left: 270px !important;
+        width: calc(100% - 270px) !important;
+
+        padding: 35px 45px !important;
     }
 }
 
 
-/* =====================================================
+/* =========================================================
    NOTEBOOK / TABLET
-   ===================================================== */
+   ========================================================= */
 
 @media (max-width: 1000px) {
 
-    .sidebar {
-        width: 220px;
-        min-width: 220px;
+    .side {
+        width: 210px !important;
+        min-width: 210px !important;
     }
 
     .main {
-        width: calc(100% - 220px);
-        padding: 20px;
+        margin-left: 210px !important;
+        width: calc(100% - 210px) !important;
+
+        padding: 20px !important;
     }
 
-    .cards {
+    .main .cards {
         grid-template-columns:
-            repeat(2, minmax(180px, 1fr));
+            repeat(2, minmax(160px, 1fr));
     }
 }
 
 
-/* =====================================================
+/* =========================================================
    CELULAR
-   ===================================================== */
+   ========================================================= */
 
-@media (max-width: 700px) {
+@media (max-width: 650px) {
 
     .app {
-        display: block;
+        display: block !important;
     }
 
-    .sidebar {
-        width: 100%;
-        min-width: 0;
+    .side {
+        position: relative !important;
+
+        width: 100% !important;
+        min-width: 100% !important;
+
+        height: auto !important;
+
+        max-height: none !important;
+
+        padding: 12px !important;
+    }
+
+    .side .nav {
+        display: flex !important;
+
+        gap: 5px;
+
+        overflow-x: auto;
+    }
+
+    .side .nav button {
+        width: auto !important;
+
+        min-width: max-content;
+
+        white-space: nowrap;
     }
 
     .main {
-        width: 100%;
-        padding: 15px;
+        margin-left: 0 !important;
+
+        width: 100% !important;
+
+        padding: 15px !important;
     }
 
-    .cards {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .top {
+    .main .top {
         flex-direction: column;
+
         align-items: flex-start;
     }
 
+    .main .cards {
+        grid-template-columns:
+            repeat(2, minmax(130px, 1fr));
+    }
+
+    .main .table {
+        min-width: 650px;
+    }
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head>
