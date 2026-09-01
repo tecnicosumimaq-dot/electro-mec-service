@@ -791,7 +791,21 @@ comprobarSupabase();
 
 const key='electroMecAppV1';
 let db=JSON.parse(localStorage.getItem(key)||'{"clientes":[],"motos":[],"ots":[],"repuestos":[],"presupuestos":[],"movimientos":[]}');
-const save=()=>{localStorage.setItem(key,JSON.stringify(db));renderAll()};
+const save=()=>{localStorage.setItem(key,JSON.stringify(db));setTimeout(() => {
+
+    if (
+        typeof supabaseClient !== 'undefined'
+    ) {
+
+        console.log(
+            '🚀 Inicializando Electro Mec Service'
+        );
+
+        renderDashboard();
+
+    }
+
+}, 300);
 function show(id, btn) {
 
     console.log('📂 Abriendo módulo:', id);
@@ -9587,7 +9601,45 @@ function cargarLogoPDF() {
     }
 
 }
-function renderAll(){renderDashboard();renderClients();renderMotos();renderOT();renderParts();renderQuotes();renderCash()}renderAll();
+function renderAll() {
+
+    console.log(
+        '🔄 Actualización general de datos'
+    );
+
+    // No cambiamos de pantalla.
+    // Solamente actualizamos los datos
+    // de los módulos que tienen sus contenedores.
+
+    if (document.getElementById('kpis')) {
+        renderDashboard();
+    }
+
+    if (document.getElementById('clientTable')) {
+        renderClients();
+    }
+
+    if (document.getElementById('motoTable')) {
+        renderMotos();
+    }
+
+    if (document.getElementById('otTable')) {
+        renderOT();
+    }
+
+    if (document.getElementById('partTable')) {
+        renderParts();
+    }
+
+    if (document.getElementById('quoteTable')) {
+        renderQuotes();
+    }
+
+    if (document.getElementById('cashPanel')) {
+        renderCash();
+    }
+
+}
 function cajaPDF(
     doc,
     x,
