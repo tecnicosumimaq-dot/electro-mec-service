@@ -300,6 +300,113 @@
         flex: 1 1 100%;
     }
 }
+/* =========================================
+   MEJORA GENERAL DE VISTAS
+   ========================================= */
+
+.view {
+    width: 100%;
+}
+
+.main {
+    min-width: 0;
+}
+
+.panel {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.table {
+    min-width: 700px;
+}
+
+.cards {
+    width: 100%;
+}
+
+.card {
+    min-height: 105px;
+}
+
+.top {
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.toolbar {
+    align-items: center;
+}
+
+.toolbar input,
+.toolbar select {
+    max-width: 100%;
+}
+
+.empty {
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Mejor visualización en pantallas grandes */
+
+@media (min-width: 1200px) {
+
+    .main {
+        padding: 30px;
+    }
+
+    .cards {
+        grid-template-columns:
+            repeat(4, minmax(180px, 1fr));
+    }
+
+    .panel {
+        padding: 22px;
+    }
+}
+
+
+/* Tablet */
+
+@media (max-width: 900px) {
+
+    .cards {
+        grid-template-columns:
+            repeat(2, minmax(160px, 1fr));
+    }
+
+}
+
+
+/* Celular */
+
+@media (max-width: 650px) {
+
+    .cards {
+        grid-template-columns:
+            repeat(2, minmax(140px, 1fr));
+    }
+
+    .top {
+        align-items: flex-start;
+    }
+
+    .title h1 {
+        font-size: 23px;
+    }
+
+    .panel {
+        padding: 12px;
+    }
+
+    .table {
+        min-width: 650px;
+    }
+
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head>
 <body>
@@ -813,50 +920,64 @@ function save() {
 function show(id, btn) {
 
     // Ocultar todas las vistas
-    document
-        .querySelectorAll('.view')
-        .forEach(function(v) {
-            v.style.display = 'none';
-        });
-
+    document.querySelectorAll('.view').forEach(v => {
+        v.style.display = 'none';
+    });
 
     // Mostrar la vista seleccionada
-    const vista =
-        document.getElementById(id);
+    const vista = document.getElementById(id);
 
     if (!vista) {
-
-        console.error(
-            '❌ No se encontró la vista:',
-            id
-        );
-
+        console.error('❌ No existe la vista:', id);
         return;
     }
 
     vista.style.display = 'block';
 
-
     // Actualizar botón activo
-    document
-        .querySelectorAll('.nav button')
-        .forEach(function(b) {
-            b.classList.remove('active');
-        });
-
+    document.querySelectorAll('.nav button').forEach(b => {
+        b.classList.remove('active');
+    });
 
     if (btn) {
         btn.classList.add('active');
     }
 
+    // Cargar solamente el módulo seleccionado
+    switch (id) {
 
-    // Actualizar información
-    if (typeof renderAll === 'function') {
-        renderAll();
+        case 'inicio':
+            renderDashboard();
+            break;
+
+        case 'clientes':
+            renderClients();
+            break;
+
+        case 'motos':
+            renderMotos();
+            break;
+
+        case 'ot':
+            renderOT();
+            break;
+
+        case 'inventario':
+            renderParts();
+            break;
+
+        case 'presupuestos':
+            renderQuotes();
+            break;
+
+        case 'caja':
+            renderCash();
+            break;
+
+        default:
+            console.warn('⚠️ Módulo sin render:', id);
     }
 }
-
-
 function nextId(arr, prefix) {
 
     let n =
@@ -9067,205 +9188,215 @@ function cargarLogoPDF() {
         );
     }
 }
-  async function renderDashboard() {
+ async function renderDashboard() {
 
     const kpis = document.getElementById('kpis');
     const alerts = document.getElementById('alerts');
 
     if (!kpis || !alerts) return;
 
+    // Estado inicial
     kpis.innerHTML = `
+        <div class="card">
+            <div class="label">Cargando información...</div>
+            <div class="num">...</div>
+        </div>
+    `;
+
+    alerts.innerHTML = `
         <div class="empty">
-            Cargando información...
+            Cargando información del taller...
         </div>
     `;
 
     try {
 
-        // ==============================
-        // CLIENTES
-        // ==============================
+        // =========================================
+        // CONSULTAS A SUPABASE
+        // =========================================
 
-        const { data: clientes, error: errorClientes } =
-            await supabaseClient
+        const [
+            clientesResult,
+            motosResult,
+            otResult,
+            repuestosResult,
+            cajaResult
+        ] = await Promise.all([
+
+            supabaseClient
                 .from('clientes')
                 .select('id')
-                .eq('activo', true);
+                .eq('activo', true),
 
-
-        // ==============================
-        // MOTOS / EQUIPOS
-        // ==============================
-
-        const { data: motos, error: errorMotos } =
-            await supabaseClient
+            supabaseClient
                 .from('motos')
                 .select('id')
-                .eq('activo', true);
+                .eq('activo', true),
 
-
-        // ==============================
-        // ORDENES DE TRABAJO
-        // ==============================
-
-        const { data: ots, error: errorOT } =
-            await supabaseClient
+            supabaseClient
                 .from('ordenes_trabajo')
-                .select('id, estado, total');
+                .select('id,estado,total,fecha_recepcion'),
 
+            supabaseClient
+                .from('repuestos')
+                .select('id,descripcion,stock,stock_minimo'),
 
-        // ==============================
-        // PRESUPUESTOS
-        // ==============================
-
-        const { data: presupuestos, error: errorPresupuestos } =
-            await supabaseClient
-                .from('presupuestos')
-                .select('id, estado, total');
-
-
-        // ==============================
-        // CAJA
-        // ==============================
-
-        const { data: movimientos, error: errorCaja } =
-            await supabaseClient
+            supabaseClient
                 .from('movimientos_caja')
-                .select('tipo, importe');
+                .select('importe,tipo')
+        ]);
 
 
-        if (errorClientes)
-            console.error('Error clientes:', errorClientes);
+        // =========================================
+        // VERIFICAR ERRORES
+        // =========================================
 
-        if (errorMotos)
-            console.error('Error motos/equipos:', errorMotos);
+        if (clientesResult.error) {
+            console.error(
+                'Error clientes Dashboard:',
+                clientesResult.error
+            );
+        }
 
-        if (errorOT)
-            console.error('Error OT:', errorOT);
+        if (motosResult.error) {
+            console.error(
+                'Error motos Dashboard:',
+                motosResult.error
+            );
+        }
 
-        if (errorPresupuestos)
-            console.error('Error presupuestos:', errorPresupuestos);
+        if (otResult.error) {
+            console.error(
+                'Error OT Dashboard:',
+                otResult.error
+            );
+        }
 
-        if (errorCaja)
-            console.error('Error caja:', errorCaja);
+        if (repuestosResult.error) {
+            console.error(
+                'Error repuestos Dashboard:',
+                repuestosResult.error
+            );
+        }
+
+        if (cajaResult.error) {
+            console.error(
+                'Error caja Dashboard:',
+                cajaResult.error
+            );
+        }
 
 
-        const listaClientes = clientes || [];
-        const listaMotos = motos || [];
-        const listaOT = ots || [];
-        const listaPresupuestos = presupuestos || [];
-        const listaMovimientos = movimientos || [];
+        // =========================================
+        // DATOS
+        // =========================================
+
+        const clientes =
+            clientesResult.data || [];
+
+        const motos =
+            motosResult.data || [];
+
+        const ots =
+            otResult.data || [];
+
+        const repuestos =
+            repuestosResult.data || [];
+
+        const movimientos =
+            cajaResult.data || [];
 
 
-        // ==============================
-        // ESTADOS OT
-        // ==============================
+        // =========================================
+        // ESTADOS DE OT
+        // =========================================
 
-        const otAbiertas = listaOT.filter(ot => {
-
-            const estado =
-                String(ot.estado || '').toLowerCase();
-
-            return (
-                estado !== 'entregado' &&
-                estado !== 'entregada' &&
-                estado !== 'cerrado' &&
-                estado !== 'cerrada'
+        const otAbiertas =
+            ots.filter(ot =>
+                String(ot.estado || '').toLowerCase() !== 'entregado'
             );
 
-        }).length;
-
-
-        const otListas = listaOT.filter(ot => {
-
-            const estado =
-                String(ot.estado || '').toLowerCase();
-
-            return (
-                estado === 'terminado' ||
-                estado === 'terminada' ||
-                estado === 'listo' ||
-                estado === 'lista'
+        const otAutorizacion =
+            ots.filter(ot =>
+                String(ot.estado || '').toLowerCase()
+                    .includes('autoriz')
             );
 
-        }).length;
-
-
-        const otEntregadas = listaOT.filter(ot => {
-
-            const estado =
-                String(ot.estado || '').toLowerCase();
-
-            return (
-                estado === 'entregado' ||
-                estado === 'entregada' ||
-                estado === 'cerrado' ||
-                estado === 'cerrada'
+        const otReparacion =
+            ots.filter(ot =>
+                String(ot.estado || '').toLowerCase()
+                    .includes('repar')
             );
 
-        }).length;
-
-
-        // ==============================
-        // PRESUPUESTOS PENDIENTES
-        // ==============================
-
-        const presupuestosPendientes =
-            listaPresupuestos.filter(p => {
+        const otListas =
+            ots.filter(ot => {
 
                 const estado =
-                    String(p.estado || '').toLowerCase();
+                    String(ot.estado || '').toLowerCase();
 
                 return (
-                    estado === 'pendiente' ||
-                    estado === 'pendiente de aprobación' ||
-                    estado === 'pendiente de aprobacion' ||
-                    estado === 'esperando autorización' ||
-                    estado === 'esperando autorizacion'
+                    estado.includes('terminado') ||
+                    estado.includes('listo')
                 );
+            });
 
-            }).length;
+
+        const otEntregadas =
+            ots.filter(ot =>
+                String(ot.estado || '').toLowerCase()
+                    === 'entregado'
+            );
 
 
-        // ==============================
+        // =========================================
+        // STOCK
+        // =========================================
+
+        const stockBajo =
+            repuestos.filter(r => {
+
+                const stock =
+                    Number(r.stock) || 0;
+
+                const minimo =
+                    Number(r.stock_minimo) || 0;
+
+                return stock <= minimo;
+            });
+
+
+        // =========================================
         // CAJA
-        // ==============================
+        // =========================================
 
         let ingresos = 0;
         let egresos = 0;
 
-
-        listaMovimientos.forEach(m => {
+        movimientos.forEach(m => {
 
             const importe =
-                Number(m.importe || 0);
+                Number(m.importe) || 0;
 
             const tipo =
-                String(m.tipo || '').toLowerCase();
-
+                String(m.tipo || '')
+                    .toLowerCase();
 
             if (tipo === 'ingreso') {
-
                 ingresos += importe;
-
             }
-
 
             if (tipo === 'egreso') {
-
                 egresos += importe;
-
             }
-
         });
 
+        const saldo =
+            ingresos - egresos;
 
-        const saldo = ingresos - egresos;
 
-
-        // ==============================
-        // TARJETAS
-        // ==============================
+        // =========================================
+        // KPIs
+        // =========================================
 
         kpis.innerHTML = `
 
@@ -9275,11 +9406,11 @@ function cargarLogoPDF() {
                 </div>
 
                 <div class="num">
-                    ${listaClientes.length}
+                    ${clientes.length}
                 </div>
 
                 <div class="label">
-                    Registrados
+                    Clientes activos
                 </div>
             </div>
 
@@ -9290,7 +9421,7 @@ function cargarLogoPDF() {
                 </div>
 
                 <div class="num">
-                    ${listaMotos.length}
+                    ${motos.length}
                 </div>
 
                 <div class="label">
@@ -9304,94 +9435,79 @@ function cargarLogoPDF() {
                     🔧 OT abiertas
                 </div>
 
-                <div class="num">
-                    ${otAbiertas}
+                <div class="num warn">
+                    ${otAbiertas.length}
                 </div>
 
                 <div class="label">
-                    En proceso
+                    Trabajos en curso
                 </div>
             </div>
 
 
             <div class="card">
                 <div class="label">
-                    🟢 Trabajos listos
+                    🟢 Listas
                 </div>
 
                 <div class="num ok">
-                    ${otListas}
+                    ${otListas.length}
                 </div>
 
                 <div class="label">
-                    Para entregar
+                    Listas para entregar
                 </div>
             </div>
 
 
             <div class="card">
                 <div class="label">
-                    ✅ Entregadas
+                    🟡 Autorizaciones
+                </div>
+
+                <div class="num warn">
+                    ${otAutorizacion.length}
+                </div>
+
+                <div class="label">
+                    Esperando autorización
+                </div>
+            </div>
+
+
+            <div class="card">
+                <div class="label">
+                    🔧 En reparación
                 </div>
 
                 <div class="num">
-                    ${otEntregadas}
+                    ${otReparacion.length}
                 </div>
 
                 <div class="label">
-                    Finalizadas
+                    Trabajos activos
                 </div>
             </div>
 
 
             <div class="card">
                 <div class="label">
-                    📋 Presupuestos pendientes
-                </div>
-
-                <div class="num">
-                    ${presupuestosPendientes}
-                </div>
-
-                <div class="label">
-                    Para revisar
-                </div>
-            </div>
-
-
-            <div class="card">
-                <div class="label">
-                    💰 Ingresos
-                </div>
-
-                <div class="num ok">
-                    $ ${ingresos.toLocaleString('es-AR')}
-                </div>
-
-                <div class="label">
-                    Caja
-                </div>
-            </div>
-
-
-            <div class="card">
-                <div class="label">
-                    💸 Egresos
+                    📦 Stock bajo
                 </div>
 
                 <div class="num danger">
-                    $ ${egresos.toLocaleString('es-AR')}
+                    ${stockBajo.length}
                 </div>
 
                 <div class="label">
-                    Caja
+                    Repuestos a controlar
                 </div>
             </div>
 
 
             <div class="card">
                 <div class="label">
-                    💵 Saldo
+                    💰 Saldo
                 </div>
 
                 <div class="num">
@@ -9399,92 +9515,109 @@ function cargarLogoPDF() {
                 </div>
 
                 <div class="label">
-                    Disponible
+                    Caja actual
                 </div>
             </div>
 
         `;
 
 
-        // ==============================
+        // =========================================
         // ALERTAS
-        // ==============================
+        // =========================================
 
-        const listaAlertas = [];
-
-
-        if (otAbiertas > 0) {
-
-            listaAlertas.push(`
-                🔧 Hay
-                <b>${otAbiertas}</b>
-                órdenes de trabajo abiertas.
-            `);
-
-        }
+        let alertas = [];
 
 
-        if (otListas > 0) {
+        if (otAutorizacion.length) {
 
-            listaAlertas.push(`
-                🟢 Hay
-                <b>${otListas}</b>
-                trabajos listos para entregar.
-            `);
-
-        }
-
-
-        if (presupuestosPendientes > 0) {
-
-            listaAlertas.push(`
-                📋 Hay
-                <b>${presupuestosPendientes}</b>
-                presupuestos pendientes.
-            `);
-
-        }
-
-
-        if (saldo < 0) {
-
-            listaAlertas.push(`
-                🔴 La caja presenta saldo negativo.
-            `);
-
-        }
-
-
-        alerts.innerHTML = listaAlertas.length
-
-            ? listaAlertas.map(alerta => `
+            alertas.push(`
                 <div style="
-                    padding:12px 0;
+                    padding:12px;
                     border-bottom:1px solid #e5e7eb;
                 ">
-                    ${alerta}
+                    🟡
+                    <b>${otAutorizacion.length}</b>
+                    OT esperando autorización.
                 </div>
-            `).join('')
+            `);
+        }
 
-            : `
+
+        if (otListas.length) {
+
+            alertas.push(`
+                <div style="
+                    padding:12px;
+                    border-bottom:1px solid #e5e7eb;
+                ">
+                    🟢
+                    <b>${otListas.length}</b>
+                    OT listas para entregar.
+                </div>
+            `);
+        }
+
+
+        if (stockBajo.length) {
+
+            alertas.push(`
+                <div style="
+                    padding:12px;
+                    border-bottom:1px solid #e5e7eb;
+                ">
+                    🔴
+                    <b>${stockBajo.length}</b>
+                    repuestos están en stock mínimo.
+                </div>
+            `);
+        }
+
+
+        if (otEntregadas.length) {
+
+            alertas.push(`
+                <div style="
+                    padding:12px;
+                    border-bottom:1px solid #e5e7eb;
+                ">
+                    ✅
+                    <b>${otEntregadas.length}</b>
+                    OT entregadas.
+                </div>
+            `);
+        }
+
+
+        if (!alertas.length) {
+
+            alerts.innerHTML = `
                 <div class="empty">
-                    🟢 No hay alertas importantes.
+                    🟢 Sin alertas importantes.
                 </div>
             `;
+
+        } else {
+
+            alerts.innerHTML =
+                alertas.join('');
+        }
 
 
         console.log(
             '📊 Dashboard actualizado:',
             {
-                clientes: listaClientes.length,
-                motosEquipos: listaMotos.length,
-                otAbiertas,
-                otListas,
-                otEntregadas,
-                presupuestosPendientes,
-                ingresos,
-                egresos,
-                saldo
+                clientes: clientes.length,
+                motosEquipos: motos.length,
+                otAbiertas: otAbiertas.length,
+                otAutorizacion: otAutorizacion.length,
+                otReparacion: otReparacion.length,
+                otListas: otListas.length,
+                otEntregadas: otEntregadas.length,
+                stockBajo: stockBajo.length,
+                ingresos: ingresos,
+                egresos: egresos,
+                saldo: saldo
             }
         );
 
@@ -9492,7 +9625,7 @@ function cargarLogoPDF() {
     } catch (error) {
 
         console.error(
-            '❌ Error cargando dashboard:',
+            '❌ Error actualizando Dashboard:',
             error
         );
 
@@ -9504,52 +9637,27 @@ function cargarLogoPDF() {
 
         alerts.innerHTML = `
             <div class="empty">
-                Error cargando alertas.
+                Ocurrió un error al cargar la información.
             </div>
         `;
-
     }
-
 }
-function renderAll() {
+async function renderAll() {
+
+    console.log('🔄 Actualizando aplicación...');
 
     try {
 
-        if (typeof renderDashboard === 'function') {
-            renderDashboard();
-        }
+        await renderDashboard();
 
-        if (typeof renderClients === 'function') {
-            renderClients();
-        }
-
-        if (typeof renderMotos === 'function') {
-            renderMotos();
-        }
-
-        if (typeof renderOT === 'function') {
-            renderOT();
-        }
-
-        if (typeof renderParts === 'function') {
-            renderParts();
-        }
-
-        if (typeof renderQuotes === 'function') {
-            renderQuotes();
-        }
-
-        if (typeof renderCash === 'function') {
-            renderCash();
-        }
+        console.log('✅ Dashboard actualizado');
 
     } catch (error) {
 
         console.error(
-            'Error en actualización general:',
+            '❌ Error actualizando aplicación:',
             error
         );
-
     }
 }
 function cajaPDF(
@@ -9608,7 +9716,8 @@ function cajaPDF(
         y + 9
     );
 }
-function dineroPDF(valor) {
+renderAll();
+    function dineroPDF(valor) {
 
     return '$ ' +
         Number(valor || 0)
