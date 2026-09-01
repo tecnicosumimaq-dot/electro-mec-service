@@ -808,154 +808,36 @@ const save=()=>{localStorage.setItem(key,JSON.stringify(db));setTimeout(() => {
 }, 300);
 function show(id, btn) {
 
-    console.log('📂 Abriendo módulo:', id);
-
-    // ==========================================
-    // OCULTAR TODAS LAS VISTAS
-    // ==========================================
-
     document
         .querySelectorAll('.view')
-        .forEach(view => {
-            view.style.display = 'none';
+        .forEach(function(v) {
+            v.style.display = 'none';
         });
-
-
-    // ==========================================
-    // BUSCAR LA VISTA
-    // ==========================================
 
     const vista =
         document.getElementById(id);
 
     if (!vista) {
-
         console.error(
-            '❌ No existe la vista:',
+            'No se encontró la vista:',
             id
         );
-
         return;
     }
 
-
-    // ==========================================
-    // MOSTRAR VISTA
-    // ==========================================
-
     vista.style.display = 'block';
-
-
-    // ==========================================
-    // BOTÓN ACTIVO
-    // ==========================================
 
     document
         .querySelectorAll('.nav button')
-        .forEach(b => {
+        .forEach(function(b) {
             b.classList.remove('active');
         });
-
 
     if (btn) {
         btn.classList.add('active');
     }
 
-
-    // ==========================================
-    // CARGAR INFORMACIÓN DEL MÓDULO
-    // ==========================================
-
-    try {
-
-        switch (id) {
-
-            case 'inicio':
-
-                renderDashboard();
-
-                break;
-
-
-            case 'clientes':
-
-                renderClients();
-
-                break;
-
-
-            case 'motos':
-
-                renderMotos();
-
-                break;
-
-
-            case 'ot':
-
-                renderOT();
-
-                break;
-
-
-            case 'inventario':
-
-                renderParts();
-
-                break;
-
-
-            case 'presupuestos':
-
-                renderQuotes();
-
-                break;
-
-
-            case 'caja':
-
-                renderCash();
-
-                break;
-
-
-            case 'biblioteca':
-
-                if (typeof renderBiblioteca === 'function') {
-                    renderBiblioteca();
-                }
-
-                break;
-
-
-            case 'estadisticas':
-
-                if (typeof renderEstadisticas === 'function') {
-                    renderEstadisticas();
-                }
-
-                break;
-
-
-            default:
-
-                console.warn(
-                    '⚠️ Módulo sin función de carga:',
-                    id
-                );
-
-        }
-
-    } catch (error) {
-
-        console.error(
-            '❌ Error cargando módulo:',
-            id,
-            error
-        );
-
-    }
-
+    renderAll();
 }
 function nextId(arr,prefix){let n=arr.length+1;return prefix+String(n).padStart(4,'0')}
 function openClient(edit=null){
@@ -9603,42 +9485,44 @@ function cargarLogoPDF() {
 }
 function renderAll() {
 
-    console.log(
-        '🔄 Actualización general de datos'
-    );
+    try {
 
-    // No cambiamos de pantalla.
-    // Solamente actualizamos los datos
-    // de los módulos que tienen sus contenedores.
+        if (typeof renderDashboard === 'function') {
+            renderDashboard();
+        }
 
-    if (document.getElementById('kpis')) {
-        renderDashboard();
+        if (typeof renderClients === 'function') {
+            renderClients();
+        }
+
+        if (typeof renderMotos === 'function') {
+            renderMotos();
+        }
+
+        if (typeof renderOT === 'function') {
+            renderOT();
+        }
+
+        if (typeof renderParts === 'function') {
+            renderParts();
+        }
+
+        if (typeof renderQuotes === 'function') {
+            renderQuotes();
+        }
+
+        if (typeof renderCash === 'function') {
+            renderCash();
+        }
+
+    } catch (error) {
+
+        console.error(
+            'Error en actualización general:',
+            error
+        );
+
     }
-
-    if (document.getElementById('clientTable')) {
-        renderClients();
-    }
-
-    if (document.getElementById('motoTable')) {
-        renderMotos();
-    }
-
-    if (document.getElementById('otTable')) {
-        renderOT();
-    }
-
-    if (document.getElementById('partTable')) {
-        renderParts();
-    }
-
-    if (document.getElementById('quoteTable')) {
-        renderQuotes();
-    }
-
-    if (document.getElementById('cashPanel')) {
-        renderCash();
-    }
-
 }
 function cajaPDF(
     doc,
