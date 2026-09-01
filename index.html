@@ -792,7 +792,157 @@ comprobarSupabase();
 const key='electroMecAppV1';
 let db=JSON.parse(localStorage.getItem(key)||'{"clientes":[],"motos":[],"ots":[],"repuestos":[],"presupuestos":[],"movimientos":[]}');
 const save=()=>{localStorage.setItem(key,JSON.stringify(db));renderAll()};
-function show(id,btn){document.querySelectorAll('.view').forEach(v=>v.style.display='none');document.getElementById(id).style.display='block';document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderAll()}
+function show(id, btn) {
+
+    console.log('📂 Abriendo módulo:', id);
+
+    // ==========================================
+    // OCULTAR TODAS LAS VISTAS
+    // ==========================================
+
+    document
+        .querySelectorAll('.view')
+        .forEach(view => {
+            view.style.display = 'none';
+        });
+
+
+    // ==========================================
+    // BUSCAR LA VISTA
+    // ==========================================
+
+    const vista =
+        document.getElementById(id);
+
+    if (!vista) {
+
+        console.error(
+            '❌ No existe la vista:',
+            id
+        );
+
+        return;
+    }
+
+
+    // ==========================================
+    // MOSTRAR VISTA
+    // ==========================================
+
+    vista.style.display = 'block';
+
+
+    // ==========================================
+    // BOTÓN ACTIVO
+    // ==========================================
+
+    document
+        .querySelectorAll('.nav button')
+        .forEach(b => {
+            b.classList.remove('active');
+        });
+
+
+    if (btn) {
+        btn.classList.add('active');
+    }
+
+
+    // ==========================================
+    // CARGAR INFORMACIÓN DEL MÓDULO
+    // ==========================================
+
+    try {
+
+        switch (id) {
+
+            case 'inicio':
+
+                renderDashboard();
+
+                break;
+
+
+            case 'clientes':
+
+                renderClients();
+
+                break;
+
+
+            case 'motos':
+
+                renderMotos();
+
+                break;
+
+
+            case 'ot':
+
+                renderOT();
+
+                break;
+
+
+            case 'inventario':
+
+                renderParts();
+
+                break;
+
+
+            case 'presupuestos':
+
+                renderQuotes();
+
+                break;
+
+
+            case 'caja':
+
+                renderCash();
+
+                break;
+
+
+            case 'biblioteca':
+
+                if (typeof renderBiblioteca === 'function') {
+                    renderBiblioteca();
+                }
+
+                break;
+
+
+            case 'estadisticas':
+
+                if (typeof renderEstadisticas === 'function') {
+                    renderEstadisticas();
+                }
+
+                break;
+
+
+            default:
+
+                console.warn(
+                    '⚠️ Módulo sin función de carga:',
+                    id
+                );
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            '❌ Error cargando módulo:',
+            id,
+            error
+        );
+
+    }
+
+}
 function nextId(arr,prefix){let n=arr.length+1;return prefix+String(n).padStart(4,'0')}
 function openClient(edit=null){
 let c=edit||{id:'',nombre:'',apellido:'',telefono:'',email:'',direccion:''};
