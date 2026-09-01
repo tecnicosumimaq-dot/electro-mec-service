@@ -8740,182 +8740,375 @@ function cargarLogoPDF() {
         );
     }
 }
-    function renderDashboard() {
+   async function renderDashboard() {
 
-    const estadosCerrados = [
-        'Entregado',
-        'Entregada',
-        'Cerrada',
-        'Cerrado'
-    ];
+    const container = document.getElementById('dashboard');
 
-    const abiertas =
-        db.ots.filter(o =>
-            !estadosCerrados.includes(
-                String(o.estado || '').trim()
-            )
-        );
+    if (!container) return;
 
-    const cerradas =
-        db.ots.filter(o =>
-            estadosCerrados.includes(
-                String(o.estado || '').trim()
-            )
-        );
-
-    const pending =
-        db.ots.filter(o =>
-            o.estado === 'Esperando autorización'
-        );
-
-    const low =
-        db.repuestos.filter(p =>
-            Number(p.stock || 0) <=
-            Number(p.min || 0)
-        );
-
-    const ing =
-        db.movimientos
-            .filter(m => m.tipo === 'Ingreso')
-            .reduce(
-                (a, m) =>
-                    a + Number(m.importe || 0),
-                0
-            );
-
-    const egr =
-        db.movimientos
-            .filter(m => m.tipo === 'Egreso')
-            .reduce(
-                (a, m) =>
-                    a + Number(m.importe || 0),
-                0
-            );
-
-    const saldo =
-        ing - egr;
-
-    document.getElementById('kpis').innerHTML = [
-
-        [
-            '👤 Clientes',
-            db.clientes.length,
-            ''
-        ],
-
-        [
-            '🏍️ Motos / Equipos',
-            db.motos.length,
-            ''
-        ],
-
-        [
-            '🔧 OT abiertas',
-            abiertas.length,
-            abiertas.length
-                ? 'Revisar'
-                : 'OK'
-        ],
-
-        [
-            '✅ OT cerradas',
-            cerradas.length,
-            ''
-        ],
-
-        [
-            '📦 Stock bajo',
-            low.length,
-            low.length
-                ? 'Comprar'
-                : 'OK'
-        ],
-
-        [
-            '💵 Saldo',
-            '$ ' +
-            saldo.toLocaleString('es-AR'),
-            ''
-        ]
-
-    ]
-    .map(x => `
-
-        <div class="card">
-
-            <div class="label">
-                ${x[0]}
-            </div>
-
-            <div class="num">
-                ${x[1]}
-            </div>
-
-            <div class="label">
-                ${x[2]}
-            </div>
-
+    container.innerHTML = `
+        <div class="empty">
+            Cargando panel...
         </div>
+    `;
 
-    `)
-    .join('');
+    try {
 
-    let alertas = [];
+        // ==============================
+        // CLIENTES
+        // ==============================
 
-    if (abiertas.length) {
+        const { data: clientes, error: errorClientes } =
+            await supabaseClient
+                .from('clientes')
+                .select('id')
+                .eq('activo', true);
 
-        alertas.push(
-            '🔧 ' +
-            abiertas.length +
-            ' OT abiertas.'
-        );
+        if (errorClientes) {
+            console.error('Error cargando estadísticas de clientes:', errorClientes);
+        }
 
-    }
 
-    if (pending.length) {
+        // ==============================
+        // MOTOS / EQUIPOS
+        // ==============================
 
-        alertas.push(
-            '🟡 ' +
-            pending.length +
-            ' OT esperando autorización.'
-        );
+        const { data: motos, error: errorMotos } =
+            await supabaseClient
+                .from('motos')
+                .select('id')
+                .eq('activo', true);
 
-    }
+        if (errorMotos) {
+            console.error('Error cargando estadísticas de motos/equipos:', errorMotos);
+        }
 
-    if (low.length) {
 
-        alertas.push(
-            '🔴 ' +
-            low.length +
-            ' repuestos están en stock mínimo.'
-        );
+        // ==============================
+        // ORDENES DE TRABAJO
+        // ==============================
 
-    }
+        const { data: ots, error: errorOT } =
+            await supabaseClient
+                .from('ordenes_trabajo')
+                .select('id, estado, total');
 
-    document.getElementById('alerts').innerHTML =
+        if (errorOT) {
+            console.error('Error cargando estadísticas de OT:', errorOT);
+        }
 
-        alertas.length
 
-        ?
+        // ==============================
+        // PRESUPUESTOS
+        // ==============================
 
-        alertas
-            .map(x => `
-                <div
-                    style="
-                        padding:10px 0;
-                    ">
-                    ${x}
+        const { data: presupuestos, error: errorPresupuestos } =
+            await supabaseClient
+                .from('presupuestos')
+                .select('id, estado, total');
+
+        if (errorPresupuestos) {
+            console.error(
+                'Error cargando estadísticas de presupuestos:',
+                errorPresupuestos
+            );
+        }
+
+
+        // ==============================
+        // CAJA
+        // ==============================
+
+        const { data: movimientos, error: errorCaja } =
+            await supabaseClient
+                .from('movimientos_caja')
+                .select('tipo, importe');
+
+        if (errorCaja) {
+            console.error(
+                'Error cargando estadísticas de caja:',
+                errorCaja
+            );
+        }
+
+
+        // ==============================
+        // CALCULOS
+        // ==============================
+
+        const listaClientes = clientes || [];
+        const listaMotos = motos || [];
+        const listaOT = ots || [];
+        const listaPresupuestos = presupuestos || [];
+        const listaMovimientos = movimientos || [];
+
+
+        const otAbiertas = listaOT.filter(ot => {
+
+            const estado = String(
+                ot.estado || ''
+            ).toLowerCase();
+
+            return (
+                estado !== 'entregado' &&
+                estado !== 'cerrada' &&
+                estado !== 'cerrado'
+            );
+
+        }).length;
+
+
+        const otListas = listaOT.filter(ot => {
+
+            const estado = String(
+                ot.estado || ''
+            ).toLowerCase();
+
+            return (
+                estado === 'listo' ||
+                estado === 'lista'
+            );
+
+        }).length;
+
+
+        const otEntregadas = listaOT.filter(ot => {
+
+            const estado = String(
+                ot.estado || ''
+            ).toLowerCase();
+
+            return (
+                estado === 'entregado' ||
+                estado === 'entregada' ||
+                estado === 'cerrada' ||
+                estado === 'cerrado'
+            );
+
+        }).length;
+
+
+        const presupuestosPendientes =
+            listaPresupuestos.filter(p => {
+
+                const estado = String(
+                    p.estado || ''
+                ).toLowerCase();
+
+                return (
+                    estado === 'pendiente' ||
+                    estado === 'pendiente de aprobación' ||
+                    estado === 'pendiente de aprobacion'
+                );
+
+            }).length;
+
+
+        let ingresos = 0;
+        let egresos = 0;
+
+
+        listaMovimientos.forEach(m => {
+
+            const importe =
+                Number(m.importe || 0);
+
+            const tipo =
+                String(m.tipo || '').toLowerCase();
+
+
+            if (tipo === 'ingreso') {
+                ingresos += importe;
+            }
+
+
+            if (tipo === 'egreso') {
+                egresos += importe;
+            }
+
+        });
+
+
+        const saldo = ingresos - egresos;
+
+
+        // ==============================
+        // PANEL
+        // ==============================
+
+        container.innerHTML = `
+
+            <div class="cards">
+
+
+                <div class="card">
+
+                    <div class="label">
+                        👤 Clientes
+                    </div>
+
+                    <div class="num">
+                        ${listaClientes.length}
+                    </div>
+
                 </div>
-            `)
-            .join('')
 
-        :
 
-        `
+                <div class="card">
+
+                    <div class="label">
+                        🏍️ Motos / Equipos
+                    </div>
+
+                    <div class="num">
+                        ${listaMotos.length}
+                    </div>
+
+                </div>
+
+
+                <div class="card">
+
+                    <div class="label">
+                        🔧 OT abiertas
+                    </div>
+
+                    <div class="num">
+                        ${otAbiertas}
+                    </div>
+
+                </div>
+
+
+                <div class="card">
+
+                    <div class="label">
+                        🟢 Listas
+                    </div>
+
+                    <div class="num ok">
+                        ${otListas}
+                    </div>
+
+                </div>
+
+
+                <div class="card">
+
+                    <div class="label">
+                        ✅ Entregadas / Cerradas
+                    </div>
+
+                    <div class="num">
+                        ${otEntregadas}
+                    </div>
+
+                </div>
+
+
+                <div class="card">
+
+                    <div class="label">
+                        📋 Presupuestos pendientes
+                    </div>
+
+                    <div class="num">
+                        ${presupuestosPendientes}
+                    </div>
+
+                </div>
+
+
+                <div class="card">
+
+                    <div class="label">
+                        💰 Ingresos
+                    </div>
+
+                    <div class="num ok">
+                        $ ${ingresos.toLocaleString('es-AR')}
+                    </div>
+
+                </div>
+
+
+                <div class="card">
+
+                    <div class="label">
+                        💸 Egresos
+                    </div>
+
+                    <div class="num danger">
+                        $ ${egresos.toLocaleString('es-AR')}
+                    </div>
+
+                </div>
+
+
+                <div class="card">
+
+                    <div class="label">
+                        💵 Saldo
+                    </div>
+
+                    <div class="num">
+                        $ ${saldo.toLocaleString('es-AR')}
+                    </div>
+
+                </div>
+
+
+            </div>
+
+
+            <div class="section">
+
+                <div class="section-title">
+                    📊 Resumen del taller
+                </div>
+
+                <p>
+                    El sistema está conectado a Supabase
+                    y los datos mostrados corresponden
+                    a la información actual del taller.
+                </p>
+
+            </div>
+
+        `;
+
+
+        console.log(
+            '📊 Estadísticas actualizadas:',
+            {
+                clientes: listaClientes.length,
+                motos: listaMotos.length,
+                otAbiertas,
+                otListas,
+                otEntregadas,
+                presupuestosPendientes,
+                ingresos,
+                egresos,
+                saldo
+            }
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            'Error inesperado cargando dashboard:',
+            error
+        );
+
+        container.innerHTML = `
             <div class="empty">
-                🟢 Sin alertas importantes.
+                Error cargando el panel.
             </div>
         `;
+
+    }
+
 }
 function renderAll(){renderDashboard();renderClients();renderMotos();renderOT();renderParts();renderQuotes();renderCash()}renderAll();
 function cajaPDF(
