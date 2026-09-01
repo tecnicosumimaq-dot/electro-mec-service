@@ -8740,15 +8740,16 @@ function cargarLogoPDF() {
         );
     }
 }
-   async function renderDashboard() {
+  async function renderDashboard() {
 
-    const container = document.getElementById('dashboard');
+    const kpis = document.getElementById('kpis');
+    const alerts = document.getElementById('alerts');
 
-    if (!container) return;
+    if (!kpis || !alerts) return;
 
-    container.innerHTML = `
+    kpis.innerHTML = `
         <div class="empty">
-            Cargando panel...
+            Cargando información...
         </div>
     `;
 
@@ -8764,10 +8765,6 @@ function cargarLogoPDF() {
                 .select('id')
                 .eq('activo', true);
 
-        if (errorClientes) {
-            console.error('Error cargando estadísticas de clientes:', errorClientes);
-        }
-
 
         // ==============================
         // MOTOS / EQUIPOS
@@ -8779,10 +8776,6 @@ function cargarLogoPDF() {
                 .select('id')
                 .eq('activo', true);
 
-        if (errorMotos) {
-            console.error('Error cargando estadísticas de motos/equipos:', errorMotos);
-        }
-
 
         // ==============================
         // ORDENES DE TRABAJO
@@ -8792,10 +8785,6 @@ function cargarLogoPDF() {
             await supabaseClient
                 .from('ordenes_trabajo')
                 .select('id, estado, total');
-
-        if (errorOT) {
-            console.error('Error cargando estadísticas de OT:', errorOT);
-        }
 
 
         // ==============================
@@ -8807,13 +8796,6 @@ function cargarLogoPDF() {
                 .from('presupuestos')
                 .select('id, estado, total');
 
-        if (errorPresupuestos) {
-            console.error(
-                'Error cargando estadísticas de presupuestos:',
-                errorPresupuestos
-            );
-        }
-
 
         // ==============================
         // CAJA
@@ -8824,17 +8806,22 @@ function cargarLogoPDF() {
                 .from('movimientos_caja')
                 .select('tipo, importe');
 
-        if (errorCaja) {
-            console.error(
-                'Error cargando estadísticas de caja:',
-                errorCaja
-            );
-        }
 
+        if (errorClientes)
+            console.error('Error clientes:', errorClientes);
 
-        // ==============================
-        // CALCULOS
-        // ==============================
+        if (errorMotos)
+            console.error('Error motos/equipos:', errorMotos);
+
+        if (errorOT)
+            console.error('Error OT:', errorOT);
+
+        if (errorPresupuestos)
+            console.error('Error presupuestos:', errorPresupuestos);
+
+        if (errorCaja)
+            console.error('Error caja:', errorCaja);
+
 
         const listaClientes = clientes || [];
         const listaMotos = motos || [];
@@ -8843,16 +8830,20 @@ function cargarLogoPDF() {
         const listaMovimientos = movimientos || [];
 
 
+        // ==============================
+        // ESTADOS OT
+        // ==============================
+
         const otAbiertas = listaOT.filter(ot => {
 
-            const estado = String(
-                ot.estado || ''
-            ).toLowerCase();
+            const estado =
+                String(ot.estado || '').toLowerCase();
 
             return (
                 estado !== 'entregado' &&
-                estado !== 'cerrada' &&
-                estado !== 'cerrado'
+                estado !== 'entregada' &&
+                estado !== 'cerrado' &&
+                estado !== 'cerrada'
             );
 
         }).length;
@@ -8860,11 +8851,12 @@ function cargarLogoPDF() {
 
         const otListas = listaOT.filter(ot => {
 
-            const estado = String(
-                ot.estado || ''
-            ).toLowerCase();
+            const estado =
+                String(ot.estado || '').toLowerCase();
 
             return (
+                estado === 'terminado' ||
+                estado === 'terminada' ||
                 estado === 'listo' ||
                 estado === 'lista'
             );
@@ -8874,35 +8866,43 @@ function cargarLogoPDF() {
 
         const otEntregadas = listaOT.filter(ot => {
 
-            const estado = String(
-                ot.estado || ''
-            ).toLowerCase();
+            const estado =
+                String(ot.estado || '').toLowerCase();
 
             return (
                 estado === 'entregado' ||
                 estado === 'entregada' ||
-                estado === 'cerrada' ||
-                estado === 'cerrado'
+                estado === 'cerrado' ||
+                estado === 'cerrada'
             );
 
         }).length;
 
 
+        // ==============================
+        // PRESUPUESTOS PENDIENTES
+        // ==============================
+
         const presupuestosPendientes =
             listaPresupuestos.filter(p => {
 
-                const estado = String(
-                    p.estado || ''
-                ).toLowerCase();
+                const estado =
+                    String(p.estado || '').toLowerCase();
 
                 return (
                     estado === 'pendiente' ||
                     estado === 'pendiente de aprobación' ||
-                    estado === 'pendiente de aprobacion'
+                    estado === 'pendiente de aprobacion' ||
+                    estado === 'esperando autorización' ||
+                    estado === 'esperando autorizacion'
                 );
 
             }).length;
 
+
+        // ==============================
+        // CAJA
+        // ==============================
 
         let ingresos = 0;
         let egresos = 0;
@@ -8918,12 +8918,16 @@ function cargarLogoPDF() {
 
 
             if (tipo === 'ingreso') {
+
                 ingresos += importe;
+
             }
 
 
             if (tipo === 'egreso') {
+
                 egresos += importe;
+
             }
 
         });
@@ -8933,156 +8937,220 @@ function cargarLogoPDF() {
 
 
         // ==============================
-        // PANEL
+        // TARJETAS
         // ==============================
 
-        container.innerHTML = `
+        kpis.innerHTML = `
 
-            <div class="cards">
-
-
-                <div class="card">
-
-                    <div class="label">
-                        👤 Clientes
-                    </div>
-
-                    <div class="num">
-                        ${listaClientes.length}
-                    </div>
-
+            <div class="card">
+                <div class="label">
+                    👤 Clientes
                 </div>
 
-
-                <div class="card">
-
-                    <div class="label">
-                        🏍️ Motos / Equipos
-                    </div>
-
-                    <div class="num">
-                        ${listaMotos.length}
-                    </div>
-
+                <div class="num">
+                    ${listaClientes.length}
                 </div>
 
-
-                <div class="card">
-
-                    <div class="label">
-                        🔧 OT abiertas
-                    </div>
-
-                    <div class="num">
-                        ${otAbiertas}
-                    </div>
-
+                <div class="label">
+                    Registrados
                 </div>
-
-
-                <div class="card">
-
-                    <div class="label">
-                        🟢 Listas
-                    </div>
-
-                    <div class="num ok">
-                        ${otListas}
-                    </div>
-
-                </div>
-
-
-                <div class="card">
-
-                    <div class="label">
-                        ✅ Entregadas / Cerradas
-                    </div>
-
-                    <div class="num">
-                        ${otEntregadas}
-                    </div>
-
-                </div>
-
-
-                <div class="card">
-
-                    <div class="label">
-                        📋 Presupuestos pendientes
-                    </div>
-
-                    <div class="num">
-                        ${presupuestosPendientes}
-                    </div>
-
-                </div>
-
-
-                <div class="card">
-
-                    <div class="label">
-                        💰 Ingresos
-                    </div>
-
-                    <div class="num ok">
-                        $ ${ingresos.toLocaleString('es-AR')}
-                    </div>
-
-                </div>
-
-
-                <div class="card">
-
-                    <div class="label">
-                        💸 Egresos
-                    </div>
-
-                    <div class="num danger">
-                        $ ${egresos.toLocaleString('es-AR')}
-                    </div>
-
-                </div>
-
-
-                <div class="card">
-
-                    <div class="label">
-                        💵 Saldo
-                    </div>
-
-                    <div class="num">
-                        $ ${saldo.toLocaleString('es-AR')}
-                    </div>
-
-                </div>
-
-
             </div>
 
 
-            <div class="section">
-
-                <div class="section-title">
-                    📊 Resumen del taller
+            <div class="card">
+                <div class="label">
+                    🏍️ Motos / Equipos
                 </div>
 
-                <p>
-                    El sistema está conectado a Supabase
-                    y los datos mostrados corresponden
-                    a la información actual del taller.
-                </p>
+                <div class="num">
+                    ${listaMotos.length}
+                </div>
 
+                <div class="label">
+                    Registrados
+                </div>
+            </div>
+
+
+            <div class="card">
+                <div class="label">
+                    🔧 OT abiertas
+                </div>
+
+                <div class="num">
+                    ${otAbiertas}
+                </div>
+
+                <div class="label">
+                    En proceso
+                </div>
+            </div>
+
+
+            <div class="card">
+                <div class="label">
+                    🟢 Trabajos listos
+                </div>
+
+                <div class="num ok">
+                    ${otListas}
+                </div>
+
+                <div class="label">
+                    Para entregar
+                </div>
+            </div>
+
+
+            <div class="card">
+                <div class="label">
+                    ✅ Entregadas
+                </div>
+
+                <div class="num">
+                    ${otEntregadas}
+                </div>
+
+                <div class="label">
+                    Finalizadas
+                </div>
+            </div>
+
+
+            <div class="card">
+                <div class="label">
+                    📋 Presupuestos pendientes
+                </div>
+
+                <div class="num">
+                    ${presupuestosPendientes}
+                </div>
+
+                <div class="label">
+                    Para revisar
+                </div>
+            </div>
+
+
+            <div class="card">
+                <div class="label">
+                    💰 Ingresos
+                </div>
+
+                <div class="num ok">
+                    $ ${ingresos.toLocaleString('es-AR')}
+                </div>
+
+                <div class="label">
+                    Caja
+                </div>
+            </div>
+
+
+            <div class="card">
+                <div class="label">
+                    💸 Egresos
+                </div>
+
+                <div class="num danger">
+                    $ ${egresos.toLocaleString('es-AR')}
+                </div>
+
+                <div class="label">
+                    Caja
+                </div>
+            </div>
+
+
+            <div class="card">
+                <div class="label">
+                    💵 Saldo
+                </div>
+
+                <div class="num">
+                    $ ${saldo.toLocaleString('es-AR')}
+                </div>
+
+                <div class="label">
+                    Disponible
+                </div>
             </div>
 
         `;
 
 
+        // ==============================
+        // ALERTAS
+        // ==============================
+
+        const listaAlertas = [];
+
+
+        if (otAbiertas > 0) {
+
+            listaAlertas.push(`
+                🔧 Hay
+                <b>${otAbiertas}</b>
+                órdenes de trabajo abiertas.
+            `);
+
+        }
+
+
+        if (otListas > 0) {
+
+            listaAlertas.push(`
+                🟢 Hay
+                <b>${otListas}</b>
+                trabajos listos para entregar.
+            `);
+
+        }
+
+
+        if (presupuestosPendientes > 0) {
+
+            listaAlertas.push(`
+                📋 Hay
+                <b>${presupuestosPendientes}</b>
+                presupuestos pendientes.
+            `);
+
+        }
+
+
+        if (saldo < 0) {
+
+            listaAlertas.push(`
+                🔴 La caja presenta saldo negativo.
+            `);
+
+        }
+
+
+        alerts.innerHTML = listaAlertas.length
+
+            ? listaAlertas.map(alerta => `
+                <div style="
+                    padding:12px 0;
+                    border-bottom:1px solid #e5e7eb;
+                ">
+                    ${alerta}
+                </div>
+            `).join('')
+
+            : `
+                <div class="empty">
+                    🟢 No hay alertas importantes.
+                </div>
+            `;
+
+
         console.log(
-            '📊 Estadísticas actualizadas:',
+            '📊 Dashboard actualizado:',
             {
                 clientes: listaClientes.length,
-                motos: listaMotos.length,
+                motosEquipos: listaMotos.length,
                 otAbiertas,
                 otListas,
                 otEntregadas,
@@ -9097,13 +9165,19 @@ function cargarLogoPDF() {
     } catch (error) {
 
         console.error(
-            'Error inesperado cargando dashboard:',
+            '❌ Error cargando dashboard:',
             error
         );
 
-        container.innerHTML = `
+        kpis.innerHTML = `
             <div class="empty">
-                Error cargando el panel.
+                No se pudo cargar el panel.
+            </div>
+        `;
+
+        alerts.innerHTML = `
+            <div class="empty">
+                Error cargando alertas.
             </div>
         `;
 
