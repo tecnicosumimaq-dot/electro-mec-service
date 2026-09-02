@@ -1005,6 +1005,505 @@ body {
     }
 
 }
+// ==========================================================
+// 📸 ARCHIVOS / FOTOS DE ORDEN DE TRABAJO
+// ==========================================================
+
+async function cargarArchivosOT(otId) {
+
+    const contenedor =
+        document.getElementById('otArchivosContainer');
+
+    if (!contenedor) return;
+
+    contenedor.innerHTML = `
+        <div class="empty">
+            Cargando fotos...
+        </div>
+    `;
+
+    try {
+
+        const { data, error } =
+            await supabaseClient
+                .from('ot_archivos')
+                .select('*')
+                .eq('ot_id', otId)
+                .order('fecha_alta', {
+                    ascending: false
+                });
+
+        if (error) {
+
+            console.error(
+                'Error cargando archivos de OT:',
+                error
+            );
+
+            contenedor.innerHTML = `
+                <div class="empty">
+                    No se pudieron cargar las fotos.
+                </div>
+            `;
+
+            return;
+        }
+
+        const archivos = data || [];
+
+        if (!archivos.length) {
+
+            contenedor.innerHTML = `
+                <div class="empty">
+                    📷 Todavía no hay fotos en esta OT.
+                </div>
+            `;
+
+            return;
+        }
+
+        contenedor.innerHTML = `
+
+            <div
+                style="
+                    display:grid;
+                    grid-template-columns:
+                        repeat(auto-fill,minmax(220px,1fr));
+                    gap:16px;
+                "
+            >
+
+                ${archivos.map(archivo => {
+
+                    const url =
+                        supabaseClient
+                            .storage
+                            .from('ot-fotos')
+                            .getPublicUrl(
+                                archivo.ruta_archivo
+                            )
+                            .data
+                            .publicUrl;
+
+                    return `
+
+                        <div
+                            style="
+                                background:#fff;
+                                border:1px solid #e5e7eb;
+                                border-radius:14px;
+                                overflow:hidden;
+                                box-shadow:0 3px 12px #0000000d;
+                            "
+                        >
+
+                            <img
+                                src="${url}"
+                                alt="${archivo.descripcion || 'Foto OT'}"
+                                style="
+                                    width:100%;
+                                    height:180px;
+                                    object-fit:cover;
+                                    display:block;
+                                    cursor:pointer;
+                                "
+                                onclick="verImagenOT('${url}')"
+                            >
+
+                            <div
+                                style="
+                                    padding:12px;
+                                "
+                            >
+
+                                <div
+                                    style="
+                                        font-weight:700;
+                                        margin-bottom:5px;
+                                    "
+                                >
+                                    ${archivo.descripcion || 'Sin descripción'}
+                                </div>
+
+                                <div
+                                    style="
+                                        color:#6b7280;
+                                        font-size:12px;
+                                        margin-bottom:10px;
+                                    "
+                                >
+                                    ${archivo.nombre_archivo || ''}
+                                </div>
+
+                                <button
+                                    class="btn secondary"
+                                    onclick="
+                                        eliminarArchivoOT(
+                                            '${archivo.id}',
+                                            '${archivo.ruta_archivo}',
+                                            '${otId}'
+                                        )
+                                    "
+                                >
+                                    🗑️ Eliminar
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    `;
+
+                }).join('')}
+
+            </div>
+
+        `;
+
+    } catch (error) {
+
+        console.error(
+            'Error inesperado cargando archivos OT:',
+            error
+        );
+
+        contenedor.innerHTML = `
+            <div class="empty">
+                Error inesperado.
+            </div>
+        `;
+    }
+}
+
+
+// ==========================================================
+// 📤 SUBIR FOTO A UNA OT
+// ==========================================================
+
+async function subirArchivoOT(otId) {
+
+    const input =
+        document.getElementById('otArchivoInput');
+
+    const descripcion =
+        document
+            .getElementById('otArchivoDescripcion')
+            ?.value
+            .trim() || '';
+
+    if (!input || !input.files.length) {
+
+        alert(
+            'Seleccioná una imagen.'
+        );
+
+        return;
+    }
+
+    const archivo =
+        input.files[0];
+
+    // ------------------------------------------
+    // Validaciones
+    // ------------------------------------------
+
+    if (!archivo.type.startsWith('image/')) {
+
+        alert(
+            'Por ahora solo se permiten imágenes.'
+        );
+
+        return;
+    }
+
+    const maximo =
+        8 * 1024 * 1024;
+
+    if (archivo.size > maximo) {
+
+        alert(
+            'La imagen no puede superar los 8 MB.'
+        );
+
+        return;
+    }
+
+    try {
+
+        const extension =
+            archivo.name
+                .split('.')
+                .pop()
+                .toLowerCase();
+
+        const nombreUnico =
+            `${Date.now()}_${Math.random()
+                .toString(36)
+                .substring(2,8)}.${extension}`;
+
+        const ruta =
+            `${otId}/${nombreUnico}`;
+
+        console.log(
+            '📤 Subiendo archivo:',
+            ruta
+        );
+
+        // ------------------------------------------
+        // STORAGE
+        // ------------------------------------------
+
+        const { error: errorUpload } =
+            await supabaseClient
+                .storage
+                .from('ot-fotos')
+                .upload(
+                    ruta,
+                    archivo,
+                    {
+                        cacheControl: '3600',
+                        upsert: false,
+                        contentType: archivo.type
+                    }
+                );
+
+        if (errorUpload) {
+
+            console.error(
+                'Error subiendo imagen:',
+                errorUpload
+            );
+
+            alert(
+                'No se pudo subir la imagen:\n\n' +
+                errorUpload.message
+            );
+
+            return;
+        }
+
+        // ------------------------------------------
+        // REGISTRO EN BASE DE DATOS
+        // ------------------------------------------
+
+        const { error: errorDB } =
+            await supabaseClient
+                .from('ot_archivos')
+                .insert({
+
+                    ot_id: otId,
+
+                    nombre_archivo:
+                        archivo.name,
+
+                    ruta_archivo:
+                        ruta,
+
+                    tipo_archivo:
+                        archivo.type,
+
+                    descripcion:
+                        descripcion
+
+                });
+
+        if (errorDB) {
+
+            console.error(
+                'Error guardando registro de imagen:',
+                errorDB
+            );
+
+            // Si falló la DB intentamos borrar
+            // la imagen del Storage.
+
+            await supabaseClient
+                .storage
+                .from('ot-fotos')
+                .remove([ruta]);
+
+            alert(
+                'La imagen se subió pero no pudo registrarse.'
+            );
+
+            return;
+        }
+
+        console.log(
+            '✅ Imagen guardada correctamente'
+        );
+
+        // Limpiar formulario
+
+        input.value = '';
+
+        const descripcionInput =
+            document.getElementById(
+                'otArchivoDescripcion'
+            );
+
+        if (descripcionInput) {
+            descripcionInput.value = '';
+        }
+
+        await cargarArchivosOT(otId);
+
+    } catch (error) {
+
+        console.error(
+            'Error inesperado subiendo imagen:',
+            error
+        );
+
+        alert(
+            'Ocurrió un error al subir la imagen.'
+        );
+    }
+}
+
+
+// ==========================================================
+// 🗑️ ELIMINAR FOTO
+// ==========================================================
+
+async function eliminarArchivoOT(
+    archivoId,
+    rutaArchivo,
+    otId
+) {
+
+    const confirmar =
+        confirm(
+            '¿Querés eliminar esta foto de la OT?'
+        );
+
+    if (!confirmar) return;
+
+    try {
+
+        // ------------------------------------------
+        // BORRAR STORAGE
+        // ------------------------------------------
+
+        const { error: errorStorage } =
+            await supabaseClient
+                .storage
+                .from('ot-fotos')
+                .remove([
+                    rutaArchivo
+                ]);
+
+        if (errorStorage) {
+
+            console.error(
+                'Error eliminando imagen:',
+                errorStorage
+            );
+        }
+
+        // ------------------------------------------
+        // BORRAR REGISTRO
+        // ------------------------------------------
+
+        const { error } =
+            await supabaseClient
+                .from('ot_archivos')
+                .delete()
+                .eq('id', archivoId);
+
+        if (error) {
+
+            console.error(
+                'Error eliminando registro:',
+                error
+            );
+
+            alert(
+                'No se pudo eliminar la foto:\n\n' +
+                error.message
+            );
+
+            return;
+        }
+
+        console.log(
+            '🗑️ Foto eliminada'
+        );
+
+        await cargarArchivosOT(otId);
+
+    } catch (error) {
+
+        console.error(
+            'Error inesperado eliminando foto:',
+            error
+        );
+
+        alert(
+            'Ocurrió un error eliminando la foto.'
+        );
+    }
+}
+
+
+// ==========================================================
+// 🖼️ VER IMAGEN GRANDE
+// ==========================================================
+
+function verImagenOT(url) {
+
+    const modal =
+        document.getElementById('modalbox');
+
+    if (!modal) return;
+
+    modal.innerHTML = `
+
+        <h2>
+            📷 Imagen de la OT
+        </h2>
+
+        <div
+            style="
+                display:flex;
+                justify-content:center;
+                align-items:center;
+                background:#111827;
+                border-radius:14px;
+                padding:15px;
+            "
+        >
+
+            <img
+                src="${url}"
+                style="
+                    max-width:100%;
+                    max-height:65vh;
+                    object-fit:contain;
+                    border-radius:10px;
+                "
+            >
+
+        </div>
+
+        <div class="actions">
+
+            <button
+                class="btn secondary"
+                onclick="closeModal()"
+            >
+                ← Volver
+            </button>
+
+        </div>
+
+    `;
+
+    document
+        .getElementById('modal')
+        .classList
+        .add('show');
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head>
 <body>
