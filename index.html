@@ -5884,20 +5884,6 @@ await cargarArchivosOT(ot.id);
             .classList
             .add('show');
 
-
-    } catch (error) {
-
-        console.error(
-            'Error inesperado:',
-            error
-        );
-
-        alert(
-            'Ocurrió un error al cargar el pago.'
-        );
-    }
-}
-
   async function guardarPagoOT(otId) {
 
     const importe =
