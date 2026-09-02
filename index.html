@@ -4485,7 +4485,9 @@ const pendiente =
     }
 }
 async function verFichaOT(otId) {
-
+  
+    ultimaOTVisualizada = otId;
+   
     if (!otId) {
         alert('No se encontró la Orden de Trabajo.');
         return;
@@ -5122,22 +5124,11 @@ async function verFichaOT(otId) {
                 </div>
 
 
-                <!-- BOTONES -->
-
-                <div
-                    class="actions"
-                    style="
-                        display:flex;
-                        justify-content:flex-end;
-                        flex-wrap:wrap;
-                        gap:8px;
-                    "
-                >
-<!-- ==========================================
-     FOTOS Y ARCHIVOS DE LA OT
+             <!-- ==========================================
+     FOTOS DE LA REPARACIÓN
 ========================================== -->
 
-<div class="section">
+<div class="section ot-fotos-section">
 
     <div class="section-title">
 
@@ -5146,60 +5137,48 @@ async function verFichaOT(otId) {
     </div>
 
 
-    <div
-        style="
-            background:#f8fafc;
-            border:1px solid #e5e7eb;
-            border-radius:14px;
-            padding:16px;
-            margin-bottom:18px;
-        "
-    >
+    <!-- ==============================
+         CARGAR FOTO
+    =============================== -->
 
-        <div
-            style="
-                display:grid;
-                grid-template-columns:
-                    minmax(200px,1fr)
-                    minmax(200px,2fr)
-                    auto;
-                gap:10px;
-                align-items:end;
-            "
-        >
+    <div class="ot-fotos-form">
+
+        <div class="ot-fotos-campo">
 
             <label>
-
-                Imagen
-
-                <input
-                    id="otArchivoInput"
-                    type="file"
-                    accept="image/*"
-                >
-
+                📷 Imagen
             </label>
 
+            <input
+                id="otArchivoInput"
+                type="file"
+                accept="image/*"
+            >
+
+        </div>
+
+
+        <div class="ot-fotos-campo">
 
             <label>
-
-                Descripción
-
-                <input
-                    id="otArchivoDescripcion"
-                    type="text"
-                    placeholder="Ej: Estado inicial"
-                    style="width:100%;"
-                >
-
+                📝 Descripción
             </label>
 
+            <input
+                id="otArchivoDescripcion"
+                type="text"
+                placeholder="Ej: Estado inicial de la moto"
+            >
+
+        </div>
+
+
+        <div class="ot-fotos-boton">
 
             <button
+                type="button"
                 class="btn"
-                onclick="
-                    subirArchivoOT('${ot.id}')
-                "
+                onclick="subirArchivoOT('${ot.id}')"
             >
 
                 📤 Subir foto
@@ -5211,48 +5190,65 @@ async function verFichaOT(otId) {
     </div>
 
 
+    <!-- ==============================
+         GALERÍA
+    =============================== -->
+
     <div
         id="otArchivosContainer"
+        class="ot-archivos-container"
     >
 
         <div class="empty">
 
-            Cargando fotos...
+            📷 Todavía no hay fotos en esta OT.
 
         </div>
 
     </div>
 
 </div>
-                    <button
-                        class="btn secondary"
-                        onclick="openOTEdit('${ot.id}')"
-                    >
-                        ✏️ Editar
-                    </button>
 
 
-                    <button
-                        class="btn secondary"
-                        onclick="openOTPago('${ot.id}')"
-                    >
-                        💳 Registrar pago
-                    </button>
+<!-- ==========================================
+     BOTONES DE LA OT
+========================================== -->
+
+<div class="actions ot-acciones-finales">
+
+    <button
+        type="button"
+        class="btn secondary"
+        onclick="openOTEdit('${ot.id}')"
+    >
+
+        ✏️ Editar
+
+    </button>
 
 
-                    <button
-                        class="btn secondary"
-                        onclick="closeModal()"
-                    >
-                        ✕ Cerrar
-                    </button>
+    <button
+        type="button"
+        class="btn secondary"
+        onclick="openOTPago('${ot.id}')"
+    >
 
-                </div>
+        💳 Registrar pago
 
-            </div>
+    </button>
 
-        `;
 
+    <button
+        type="button"
+        class="btn secondary"
+        onclick="closeModal()"
+    >
+
+        ✕ Cerrar
+
+    </button>
+
+</div>
 
         document
             .getElementById('modal')
@@ -10378,7 +10374,510 @@ function cargarLogoPDF() {
         );
     }
 }
- async function renderDashboard() {
+// ==========================================================
+// 📸 FOTOS / ARCHIVOS DE LAS ÓRDENES DE TRABAJO
+// ==========================================================
+
+async function cargarArchivosOT(otId) {
+
+    const contenedor =
+        document.getElementById('otArchivosContainer');
+
+    if (!contenedor) return;
+
+    contenedor.innerHTML = `
+        <div class="empty">
+            📷 Cargando fotos...
+        </div>
+    `;
+
+    try {
+
+        const { data, error } =
+            await supabaseClient
+                .from('ot_archivos')
+                .select('*')
+                .eq('ot_id', otId)
+                .order('fecha_alta', {
+                    ascending: false
+                });
+
+        if (error) {
+
+            console.error(
+                '❌ Error cargando fotos de OT:',
+                error
+            );
+
+            contenedor.innerHTML = `
+                <div class="empty">
+                    No se pudieron cargar las fotos.
+                </div>
+            `;
+
+            return;
+        }
+
+        const archivos = data || [];
+
+        if (!archivos.length) {
+
+            contenedor.innerHTML = `
+                <div class="empty">
+                    📷 Todavía no hay fotos en esta OT.
+                </div>
+            `;
+
+            return;
+        }
+
+        contenedor.innerHTML = `
+
+            <div class="ot-fotos-grid">
+
+                ${archivos.map(archivo => {
+
+                    const resultado =
+                        supabaseClient
+                            .storage
+                            .from('ot-fotos')
+                            .getPublicUrl(
+                                archivo.ruta_archivo
+                            );
+
+                    const url =
+                        resultado.data.publicUrl;
+
+                    return `
+
+                        <div class="ot-foto-card">
+
+                            <img
+                                src="${url}"
+                                alt="Foto de OT"
+                                class="ot-foto-img"
+                                onclick="verImagenOT('${url}')"
+                            >
+
+                            <div class="ot-foto-info">
+
+                                <div class="ot-foto-descripcion">
+
+                                    ${archivo.descripcion || 'Sin descripción'}
+
+                                </div>
+
+                                <div class="ot-foto-nombre">
+
+                                    ${archivo.nombre_archivo || ''}
+
+                                </div>
+
+                                <button
+                                    type="button"
+                                    class="btn secondary"
+                                    onclick="
+                                        eliminarArchivoOT(
+                                            '${archivo.id}',
+                                            '${archivo.ruta_archivo}',
+                                            '${otId}'
+                                        )
+                                    "
+                                >
+                                    🗑️ Eliminar
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    `;
+
+                }).join('')}
+
+            </div>
+        `;
+
+    } catch (error) {
+
+        console.error(
+            '❌ Error inesperado cargando fotos:',
+            error
+        );
+
+        contenedor.innerHTML = `
+            <div class="empty">
+                Error inesperado cargando las fotos.
+            </div>
+        `;
+    }
+}
+
+
+// ==========================================================
+// 📤 SUBIR FOTO
+// ==========================================================
+
+async function subirArchivoOT(otId) {
+
+    const input =
+        document.getElementById('otArchivoInput');
+
+    const descripcionInput =
+        document.getElementById(
+            'otArchivoDescripcion'
+        );
+
+    if (!input) {
+
+        alert(
+            'No se encontró el selector de imágenes.'
+        );
+
+        return;
+    }
+
+    if (!input.files || !input.files.length) {
+
+        alert(
+            'Primero seleccioná una imagen.'
+        );
+
+        return;
+    }
+
+    const archivo =
+        input.files[0];
+
+    const descripcion =
+        descripcionInput
+            ? descripcionInput.value.trim()
+            : '';
+
+    // ------------------------------------------
+    // VALIDAR IMAGEN
+    // ------------------------------------------
+
+    if (!archivo.type.startsWith('image/')) {
+
+        alert(
+            'Solo se pueden subir imágenes.'
+        );
+
+        return;
+    }
+
+    // Máximo 8 MB
+
+    if (archivo.size > 8 * 1024 * 1024) {
+
+        alert(
+            'La imagen no puede superar los 8 MB.'
+        );
+
+        return;
+    }
+
+    try {
+
+        console.log(
+            '📤 Subiendo foto de OT:',
+            otId
+        );
+
+        // ------------------------------------------
+        // NOMBRE ÚNICO
+        // ------------------------------------------
+
+        const extension =
+            archivo.name
+                .split('.')
+                .pop()
+                .toLowerCase();
+
+        const nombreUnico =
+            `${Date.now()}_${Math.random()
+                .toString(36)
+                .substring(2, 8)}.${extension}`;
+
+        const ruta =
+            `${otId}/${nombreUnico}`;
+
+        // ------------------------------------------
+        // STORAGE
+        // ------------------------------------------
+
+        const { error: errorUpload } =
+            await supabaseClient
+                .storage
+                .from('ot-fotos')
+                .upload(
+                    ruta,
+                    archivo,
+                    {
+                        cacheControl: '3600',
+                        upsert: false,
+                        contentType: archivo.type
+                    }
+                );
+
+        if (errorUpload) {
+
+            console.error(
+                '❌ Error subiendo imagen:',
+                errorUpload
+            );
+
+            alert(
+                'No se pudo subir la imagen.\n\n' +
+                errorUpload.message
+            );
+
+            return;
+        }
+
+        // ------------------------------------------
+        // GUARDAR REGISTRO
+        // ------------------------------------------
+
+        const { error: errorDB } =
+            await supabaseClient
+                .from('ot_archivos')
+                .insert({
+
+                    ot_id: otId,
+
+                    nombre_archivo:
+                        archivo.name,
+
+                    ruta_archivo:
+                        ruta,
+
+                    tipo_archivo:
+                        archivo.type,
+
+                    descripcion:
+                        descripcion || null
+
+                });
+
+        if (errorDB) {
+
+            console.error(
+                '❌ Error guardando registro:',
+                errorDB
+            );
+
+            // Intentar eliminar archivo si falló DB
+
+            await supabaseClient
+                .storage
+                .from('ot-fotos')
+                .remove([
+                    ruta
+                ]);
+
+            alert(
+                'La imagen se subió pero no pudo registrarse.\n\n' +
+                errorDB.message
+            );
+
+            return;
+        }
+
+        console.log(
+            '✅ Foto guardada correctamente'
+        );
+
+        // ------------------------------------------
+        // LIMPIAR
+        // ------------------------------------------
+
+        input.value = '';
+
+        if (descripcionInput) {
+
+            descripcionInput.value = '';
+
+        }
+
+        // ------------------------------------------
+        // ACTUALIZAR GALERÍA
+        // ------------------------------------------
+
+        await cargarArchivosOT(otId);
+
+    } catch (error) {
+
+        console.error(
+            '❌ Error inesperado subiendo foto:',
+            error
+        );
+
+        alert(
+            'Ocurrió un error al subir la foto.\n\n' +
+            error.message
+        );
+    }
+}
+
+
+// ==========================================================
+// 🗑️ ELIMINAR FOTO
+// ==========================================================
+
+async function eliminarArchivoOT(
+    archivoId,
+    rutaArchivo,
+    otId
+) {
+
+    const confirmar =
+        confirm(
+            '¿Querés eliminar esta foto de la OT?'
+        );
+
+    if (!confirmar) return;
+
+    try {
+
+        console.log(
+            '🗑️ Eliminando foto:',
+            archivoId
+        );
+
+        // ------------------------------------------
+        // STORAGE
+        // ------------------------------------------
+
+        const { error: errorStorage } =
+            await supabaseClient
+                .storage
+                .from('ot-fotos')
+                .remove([
+                    rutaArchivo
+                ]);
+
+        if (errorStorage) {
+
+            console.error(
+                'Error eliminando archivo Storage:',
+                errorStorage
+            );
+
+        }
+
+        // ------------------------------------------
+        // BASE DE DATOS
+        // ------------------------------------------
+
+        const { error } =
+            await supabaseClient
+                .from('ot_archivos')
+                .delete()
+                .eq('id', archivoId);
+
+        if (error) {
+
+            console.error(
+                '❌ Error eliminando registro:',
+                error
+            );
+
+            alert(
+                'No se pudo eliminar la foto.\n\n' +
+                error.message
+            );
+
+            return;
+        }
+
+        console.log(
+            '✅ Foto eliminada'
+        );
+
+        await cargarArchivosOT(otId);
+
+    } catch (error) {
+
+        console.error(
+            '❌ Error inesperado eliminando foto:',
+            error
+        );
+
+        alert(
+            'Ocurrió un error eliminando la foto.'
+        );
+    }
+}
+
+
+// ==========================================================
+// 🖼️ VER FOTO GRANDE
+// ==========================================================
+
+function verImagenOT(url) {
+
+    document.getElementById('modalbox').className =
+        'modalbox';
+
+    document.getElementById('modalbox').innerHTML = `
+
+        <h2>
+            📷 Foto de la reparación
+        </h2>
+
+        <div class="ot-imagen-grande">
+
+            <img
+                src="${url}"
+                alt="Foto de reparación"
+            >
+
+        </div>
+
+        <div class="actions">
+
+            <button
+                type="button"
+                class="btn secondary"
+                onclick="verFichaOTDesdeImagen()"
+            >
+                ← Volver a la OT
+            </button>
+
+        </div>
+
+    `;
+
+    document
+        .getElementById('modal')
+        .classList
+        .add('show');
+}
+
+
+// ==========================================================
+// 🔙 VOLVER DESDE FOTO
+// ==========================================================
+
+let ultimaOTVisualizada = null;
+
+function verFichaOTDesdeImagen() {
+
+    if (!ultimaOTVisualizada) {
+
+        closeModal();
+
+        return;
+    }
+
+    verFichaOT(
+        ultimaOTVisualizada
+    );
+}
+    async function renderDashboard() {
 
     const kpis = document.getElementById('kpis');
     const alerts = document.getElementById('alerts');
