@@ -5133,7 +5133,97 @@ async function verFichaOT(otId) {
                         gap:8px;
                     "
                 >
+<!-- ==========================================
+     FOTOS Y ARCHIVOS DE LA OT
+========================================== -->
 
+<div class="section">
+
+    <div class="section-title">
+
+        📸 Fotos de la reparación
+
+    </div>
+
+
+    <div
+        style="
+            background:#f8fafc;
+            border:1px solid #e5e7eb;
+            border-radius:14px;
+            padding:16px;
+            margin-bottom:18px;
+        "
+    >
+
+        <div
+            style="
+                display:grid;
+                grid-template-columns:
+                    minmax(200px,1fr)
+                    minmax(200px,2fr)
+                    auto;
+                gap:10px;
+                align-items:end;
+            "
+        >
+
+            <label>
+
+                Imagen
+
+                <input
+                    id="otArchivoInput"
+                    type="file"
+                    accept="image/*"
+                >
+
+            </label>
+
+
+            <label>
+
+                Descripción
+
+                <input
+                    id="otArchivoDescripcion"
+                    type="text"
+                    placeholder="Ej: Estado inicial"
+                    style="width:100%;"
+                >
+
+            </label>
+
+
+            <button
+                class="btn"
+                onclick="
+                    subirArchivoOT('${ot.id}')
+                "
+            >
+
+                📤 Subir foto
+
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <div
+        id="otArchivosContainer"
+    >
+
+        <div class="empty">
+
+            Cargando fotos...
+
+        </div>
+
+    </div>
+
+</div>
                     <button
                         class="btn secondary"
                         onclick="openOTEdit('${ot.id}')"
@@ -5168,7 +5258,7 @@ async function verFichaOT(otId) {
             .getElementById('modal')
             .classList
             .add('show');
-
+await cargarArchivosOT(ot.id);
 
         console.log(
             '✅ Ficha OT cargada correctamente'
