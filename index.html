@@ -4831,10 +4831,11 @@ const pendiente =
             '<div class="empty">Error inesperado.</div>';
     }
 }
+```javascript
 async function verFichaOT(otId) {
-  
+
     ultimaOTVisualizada = otId;
-   
+
     if (!otId) {
         alert('No se encontró la Orden de Trabajo.');
         return;
@@ -4910,7 +4911,6 @@ async function verFichaOT(otId) {
                 .eq('ot_id', otId)
                 .order('id');
 
-
         if (errorRepuestos) {
 
             console.error(
@@ -4934,7 +4934,6 @@ async function verFichaOT(otId) {
                 .order('fecha', {
                     ascending: false
                 });
-
 
         if (errorPagos) {
 
@@ -5236,9 +5235,7 @@ async function verFichaOT(otId) {
 
                     ${
                         listaRepuestos.length
-
                         ?
-
                         `
 
                         <div style="overflow-x:auto;">
@@ -5254,7 +5251,6 @@ async function verFichaOT(otId) {
                                     <th>Subtotal</th>
 
                                 </tr>
-
 
                                 ${listaRepuestos.map(r => `
 
@@ -5278,7 +5274,8 @@ async function verFichaOT(otId) {
                                         </td>
 
                                         <td>
-                                            $ ${
+                                            $
+                                            ${
                                                 Number(
                                                     r.precio_unitario || 0
                                                 ).toLocaleString(
@@ -5288,7 +5285,8 @@ async function verFichaOT(otId) {
                                         </td>
 
                                         <td>
-                                            $ ${
+                                            $
+                                            ${
                                                 Number(
                                                     r.subtotal || 0
                                                 ).toLocaleString(
@@ -5306,9 +5304,7 @@ async function verFichaOT(otId) {
                         </div>
 
                         `
-
                         :
-
                         `
 
                         <div class="empty">
@@ -5331,9 +5327,7 @@ async function verFichaOT(otId) {
 
                     ${
                         listaPagos.length
-
                         ?
-
                         `
 
                         <div style="overflow-x:auto;">
@@ -5366,7 +5360,8 @@ async function verFichaOT(otId) {
                                         </td>
 
                                         <td>
-                                            $ ${
+                                            $
+                                            ${
                                                 Number(
                                                     p.importe || 0
                                                 ).toLocaleString(
@@ -5384,9 +5379,7 @@ async function verFichaOT(otId) {
                         </div>
 
                         `
-
                         :
-
                         `
 
                         <div class="empty">
@@ -5422,7 +5415,8 @@ async function verFichaOT(otId) {
                             </div>
 
                             <div class="num">
-                                $ ${total.toLocaleString('es-AR')}
+                                $
+                                ${total.toLocaleString('es-AR')}
                             </div>
 
                         </div>
@@ -5435,7 +5429,8 @@ async function verFichaOT(otId) {
                             </div>
 
                             <div class="num ok">
-                                $ ${pagado.toLocaleString('es-AR')}
+                                $
+                                ${pagado.toLocaleString('es-AR')}
                             </div>
 
                         </div>
@@ -5448,7 +5443,8 @@ async function verFichaOT(otId) {
                             </div>
 
                             <div class="num danger">
-                                $ ${pendiente.toLocaleString('es-AR')}
+                                $
+                                ${pendiente.toLocaleString('es-AR')}
                             </div>
 
                         </div>
@@ -5461,7 +5457,8 @@ async function verFichaOT(otId) {
                             </div>
 
                             <div class="num ok">
-                                $ ${ganancia.toLocaleString('es-AR')}
+                                $
+                                ${ganancia.toLocaleString('es-AR')}
                             </div>
 
                         </div>
@@ -5471,137 +5468,144 @@ async function verFichaOT(otId) {
                 </div>
 
 
-             <!-- ==========================================
-     FOTOS DE LA REPARACIÓN
-========================================== -->
+                <!-- ==========================================
+                     FOTOS DE LA REPARACIÓN
+                =========================================== -->
 
-<div class="section ot-fotos-section">
+                <div class="section ot-fotos-section">
 
-    <div class="section-title">
-
-        📸 Fotos de la reparación
-
-    </div>
+                    <div class="section-title">
+                        📸 Fotos de la reparación
+                    </div>
 
 
-    <!-- ==============================
-         CARGAR FOTO
-    =============================== -->
+                    <!-- CARGAR FOTO -->
 
-    <div class="ot-fotos-form">
+                    <div class="ot-fotos-form">
 
-        <div class="ot-fotos-campo">
+                        <div class="ot-fotos-campo">
 
-            <label>
-                📷 Imagen
-            </label>
+                            <label>
+                                📷 Imagen
+                            </label>
 
-            <input
-                id="otArchivoInput"
-                type="file"
-                accept="image/*"
-            >
+                            <input
+                                id="otArchivoInput"
+                                type="file"
+                                accept="image/*"
+                            >
 
-        </div>
+                        </div>
 
 
-        <div class="ot-fotos-campo">
+                        <div class="ot-fotos-campo">
 
-            <label>
-                📝 Descripción
-            </label>
+                            <label>
+                                📝 Descripción
+                            </label>
 
-            <input
-                id="otArchivoDescripcion"
-                type="text"
-                placeholder="Ej: Estado inicial de la moto"
-            >
+                            <input
+                                id="otArchivoDescripcion"
+                                type="text"
+                                placeholder="Ej: Estado inicial de la moto"
+                            >
 
-        </div>
-
-
-        <div class="ot-fotos-boton">
-
-            <button
-                type="button"
-                class="btn"
-                onclick="subirArchivoOT('${ot.id}')"
-            >
-
-                📤 Subir foto
-
-            </button>
-
-        </div>
-
-    </div>
+                        </div>
 
 
-    <!-- ==============================
-         GALERÍA
-    =============================== -->
+                        <div class="ot-fotos-boton">
 
-    <div
-        id="otArchivosContainer"
-        class="ot-archivos-container"
-    >
+                            <button
+                                type="button"
+                                class="btn"
+                                onclick="subirArchivoOT('${ot.id}')"
+                            >
+                                📤 Subir foto
+                            </button>
 
-        <div class="empty">
+                        </div>
 
-            📷 Todavía no hay fotos en esta OT.
-
-        </div>
-
-    </div>
-
-</div>
+                    </div>
 
 
-<!-- ==========================================
-     BOTONES DE LA OT
-========================================== -->
+                    <!-- GALERÍA -->
 
-<div class="actions ot-acciones-finales">
+                    <div
+                        id="otArchivosContainer"
+                        class="ot-archivos-container"
+                    >
 
-    <button
-        type="button"
-        class="btn secondary"
-        onclick="openOTEdit('${ot.id}')"
-    >
+                        <div class="empty">
+                            📷 Todavía no hay fotos en esta OT.
+                        </div>
 
-        ✏️ Editar
+                    </div>
 
-    </button>
-
-
-    <button
-        type="button"
-        class="btn secondary"
-        onclick="openOTPago('${ot.id}')"
-    >
-
-        💳 Registrar pago
-
-    </button>
+                </div>
 
 
-    <button
-        type="button"
-        class="btn secondary"
-        onclick="closeModal()"
-    >
+                <!-- ==========================================
+                     BOTONES DE LA OT
+                =========================================== -->
 
-        ✕ Cerrar
+                <div class="actions ot-acciones-finales">
 
-    </button>
+                    <button
+                        type="button"
+                        class="btn secondary"
+                        onclick="openOTEdit('${ot.id}')"
+                    >
+                        ✏️ Editar
+                    </button>
 
-</div>
 
-        document
-            .getElementById('modal')
-            .classList
-            .add('show');
-await cargarArchivosOT(ot.id);
+                    <button
+                        type="button"
+                        class="btn secondary"
+                        onclick="openOTPago('${ot.id}')"
+                    >
+                        💳 Registrar pago
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="btn secondary"
+                        onclick="closeModal()"
+                    >
+                        ✕ Cerrar
+                    </button>
+
+                </div>
+
+            </div>
+
+        `;
+
+        /* ==========================================
+           MOSTRAR MODAL
+        ========================================== */
+
+        const modal = document.getElementById('modal');
+
+        if (!modal) {
+
+            console.error(
+                'No se encontró el elemento #modal'
+            );
+
+            return;
+        }
+
+        modal.classList.add('show');
+
+
+        /* ==========================================
+           CARGAR FOTOS
+        ========================================== */
+
+        await cargarArchivosOT(ot.id);
+
 
         console.log(
             '✅ Ficha OT cargada correctamente'
@@ -5620,6 +5624,8 @@ await cargarArchivosOT(ot.id);
         );
     }
 }
+```
+
     async function eliminarOT(otId) {
 
     if (!otId) {
