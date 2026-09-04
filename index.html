@@ -4173,139 +4173,131 @@ async function verFichaMoto(motoId) {
         );
     }
 }
-    async function openOT() {
+   function openOTPago(otId) {
 
-    try {
+    const ot = db.ots.find(x => x.id == otId);
 
-        const { data: motos, error } = await supabaseClient
-            .from('motos')
-            .select(`
-                id,
-                dominio,
-                marca,
-                modelo,
-                cliente_id,
-                clientes (
-                    id,
-                    nombre,
-                    apellido
-                )
-            `)
-            .eq('activo', true)
-            .order('fecha_alta', { ascending: false });
-
-        if (error) {
-            console.error('Error cargando motos para OT:', error);
-            alert('No se pudieron cargar las motos.');
-            return;
-        }
-
-        if (!motos || !motos.length) {
-            alert('Primero cargá una moto.');
-            return;
-        }
-
-        const opcionesMoto = motos.map(m => {
-
-            const cliente = m.clientes || {};
-
-            return `
-                <option value="${m.id}">
-                    ${m.dominio || 'Sin dominio'} -
-                    ${m.marca || ''} ${m.modelo || ''}
-                    - ${cliente.nombre || ''} ${cliente.apellido || ''}
-                </option>
-            `;
-
-        }).join('');
-
-        document.getElementById('modalbox').innerHTML = `
-
-            <h2>Nueva Orden de Trabajo</h2>
-
-            <div class="form">
-
-                <label>
-                    Moto
-                    <select id="otMoto">
-                        <option value="">Seleccionar moto</option>
-                        ${opcionesMoto}
-                    </select>
-                </label>
-
-                <label>
-                    Estado
-                    <select id="otEstado">
-                        <option>Abierta</option>
-                        <option>Esperando autorización</option>
-                        <option>En reparación</option>
-                        <option>Terminado</option>
-                        <option>Entregado</option>
-                    </select>
-                </label>
-
-                <label>
-                    Kilometraje
-                    <input id="otKm" type="number">
-                </label>
-
-                <label>
-                    Diagnóstico
-                    <input id="otDiag">
-                </label>
-
-                <label>
-                    Trabajos realizados
-                    <input id="otTrab">
-                </label>
-
-                <label>
-                    Mano de obra ($)
-                    <input id="otMO" type="number" value="0">
-                </label>
-
-                <label>
-                    Repuestos ($)
-                    <input id="otRep" type="number" value="0">
-                </label>
-
-                <label>
-                    Descuento ($)
-                    <input id="otDesc" type="number" value="0">
-                </label>
-
-                <label>
-                    Observaciones
-                    <input id="otObs">
-                </label>
-
-            </div>
-
-            <div class="actions">
-
-                <button
-                    class="btn secondary"
-                    onclick="closeModal()">
-                    Cancelar
-                </button>
-
-                <button
-                    class="btn"
-                    onclick="saveOT()">
-                    Crear OT
-                </button>
-
-            </div>
-        `;
-
-        document.getElementById('modal').classList.add('show');
-
-    } catch (error) {
-
-        console.error('Error inesperado abriendo OT:', error);
-
-        alert('No se pudo abrir el formulario de OT.');
+    if (!ot) {
+        alert('No se encontró la orden de trabajo.');
+        return;
     }
+
+    const total = Number(ot.total || 0);
+
+    const pagado = Number(
+        ot.pagado ||
+        ot.monto_pagado ||
+        0
+    );
+
+    const pendiente = Math.max(
+        total - pagado,
+        0
+    );
+
+    document.getElementById('modalbox').innerHTML = `
+        <h2>💰 Pago de OT ${ot.numero_ot || ot.id}</h2>
+
+        <div class="cards">
+
+            <div class="card">
+                <div class="label">
+                    Total OT
+                </div>
+
+                <div class="num">
+                    $ ${total.toLocaleString('es-AR')}
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="label">
+                    Pagado
+                </div>
+
+                <div class="num ok">
+                    $ ${pagado.toLocaleString('es-AR')}
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="label">
+                    Pendiente
+                </div>
+
+                <div class="num danger">
+                    $ ${pendiente.toLocaleString('es-AR')}
+                </div>
+            </div>
+
+        </div>
+
+        ${
+            pendiente > 0
+            ? `
+                <div class="form">
+
+                    <label>
+                        Importe a pagar
+
+                        <input
+                            id="otPagoImporte"
+                            type="number"
+                            min="0"
+                            max="${pendiente}"
+                            step="0.01"
+                            value="${pendiente}">
+                    </label>
+
+                    <label>
+                        Concepto
+
+                        <input
+                            id="otPagoConcepto"
+                            type="text"
+                            value="Pago OT ${ot.numero_ot || ot.id}">
+                    </label>
+
+                </div>
+
+                <div class="actions">
+
+                    <button
+                        class="btn secondary"
+                        onclick="closeModal()">
+                        Cancelar
+                    </button>
+
+                    <button
+                        class="btn"
+                        onclick='guardarPagoOT("${otId}")'>
+                        💾 Registrar pago
+                    </button>
+
+                </div>
+            `
+            : `
+                <div class="empty">
+                    ✅ Esta OT está completamente pagada.
+                </div>
+
+                <div class="actions">
+
+                    <button
+                        class="btn secondary"
+                        onclick="closeModal()">
+                        Cerrar
+                    </button>
+
+                </div>
+            `
+        }
+    `;
+
+    document
+        .getElementById('modal')
+        .classList
+        .add('show');
 }
 async function saveOT() {
 
