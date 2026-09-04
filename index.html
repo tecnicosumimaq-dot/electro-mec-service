@@ -4173,68 +4173,82 @@ async function verFichaMoto(motoId) {
         );
     }
 }
-   function openOTPago(otId) {
+  async function openOTPago(otId) {
 
-    const ot = db.ots.find(x => x.id == otId);
+    try {
 
-    if (!ot) {
-        alert('No se encontró la orden de trabajo.');
-        return;
-    }
+        const { data: ot, error } =
+            await supabaseClient
+                .from('ordenes_trabajo')
+                .select('*')
+                .eq('id', otId)
+                .single();
 
-    const total = Number(ot.total || 0);
+        if (error || !ot) {
 
-    const pagado = Number(
-        ot.pagado ||
-        ot.monto_pagado ||
-        0
-    );
+            console.error(
+                'Error cargando OT para pago:',
+                error
+            );
 
-    const pendiente = Math.max(
-        total - pagado,
-        0
-    );
+            alert('No se pudo cargar la OT.');
+            return;
+        }
 
-    document.getElementById('modalbox').innerHTML = `
-        <h2>💰 Pago de OT ${ot.numero_ot || ot.id}</h2>
 
-        <div class="cards">
+        const { data: movimientos, error: errorPagos } =
+            await supabaseClient
+                .from('movimientos_caja')
+                .select('*');
 
-            <div class="card">
-                <div class="label">
-                    Total OT
-                </div>
 
-                <div class="num">
-                    $ ${total.toLocaleString('es-AR')}
-                </div>
-            </div>
+        if (errorPagos) {
 
-            <div class="card">
-                <div class="label">
-                    Pagado
-                </div>
+            console.error(
+                'Error cargando movimientos:',
+                errorPagos
+            );
 
-                <div class="num ok">
-                    $ ${pagado.toLocaleString('es-AR')}
-                </div>
-            </div>
+            alert(
+                'No se pudieron cargar los movimientos de caja.'
+            );
 
-            <div class="card">
-                <div class="label">
-                    Pendiente
-                </div>
+            return;
+        }
 
-                <div class="num danger">
-                    $ ${pendiente.toLocaleString('es-AR')}
-                </div>
-            </div>
 
-        </div>
+        const pagos =
+            (movimientos || []).filter(m =>
+                m.ot_id === otId &&
+                m.tipo === 'Ingreso'
+            );
 
-        ${
-            pendiente > 0
-            ? `
+
+        const total =
+            Number(ot.total || 0);
+
+
+        const pagado =
+            pagos.reduce(
+                (suma, pago) =>
+                    suma + Number(pago.importe || 0),
+                0
+            );
+
+
+        const pendiente =
+            Math.max(
+                total - pagado,
+                0
+            );
+
+
+        let contenidoPago = '';
+
+
+        if (pendiente > 0) {
+
+            contenidoPago = `
                 <div class="form">
 
                     <label>
@@ -4249,6 +4263,7 @@ async function verFichaMoto(motoId) {
                             value="${pendiente}">
                     </label>
 
+
                     <label>
                         Concepto
 
@@ -4260,6 +4275,7 @@ async function verFichaMoto(motoId) {
 
                 </div>
 
+
                 <div class="actions">
 
                     <button
@@ -4268,6 +4284,7 @@ async function verFichaMoto(motoId) {
                         Cancelar
                     </button>
 
+
                     <button
                         class="btn"
                         onclick='guardarPagoOT("${otId}")'>
@@ -4275,11 +4292,15 @@ async function verFichaMoto(motoId) {
                     </button>
 
                 </div>
-            `
-            : `
+            `;
+
+        } else {
+
+            contenidoPago = `
                 <div class="empty">
                     ✅ Esta OT está completamente pagada.
                 </div>
+
 
                 <div class="actions">
 
@@ -4290,14 +4311,83 @@ async function verFichaMoto(motoId) {
                     </button>
 
                 </div>
-            `
+            `;
         }
-    `;
 
-    document
-        .getElementById('modal')
-        .classList
-        .add('show');
+
+        document.getElementById('modalbox').innerHTML = `
+
+            <h2>
+                💰 Pago de OT
+                ${ot.numero_ot || ot.id}
+            </h2>
+
+
+            <div class="cards">
+
+                <div class="card">
+
+                    <div class="label">
+                        Total OT
+                    </div>
+
+                    <div class="num">
+                        $ ${total.toLocaleString('es-AR')}
+                    </div>
+
+                </div>
+
+
+                <div class="card">
+
+                    <div class="label">
+                        Pagado
+                    </div>
+
+                    <div class="num ok">
+                        $ ${pagado.toLocaleString('es-AR')}
+                    </div>
+
+                </div>
+
+
+                <div class="card">
+
+                    <div class="label">
+                        Pendiente
+                    </div>
+
+                    <div class="num danger">
+                        $ ${pendiente.toLocaleString('es-AR')}
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            ${contenidoPago}
+
+        `;
+
+
+        document
+            .getElementById('modal')
+            .classList
+            .add('show');
+
+
+    } catch (error) {
+
+        console.error(
+            'Error en openOTPago:',
+            error
+        );
+
+        alert(
+            'Ocurrió un error al abrir el pago de la OT.'
+        );
+    }
 }
 async function saveOT() {
 
