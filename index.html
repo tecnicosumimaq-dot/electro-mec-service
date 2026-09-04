@@ -4173,220 +4173,138 @@ async function verFichaMoto(motoId) {
         );
     }
 }
-  async function openOTPago(otId) {
+    async function openOT() {
 
     try {
 
-        const { data: ot, error } =
-            await supabaseClient
-                .from('ordenes_trabajo')
-                .select('*')
-                .eq('id', otId)
-                .single();
+        const { data: motos, error } = await supabaseClient
+            .from('motos')
+            .select(`
+                id,
+                dominio,
+                marca,
+                modelo,
+                cliente_id,
+                clientes (
+                    id,
+                    nombre,
+                    apellido
+                )
+            `)
+            .eq('activo', true)
+            .order('fecha_alta', { ascending: false });
 
-        if (error || !ot) {
-
-            console.error(
-                'Error cargando OT para pago:',
-                error
-            );
-
-            alert('No se pudo cargar la OT.');
+        if (error) {
+            console.error('Error cargando motos para OT:', error);
+            alert('No se pudieron cargar las motos.');
             return;
         }
 
-
-        const { data: movimientos, error: errorPagos } =
-            await supabaseClient
-                .from('movimientos_caja')
-                .select('*');
-
-
-        if (errorPagos) {
-
-            console.error(
-                'Error cargando movimientos:',
-                errorPagos
-            );
-
-            alert(
-                'No se pudieron cargar los movimientos de caja.'
-            );
-
+        if (!motos || !motos.length) {
+            alert('Primero cargá una moto.');
             return;
         }
 
+        const opcionesMoto = motos.map(m => {
 
-        const pagos =
-            (movimientos || []).filter(m =>
-                m.ot_id === otId &&
-                m.tipo === 'Ingreso'
-            );
+            const cliente = m.clientes || {};
 
-
-        const total =
-            Number(ot.total || 0);
-
-
-        const pagado =
-            pagos.reduce(
-                (suma, pago) =>
-                    suma + Number(pago.importe || 0),
-                0
-            );
-
-
-        const pendiente =
-            Math.max(
-                total - pagado,
-                0
-            );
-
-
-        let contenidoPago = '';
-
-
-        if (pendiente > 0) {
-
-            contenidoPago = `
-                <div class="form">
-
-                    <label>
-                        Importe a pagar
-
-                        <input
-                            id="otPagoImporte"
-                            type="number"
-                            min="0"
-                            max="${pendiente}"
-                            step="0.01"
-                            value="${pendiente}">
-                    </label>
-
-
-                    <label>
-                        Concepto
-
-                        <input
-                            id="otPagoConcepto"
-                            type="text"
-                            value="Pago OT ${ot.numero_ot || ot.id}">
-                    </label>
-
-                </div>
-
-
-                <div class="actions">
-
-                    <button
-                        class="btn secondary"
-                        onclick="closeModal()">
-                        Cancelar
-                    </button>
-
-
-                    <button
-                        class="btn"
-                        onclick='guardarPagoOT("${otId}")'>
-                        💾 Registrar pago
-                    </button>
-
-                </div>
+            return `
+                <option value="${m.id}">
+                    ${m.dominio || 'Sin dominio'} -
+                    ${m.marca || ''} ${m.modelo || ''}
+                    - ${cliente.nombre || ''} ${cliente.apellido || ''}
+                </option>
             `;
 
-        } else {
-
-            contenidoPago = `
-                <div class="empty">
-                    ✅ Esta OT está completamente pagada.
-                </div>
-
-
-                <div class="actions">
-
-                    <button
-                        class="btn secondary"
-                        onclick="closeModal()">
-                        Cerrar
-                    </button>
-
-                </div>
-            `;
-        }
-
+        }).join('');
 
         document.getElementById('modalbox').innerHTML = `
 
-            <h2>
-                💰 Pago de OT
-                ${ot.numero_ot || ot.id}
-            </h2>
+            <h2>Nueva Orden de Trabajo</h2>
 
+            <div class="form">
 
-            <div class="cards">
+                <label>
+                    Moto
+                    <select id="otMoto">
+                        <option value="">Seleccionar moto</option>
+                        ${opcionesMoto}
+                    </select>
+                </label>
 
-                <div class="card">
+                <label>
+                    Estado
+                    <select id="otEstado">
+                        <option>Abierta</option>
+                        <option>Esperando autorización</option>
+                        <option>En reparación</option>
+                        <option>Terminado</option>
+                        <option>Entregado</option>
+                    </select>
+                </label>
 
-                    <div class="label">
-                        Total OT
-                    </div>
+                <label>
+                    Kilometraje
+                    <input id="otKm" type="number">
+                </label>
 
-                    <div class="num">
-                        $ ${total.toLocaleString('es-AR')}
-                    </div>
+                <label>
+                    Diagnóstico
+                    <input id="otDiag">
+                </label>
 
-                </div>
+                <label>
+                    Trabajos realizados
+                    <input id="otTrab">
+                </label>
 
+                <label>
+                    Mano de obra ($)
+                    <input id="otMO" type="number" value="0">
+                </label>
 
-                <div class="card">
+                <label>
+                    Repuestos ($)
+                    <input id="otRep" type="number" value="0">
+                </label>
 
-                    <div class="label">
-                        Pagado
-                    </div>
+                <label>
+                    Descuento ($)
+                    <input id="otDesc" type="number" value="0">
+                </label>
 
-                    <div class="num ok">
-                        $ ${pagado.toLocaleString('es-AR')}
-                    </div>
-
-                </div>
-
-
-                <div class="card">
-
-                    <div class="label">
-                        Pendiente
-                    </div>
-
-                    <div class="num danger">
-                        $ ${pendiente.toLocaleString('es-AR')}
-                    </div>
-
-                </div>
+                <label>
+                    Observaciones
+                    <input id="otObs">
+                </label>
 
             </div>
 
+            <div class="actions">
 
-            ${contenidoPago}
+                <button
+                    class="btn secondary"
+                    onclick="closeModal()">
+                    Cancelar
+                </button>
 
+                <button
+                    class="btn"
+                    onclick="saveOT()">
+                    Crear OT
+                </button>
+
+            </div>
         `;
 
-
-        document
-            .getElementById('modal')
-            .classList
-            .add('show');
-
+        document.getElementById('modal').classList.add('show');
 
     } catch (error) {
 
-        console.error(
-            'Error en openOTPago:',
-            error
-        );
+        console.error('Error inesperado abriendo OT:', error);
 
-        alert(
-            'Ocurrió un error al abrir el pago de la OT.'
-        );
+        alert('No se pudo abrir el formulario de OT.');
     }
 }
 async function saveOT() {
@@ -4913,11 +4831,10 @@ const pendiente =
             '<div class="empty">Error inesperado.</div>';
     }
 }
-
 async function verFichaOT(otId) {
-
+  
     ultimaOTVisualizada = otId;
-
+   
     if (!otId) {
         alert('No se encontró la Orden de Trabajo.');
         return;
@@ -4993,6 +4910,7 @@ async function verFichaOT(otId) {
                 .eq('ot_id', otId)
                 .order('id');
 
+
         if (errorRepuestos) {
 
             console.error(
@@ -5016,6 +4934,7 @@ async function verFichaOT(otId) {
                 .order('fecha', {
                     ascending: false
                 });
+
 
         if (errorPagos) {
 
@@ -5317,7 +5236,9 @@ async function verFichaOT(otId) {
 
                     ${
                         listaRepuestos.length
+
                         ?
+
                         `
 
                         <div style="overflow-x:auto;">
@@ -5333,6 +5254,7 @@ async function verFichaOT(otId) {
                                     <th>Subtotal</th>
 
                                 </tr>
+
 
                                 ${listaRepuestos.map(r => `
 
@@ -5356,8 +5278,7 @@ async function verFichaOT(otId) {
                                         </td>
 
                                         <td>
-                                            $
-                                            ${
+                                            $ ${
                                                 Number(
                                                     r.precio_unitario || 0
                                                 ).toLocaleString(
@@ -5367,8 +5288,7 @@ async function verFichaOT(otId) {
                                         </td>
 
                                         <td>
-                                            $
-                                            ${
+                                            $ ${
                                                 Number(
                                                     r.subtotal || 0
                                                 ).toLocaleString(
@@ -5386,7 +5306,9 @@ async function verFichaOT(otId) {
                         </div>
 
                         `
+
                         :
+
                         `
 
                         <div class="empty">
@@ -5409,7 +5331,9 @@ async function verFichaOT(otId) {
 
                     ${
                         listaPagos.length
+
                         ?
+
                         `
 
                         <div style="overflow-x:auto;">
@@ -5442,8 +5366,7 @@ async function verFichaOT(otId) {
                                         </td>
 
                                         <td>
-                                            $
-                                            ${
+                                            $ ${
                                                 Number(
                                                     p.importe || 0
                                                 ).toLocaleString(
@@ -5461,7 +5384,9 @@ async function verFichaOT(otId) {
                         </div>
 
                         `
+
                         :
+
                         `
 
                         <div class="empty">
@@ -5497,8 +5422,7 @@ async function verFichaOT(otId) {
                             </div>
 
                             <div class="num">
-                                $
-                                ${total.toLocaleString('es-AR')}
+                                $ ${total.toLocaleString('es-AR')}
                             </div>
 
                         </div>
@@ -5511,8 +5435,7 @@ async function verFichaOT(otId) {
                             </div>
 
                             <div class="num ok">
-                                $
-                                ${pagado.toLocaleString('es-AR')}
+                                $ ${pagado.toLocaleString('es-AR')}
                             </div>
 
                         </div>
@@ -5525,8 +5448,7 @@ async function verFichaOT(otId) {
                             </div>
 
                             <div class="num danger">
-                                $
-                                ${pendiente.toLocaleString('es-AR')}
+                                $ ${pendiente.toLocaleString('es-AR')}
                             </div>
 
                         </div>
@@ -5539,8 +5461,7 @@ async function verFichaOT(otId) {
                             </div>
 
                             <div class="num ok">
-                                $
-                                ${ganancia.toLocaleString('es-AR')}
+                                $ ${ganancia.toLocaleString('es-AR')}
                             </div>
 
                         </div>
@@ -5550,144 +5471,139 @@ async function verFichaOT(otId) {
                 </div>
 
 
-                <!-- ==========================================
-                     FOTOS DE LA REPARACIÓN
-                =========================================== -->
+             <!-- ==========================================
+     FOTOS DE LA REPARACIÓN
+========================================== -->
 
-                <div class="section ot-fotos-section">
+<div class="section ot-fotos-section">
 
-                    <div class="section-title">
-                        📸 Fotos de la reparación
-                    </div>
+    <div class="section-title">
 
+        📸 Fotos de la reparación
 
-                    <!-- CARGAR FOTO -->
-
-                    <div class="ot-fotos-form">
-
-                        <div class="ot-fotos-campo">
-
-                            <label>
-                                📷 Imagen
-                            </label>
-
-                            <input
-                                id="otArchivoInput"
-                                type="file"
-                                accept="image/*"
-                            >
-
-                        </div>
+    </div>
 
 
-                        <div class="ot-fotos-campo">
+    <!-- ==============================
+         CARGAR FOTO
+    =============================== -->
 
-                            <label>
-                                📝 Descripción
-                            </label>
+    <div class="ot-fotos-form">
 
-                            <input
-                                id="otArchivoDescripcion"
-                                type="text"
-                                placeholder="Ej: Estado inicial de la moto"
-                            >
+        <div class="ot-fotos-campo">
 
-                        </div>
+            <label>
+                📷 Imagen
+            </label>
 
+            <input
+                id="otArchivoInput"
+                type="file"
+                accept="image/*"
+            >
 
-                        <div class="ot-fotos-boton">
-
-                            <button
-                                type="button"
-                                class="btn"
-                                onclick="subirArchivoOT('${ot.id}')"
-                            >
-                                📤 Subir foto
-                            </button>
-
-                        </div>
-
-                    </div>
+        </div>
 
 
-                    <!-- GALERÍA -->
+        <div class="ot-fotos-campo">
 
-                    <div
-                        id="otArchivosContainer"
-                        class="ot-archivos-container"
-                    >
+            <label>
+                📝 Descripción
+            </label>
 
-                        <div class="empty">
-                            📷 Todavía no hay fotos en esta OT.
-                        </div>
+            <input
+                id="otArchivoDescripcion"
+                type="text"
+                placeholder="Ej: Estado inicial de la moto"
+            >
 
-                    </div>
-
-                </div>
-
-
-                <!-- ==========================================
-                     BOTONES DE LA OT
-                =========================================== -->
-
-                <div class="actions ot-acciones-finales">
-
-                    <button
-                        type="button"
-                        class="btn secondary"
-                        onclick="openOTEdit('${ot.id}')"
-                    >
-                        ✏️ Editar
-                    </button>
+        </div>
 
 
-                    <button
-                        type="button"
-                        class="btn secondary"
-                        onclick="openOTPago('${ot.id}')"
-                    >
-                        💳 Registrar pago
-                    </button>
+        <div class="ot-fotos-boton">
+
+            <button
+                type="button"
+                class="btn"
+                onclick="subirArchivoOT('${ot.id}')"
+            >
+
+                📤 Subir foto
+
+            </button>
+
+        </div>
+
+    </div>
 
 
-                    <button
-                        type="button"
-                        class="btn secondary"
-                        onclick="closeModal()"
-                    >
-                        ✕ Cerrar
-                    </button>
+    <!-- ==============================
+         GALERÍA
+    =============================== -->
 
-                </div>
+    <div
+        id="otArchivosContainer"
+        class="ot-archivos-container"
+    >
 
-            </div>
+        <div class="empty">
+
+            📷 Todavía no hay fotos en esta OT.
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ==========================================
+     BOTONES DE LA OT
+========================================== -->
+
+<div class="actions ot-acciones-finales">
+
+    <button
+        type="button"
+        class="btn secondary"
+        onclick="openOTEdit('${ot.id}')"
+    >
+
+        ✏️ Editar
+
+    </button>
+
+
+    <button
+        type="button"
+        class="btn secondary"
+        onclick="openOTPago('${ot.id}')"
+    >
+
+        💳 Registrar pago
+
+    </button>
+
+
+    <button
+        type="button"
+        class="btn secondary"
+        onclick="closeModal()"
+    >
+
+        ✕ Cerrar
+
+    </button>
+
+</div>
 
         `;
 
-        /* ==========================================
-           MOSTRAR MODAL
-        ========================================== */
-
-        const modal = document.getElementById('modal');
-
-        if (!modal) {
-
-            console.error(
-                'No se encontró el elemento #modal'
-            );
-
-            return;
-        }
-
-        modal.classList.add('show');
-
-
-        /* ==========================================
-           CARGAR FOTOS
-        ========================================== */
-
-        await cargarArchivosOT(ot.id);
-
+        document
+            .getElementById('modal')
+            .classList
+            .add('show');
+await cargarArchivosOT(ot.id);
 
         console.log(
             '✅ Ficha OT cargada correctamente'
@@ -5706,8 +5622,6 @@ async function verFichaOT(otId) {
         );
     }
 }
-
-
     async function eliminarOT(otId) {
 
     if (!otId) {
@@ -5965,12 +5879,18 @@ async function verFichaOT(otId) {
 
                    </div>
 
-        `;
+        `}`;
 
         document
             .getElementById('modal')
             .classList
             .add('show');
+
+    } catch (error) {
+        console.error('Error inesperado abriendo pago OT:', error);
+        alert('Ocurrió un error al abrir el pago de la OT.');
+    }
+}
 
   async function guardarPagoOT(otId) {
 
@@ -7981,6 +7901,15 @@ async function eliminarMovimientoCaja(id) {
         );
     }
 }
+function openMove(tipo) {
+    nuevoMovimientoCaja().then(() => {
+        const select = document.getElementById('cajaTipo');
+        if (select && tipo) {
+            select.value = tipo;
+        }
+    });
+}
+
     async function nuevoMovimientoCaja() {
 
     try {
