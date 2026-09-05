@@ -11001,40 +11001,31 @@ async function subirArchivoOT(otId) {
 
                 });
 
-        if (errorDB) {
+       if (errorDB) {
 
-        if (error) {
-    console.error('❌ Error guardando registro:', error);
-    console.error('Código:', error?.code);
-    console.error('Mensaje:', error?.message);
-    console.error('Detalles:', error?.details);
-    console.error('Hint:', error?.hint);
+    console.error(
+        '❌ Error guardando registro de imagen:',
+        errorDB
+    );
 
+    console.error('Código:', errorDB?.code);
+    console.error('Mensaje:', errorDB?.message);
+    console.error('Detalles:', errorDB?.details);
+    console.error('Hint:', errorDB?.hint);
+
+    // Si falló la DB intentamos borrar
+    // la imagen del Storage.
     await supabaseClient
         .storage
         .from('ot-fotos')
         .remove([ruta]);
 
+    alert(
+        'La imagen se subió pero no pudo registrarse.'
+    );
+
     return;
 }
-
-            // Intentar eliminar archivo si falló DB
-
-            await supabaseClient
-                .storage
-                .from('ot-fotos')
-                .remove([
-                    ruta
-                ]);
-
-            alert(
-                'La imagen se subió pero no pudo registrarse.\n\n' +
-                errorDB.message
-            );
-
-            return;
-        }
-
         console.log(
             '✅ Foto guardada correctamente'
         );
