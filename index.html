@@ -11012,11 +11012,20 @@ async function subirArchivoOT(otId) {
 
         if (errorDB) {
 
-          console.error('❌ Error guardando registro:', error);
-console.error('Código:', error?.code);
-console.error('Mensaje:', error?.message);
-console.error('Detalles:', error?.details);
-console.error('Hint:', error?.hint);
+        if (error) {
+    console.error('❌ Error guardando registro:', error);
+    console.error('Código:', error?.code);
+    console.error('Mensaje:', error?.message);
+    console.error('Detalles:', error?.details);
+    console.error('Hint:', error?.hint);
+
+    await supabaseClient
+        .storage
+        .from('ot-fotos')
+        .remove([ruta]);
+
+    return;
+}
 
             // Intentar eliminar archivo si falló DB
 
