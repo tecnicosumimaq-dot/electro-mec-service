@@ -11012,10 +11012,11 @@ async function subirArchivoOT(otId) {
 
         if (errorDB) {
 
-            console.error(
-                '❌ Error guardando registro:',
-                errorDB
-            );
+          console.error('❌ Error guardando registro:', error);
+console.error('Código:', error?.code);
+console.error('Mensaje:', error?.message);
+console.error('Detalles:', error?.details);
+console.error('Hint:', error?.hint);
 
             // Intentar eliminar archivo si falló DB
 
