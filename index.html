@@ -1289,24 +1289,15 @@ async function subirArchivoOT(otId) {
         const { error: errorDB } =
             await supabaseClient
                 .from('ot_archivos')
-                .insert({
-
-                    ot_id: otId,
-
-                    nombre_archivo:
-                        archivo.name,
-
-                    ruta_archivo:
-                        ruta,
-
-                    tipo_archivo:
-                        archivo.type,
-
-                    descripcion:
-                        descripcion
-
-                });
-
+               .insert({
+    ot_id: otId,
+    archivo_url: ruta,
+    nombre_archivo: archivo.name,
+    ruta_archivo: ruta,
+    tipo: 'foto',
+    tipo_archivo: archivo.type,
+    descripcion: descripcion || null
+});
         if (errorDB) {
 
             console.error(
