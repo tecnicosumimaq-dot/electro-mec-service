@@ -1844,9 +1844,679 @@ function verImagenOT(url) {
 }
 
 /* =========================================================
-   📚 BIBLIOTECA TÉCNICA - SUPABASE
-   Marcas → Modelos → Recursos → Storage
+   📚 BIBLIOTECA TÉCNICA - ETAPA 1
    ========================================================= */
+
+.biblioteca-panel {
+    overflow-x: hidden !important;
+}
+
+.biblioteca-kpis .card {
+    min-height: 125px;
+}
+
+.biblioteca-panel .section-title {
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: 14px;
+}
+
+.biblioteca-panel .toolbar {
+    margin-bottom: 18px;
+}
+
+.biblioteca-panel .toolbar input {
+    flex: 1 1 360px;
+}
+
+.biblioteca-panel .toolbar select {
+    min-width: 210px;
+}
+
+.biblioteca-categorias {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.biblioteca-cat {
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    border-radius: 16px;
+    padding: 18px;
+    text-align: left;
+    cursor: pointer;
+    box-shadow: 0 3px 15px #0000000d;
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.biblioteca-cat:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px #00000014;
+}
+
+.biblioteca-cat span {
+    display: block;
+    font-size: 28px;
+    margin-bottom: 10px;
+}
+
+.biblioteca-cat strong {
+    display: block;
+    font-size: 15px;
+    color: #111827;
+    margin-bottom: 5px;
+}
+
+.biblioteca-cat small {
+    display: block;
+    color: #6b7280;
+    line-height: 1.4;
+}
+
+.biblioteca-resultados {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+}
+
+.biblioteca-item {
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 16px;
+    background: #fff;
+}
+
+.biblioteca-item-categoria {
+    font-size: 12px;
+    font-weight: 700;
+    color: #6b7280;
+    margin-bottom: 7px;
+}
+
+.biblioteca-item h3 {
+    margin: 0 0 7px;
+    font-size: 17px;
+}
+
+.biblioteca-item p {
+    margin: 0 0 12px;
+    color: #6b7280;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.biblioteca-item .btn {
+    width: 100%;
+}
+
+@media (max-width: 850px) {
+    .biblioteca-categorias {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 600px) {
+    .biblioteca-categorias {
+        grid-template-columns: 1fr;
+    }
+
+    .biblioteca-panel .toolbar input,
+    .biblioteca-panel .toolbar select {
+        width: 100%;
+        min-width: 0;
+    }
+}
+
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head>
+<body>
+    <div id="resetPasswordScreen" style="display:none; min-height:100vh; align-items:center; justify-content:center; background:#f4f6f8; padding:20px;">
+    <div style="background:white; padding:30px; border-radius:16px; width:min(420px,100%); box-shadow:0 3px 20px #0002;">
+        
+        <h2 style="margin-top:0;">🔐 Nueva contraseña</h2>
+        
+        <p style="color:#6b7280;">
+            Ingresá una nueva contraseña para tu cuenta de Electro Mec Service.
+        </p>
+
+        <label style="display:block; margin-top:15px;">
+            Nueva contraseña
+            <input 
+                id="newPassword"
+                type="password"
+                placeholder="Nueva contraseña"
+                style="width:100%; margin-top:6px;"
+            >
+        </label>
+
+        <label style="display:block; margin-top:15px;">
+            Repetir contraseña
+            <input 
+                id="newPasswordConfirm"
+                type="password"
+                placeholder="Repetir contraseña"
+                style="width:100%; margin-top:6px;"
+            >
+        </label>
+
+        <div id="resetPasswordError" style="color:#b91c1c; margin-top:12px;"></div>
+
+        <button 
+            class="btn"
+            onclick="cambiarPassword()"
+            style="width:100%; margin-top:18px;"
+        >
+            Cambiar contraseña
+        </button>
+
+    </div>
+</div>
+    <div class="login-screen" id="loginScreen">
+    <div class="login-box">
+        <h1>⚡ Electro Mec</h1>
+        <p>Service · Acceso al sistema</p>
+
+        <label>
+            Email
+            <input type="email" id="loginEmail" placeholder="tu@email.com">
+        </label>
+
+        <label>
+            Contraseña
+            <input type="password" id="loginPassword" placeholder="••••••••">
+        </label>
+
+        <button class="btn" onclick="iniciarSesion()">
+            Iniciar sesión
+        </button>
+
+        <div class="login-error" id="loginError"></div>
+    </div>
+</div>
+<div class="app">
+<aside class="side"><div class="brand">⚡ Electro Mec<small>Service · App V1</small></div><div class="nav">
+
+    <div class="nav-title">
+        TALLER
+    </div>
+
+    <button
+        class="active"
+        onclick="show('inicio',this)">
+        🏠 Inicio
+    </button>
+
+    <button
+        onclick="show('clientes',this)">
+        👤 Clientes
+    </button>
+
+    <button
+        onclick="show('motos',this)">
+        🏍️ Motos / Equipos
+    </button>
+
+    <button
+        onclick="show('ot',this)">
+        🔧 Órdenes de trabajo
+    </button>
+
+
+    <div class="nav-title">
+        ADMINISTRACIÓN
+    </div>
+
+    <button
+        onclick="show('inventario',this)">
+        📦 Inventario
+    </button>
+
+    <button
+        onclick="show('presupuestos',this)">
+        💰 Presupuestos
+    </button>
+
+    <button
+        onclick="show('caja',this)">
+        💵 Caja
+    </button>
+
+
+    <div class="nav-title">
+        INFORMACIÓN TÉCNICA
+    </div>
+
+    <button
+        onclick="show('biblioteca',this)">
+        📚 Biblioteca técnica
+    </button>
+
+    <button
+        onclick="show('estadisticas',this)">
+        📊 Estadísticas
+    </button>
+
+</div>
+</aside>
+
+<main class="main">
+
+<div id="inicio" class="view">
+<div class="top"><div class="title"><h1>Panel de control</h1><p>Centro de operaciones del taller</p></div></div>
+<div class="cards" id="kpis"></div>
+<div class="section"><h2>⚡ Alertas</h2><div class="panel" id="alerts"></div></div>
+</div>
+<div id="clientes" class="view" style="display:none">
+<div class="top"><div class="title"><h1>Clientes</h1><p>Base de clientes del taller</p></div><button class="btn" onclick="openClient()">＋ Nuevo cliente</button></div>
+<div class="panel"><div class="toolbar"><input id="clientSearch" placeholder="Buscar por nombre o teléfono" oninput="renderClients()"></div><div id="clientTable"></div></div>
+</div>
+<div id="motos" class="view" style="display:none">
+<div class="top"><div class="title"><h1>Motos / Equipos</h1>
+<p>Vehículos, máquinas y equipos asociados a clientes</p></div><button class="btn" onclick="openMoto()">
+    ＋ Nuevo equipo
+</button>
+</div>
+<div class="panel"><div class="toolbar"><input id="motoSearch" placeholder="Buscar dominio, marca o modelo" oninput="renderMotos()"></div><div id="motoTable"></div></div>
+</div>
+<div id="ot" class="view" style="display:none"><div class="top"><div class="title"><h1>Órdenes de Trabajo</h1><p>Recepción, diagnóstico y seguimiento</p></div><button class="btn" onclick="openOT()">＋ Nueva OT</button></div><div class="panel"><div class="toolbar"><input id="otSearch" placeholder="Buscar OT, dominio o cliente" oninput="renderOT()"></div><div id="otTable"></div></div></div>
+<div id="inventario" class="view" style="display:none"><div class="top"><div class="title"><h1>Inventario</h1><p>Stock y alertas de reposición</p></div><button class="btn" onclick="openPart()">＋ Nuevo repuesto</button></div><div class="panel"><div class="toolbar"><input id="partSearch" placeholder="Buscar repuesto" oninput="renderParts()"></div><div id="partTable"></div></div></div>
+<div id="presupuestos" class="view" style="display:none"><div class="top"><div class="title"><h1>Presupuestos</h1><p>Estados y seguimiento</p></div></div><div class="panel"><div id="quoteTable"></div></div></div>
+<div id="caja" class="view" style="display:none"><div class="top"><div class="title"><h1>Caja</h1><p>Ingresos, egresos y saldo</p></div><div><button class="btn" onclick="openMove('Ingreso')">＋ Ingreso</button> <button class="btn secondary" onclick="openMove('Egreso')">＋ Egreso</button></div></div><div class="panel" id="cashPanel"></div></div>
+<div id="biblioteca" class="view" style="display:none">
+
+    <div class="top">
+        <div class="title">
+            <h1>📚 Biblioteca Técnica</h1>
+            <p>Información técnica para diagnóstico, reparación y consulta rápida</p>
+        </div>
+        <button class="btn" onclick="abrirFichaTecnicaNueva()">＋ Nueva ficha técnica</button>
+    </div>
+
+    <div class="cards biblioteca-kpis">
+        <div class="card">
+            <div class="label">🏍️ Modelos</div>
+            <div class="num" id="bibliotecaKpiModelos">0</div>
+            <div class="label">Fichas técnicas</div>
+        </div>
+        <div class="card">
+            <div class="label">🔩 Despieces</div>
+            <div class="num" id="bibliotecaKpiDespieces">0</div>
+            <div class="label">Disponibles</div>
+        </div>
+        <div class="card">
+            <div class="label">⚡ Eléctrico</div>
+            <div class="num" id="bibliotecaKpiElectricos">0</div>
+            <div class="label">Diagramas / sistemas</div>
+        </div>
+        <div class="card">
+            <div class="label">🧰 Procedimientos</div>
+            <div class="num" id="bibliotecaKpiProcedimientos">0</div>
+            <div class="label">Guías de reparación</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="panel biblioteca-panel">
+            <div class="section-title">🔎 Buscar en la biblioteca</div>
+            <div class="toolbar">
+                <input
+                    type="text"
+                    id="bibliotecaSearch"
+                    placeholder="Buscar marca, modelo, motor, sistema o componente..."
+                    oninput="renderBiblioteca()"
+                >
+                <select id="bibliotecaCategoria" onchange="renderBiblioteca()">
+                    <option value="">Todas las categorías</option>
+                    <option value="ficha_tecnica">📋 Ficha técnica</option>
+                    <option value="despiece">🔩 Despiece</option>
+                    <option value="sistema_electrico">⚡ Sistema eléctrico</option>
+                    <option value="mantenimiento">🛢️ Mantenimiento</option>
+                    <option value="diagnostico">💡 Diagnóstico</option>
+                    <option value="procedimiento">🧰 Procedimiento</option>
+                    <option value="manual_taller">📘 Manual de taller</option>
+                    <option value="catalogo_repuestos">📦 Catálogo de repuestos</option>
+                    <option value="diagrama">📐 Diagrama</option>
+                    <option value="otro">📚 Otro</option>
+                </select>
+            </div>
+            <div id="bibliotecaResultados"></div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="biblioteca-categorias">
+            <button class="biblioteca-cat" onclick="filtrarBibliotecaCategoria('ficha_tecnica')">
+                <span>📋</span>
+                <strong>Fichas técnicas</strong>
+                <small>Datos generales y especificaciones</small>
+            </button>
+            <button class="biblioteca-cat" onclick="filtrarBibliotecaCategoria('despiece')">
+                <span>🔩</span>
+                <strong>Despieces</strong>
+                <small>Componentes y conjuntos</small>
+            </button>
+            <button class="biblioteca-cat" onclick="filtrarBibliotecaCategoria('sistema_electrico')">
+                <span>⚡</span>
+                <strong>Electricidad</strong>
+                <small>Diagramas y sistemas eléctricos</small>
+            </button>
+            <button class="biblioteca-cat" onclick="filtrarBibliotecaCategoria('mantenimiento')">
+                <span>🛢️</span>
+                <strong>Mantenimiento</strong>
+                <small>Servicios, fluidos y ajustes</small>
+            </button>
+            <button class="biblioteca-cat" onclick="filtrarBibliotecaCategoria('diagnostico')">
+                <span>💡</span>
+                <strong>Diagnóstico</strong>
+                <small>Fallas, síntomas y pruebas</small>
+            </button>
+            <button class="biblioteca-cat" onclick="filtrarBibliotecaCategoria('procedimiento')">
+                <span>🧰</span>
+                <strong>Procedimientos</strong>
+                <small>Guías paso a paso</small>
+            </button>
+        </div>
+    </div>
+
+</div>
+
+<div
+    id="estadisticas"
+    class="view"
+    style="display:none"
+>
+
+    <div class="top">
+
+        <div class="title">
+
+            <h1>
+                📊 Estadísticas
+            </h1>
+
+            <p>
+                Información y rendimiento del taller
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="section">
+
+        <div class="section-title">
+            📈 Próximamente
+        </div>
+
+        <div class="empty">
+
+            Esta sección va a mostrar:
+
+            <br><br>
+
+            🔧 Trabajos realizados
+
+            <br>
+
+            💰 Facturación
+
+            <br>
+
+            📦 Repuestos utilizados
+
+            <br>
+
+            📊 Rentabilidad por OT
+
+            <br>
+
+            🏍️ Motos atendidas
+
+            <br>
+
+            👤 Clientes nuevos
+
+        </div>
+
+    </div>
+
+</div>
+</main></div>
+<div class="modal" id="modal"><div class="modalbox" id="modalbox"></div></div>
+<script>
+const SUPABASE_URL = 'https://vqkqiogttsjfrbomghtl.supabase.co';
+
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_3u_6QZ0oMgDi4Dp18qD1TQ_Vw--DeMN';
+
+const supabaseClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY
+);
+
+async function comprobarSupabase() {
+    try {
+        const { data: { session }, error } =
+            await supabaseClient.auth.getSession();
+
+        if (error) {
+            console.error('Error Supabase:', error);
+            return;
+        }
+
+        if (session) {
+            console.log('Supabase conectado');
+            console.log('Usuario:', session.user.email);
+        } else {
+            console.log('Supabase conectado');
+            console.log('No hay usuario autenticado todavía');
+        }
+
+    } catch (error) {
+        console.error('Error de conexión:', error);
+    }
+}
+
+async function iniciarSesion() {
+
+    const email =
+        document.getElementById('loginEmail').value.trim();
+
+    const password =
+        document.getElementById('loginPassword').value;
+
+    const errorBox =
+        document.getElementById('loginError');
+
+    errorBox.textContent = '';
+
+    if (!email || !password) {
+        errorBox.textContent =
+            'Ingresá email y contraseña.';
+        return;
+    }
+
+    const { data, error } =
+        await supabaseClient.auth.signInWithPassword({
+            email: email,
+            password: password
+        });
+
+    if (error) {
+        console.error(error);
+        errorBox.textContent =
+            'Email o contraseña incorrectos.';
+        return;
+    }
+
+    console.log(
+        'Usuario autenticado:',
+        data.user.email
+    );
+
+    document.getElementById('loginScreen').style.display =
+        'none';
+}
+
+comprobarSupabase();
+    async function cambiarPassword() {
+
+    const password =
+        document.getElementById('newPassword').value;
+
+    const confirmPassword =
+        document.getElementById('newPasswordConfirm').value;
+
+    const errorBox =
+        document.getElementById('resetPasswordError');
+
+    errorBox.textContent = '';
+
+    if (!password || !confirmPassword) {
+        errorBox.textContent =
+            'Completá ambos campos.';
+        return;
+    }
+
+    if (password.length < 6) {
+        errorBox.textContent =
+            'La contraseña debe tener al menos 6 caracteres.';
+        return;
+    }
+
+    if (password !== confirmPassword) {
+        errorBox.textContent =
+            'Las contraseñas no coinciden.';
+        return;
+    }
+
+    const { error } =
+        await supabaseClient.auth.updateUser({
+            password: password
+        });
+
+    if (error) {
+        console.error(error);
+        errorBox.textContent =
+            'No se pudo cambiar la contraseña.';
+        return;
+    }
+
+    alert('✅ Contraseña actualizada correctamente.');
+
+    document.getElementById('resetPasswordScreen').style.display =
+        'none';
+
+    document.getElementById('loginScreen').style.display =
+        'flex';
+}
+    supabaseClient.auth.onAuthStateChange((event, session) => {
+
+    if (event === 'PASSWORD_RECOVERY') {
+
+        document.getElementById('loginScreen').style.display =
+            'none';
+
+        document.getElementById('resetPasswordScreen').style.display =
+            'flex';
+    }
+
+});
+
+
+const key = 'electroMecAppV1';
+
+let db = JSON.parse(
+    localStorage.getItem(key) ||
+    '{"clientes":[],"motos":[],"ots":[],"repuestos":[],"presupuestos":[],"movimientos":[]}'
+);
+
+
+function save() {
+
+    localStorage.setItem(
+        key,
+        JSON.stringify(db)
+    );
+
+    if (typeof renderAll === 'function') {
+        renderAll();
+    }
+}
+
+
+function show(id, btn) {
+
+    // Ocultar todas las vistas
+    document.querySelectorAll('.view').forEach(v => {
+        v.style.display = 'none';
+    });
+
+    // Mostrar la vista seleccionada
+    const vista = document.getElementById(id);
+
+    if (!vista) {
+        console.error('❌ No existe la vista:', id);
+        return;
+    }
+
+    vista.style.display = 'block';
+
+    // Actualizar botón activo
+    document.querySelectorAll('.nav button').forEach(b => {
+        b.classList.remove('active');
+    });
+
+    if (btn) {
+        btn.classList.add('active');
+    }
+
+    // Cargar solamente el módulo seleccionado
+    switch (id) {
+
+        case 'inicio':
+            renderDashboard();
+            break;
+
+        case 'clientes':
+            renderClients();
+            break;
+
+        case 'motos':
+            renderMotos();
+            break;
+
+        case 'ot':
+            renderOT();
+            break;
+
+        case 'inventario':
+            renderParts();
+            break;
+
+        case 'presupuestos':
+            renderQuotes();
+            break;
+
+        case 'caja':
+            renderCash();
+            break;
+
+        case 'biblioteca':
+            renderBiblioteca();
+            break;
+
+        default:
+            console.warn('⚠️ Módulo sin render:', id);
+    }
+}
+
+/* ==========================================================
+   📚 BIBLIOTECA TÉCNICA - ETAPA 1
+   Estructura visual local. En la siguiente etapa se conecta
+   a Supabase y se incorporan las fichas técnicas reales.
+   ========================================================== */
 
 const BIBLIOTECA_BUCKET = 'biblioteca-tecnica';
 
@@ -2478,17 +3148,7 @@ async function guardarFichaBiblioteca() {
     }
 }
 
-function nextId(arr, prefix) {
 
-    let n =
-        (arr ? arr.length : 0) + 1;
-
-    return (
-        prefix +
-        String(n).padStart(4, '0')
-    );
-}
-function nextId(arr,prefix){let n=arr.length+1;return prefix+String(n).padStart(4,'0')}
 function openClient(edit=null){
 let c=edit||{id:'',nombre:'',apellido:'',telefono:'',email:'',direccion:''};
 document.getElementById('modalbox').innerHTML=`<h2>${edit?'Editar':'Nuevo'} cliente</h2><div class="form">
