@@ -1009,18 +1009,492 @@ body {
 // 📸 ARCHIVOS / FOTOS DE ORDEN DE TRABAJO
 // ==========================================================
 
+async function cargarArchivosOT(otId) {
+
+    const contenedor =
+        document.getElementById('otArchivosContainer');
+
+    if (!contenedor) return;
+
+    contenedor.innerHTML = `
+        <div class="empty">
+            Cargando fotos...
+        </div>
+    `;
+
+    try {
+
+        const { data, error } =
+            await supabaseClient
+                .from('ot_archivos')
+                .select('*')
+                .eq('ot_id', otId)
+                .order('fecha_alta', {
+                    ascending: false
+                });
+
+        if (error) {
+
+            console.error(
+                'Error cargando archivos de OT:',
+                error
+            );
+
+            contenedor.innerHTML = `
+                <div class="empty">
+                    No se pudieron cargar las fotos.
+                </div>
+            `;
+
+            return;
+        }
+
+        const archivos = data || [];
+
+        if (!archivos.length) {
+
+            contenedor.innerHTML = `
+                <div class="empty">
+                    📷 Todavía no hay fotos en esta OT.
+                </div>
+            `;
+
+            return;
+        }
+
+        contenedor.innerHTML = `
+
+            <div
+                style="
+                    display:grid;
+                    grid-template-columns:
+                        repeat(auto-fill,minmax(220px,1fr));
+                    gap:16px;
+                "
+            >
+
+                ${archivos.map(archivo => {
+
+                    const url =
+                        supabaseClient
+                            .storage
+                            .from('ot-fotos')
+                            .getPublicUrl(
+                                archivo.ruta_archivo
+                            )
+                            .data
+                            .publicUrl;
+
+                    return `
+
+                        <div
+                            style="
+                                background:#fff;
+                                border:1px solid #e5e7eb;
+                                border-radius:14px;
+                                overflow:hidden;
+                                box-shadow:0 3px 12px #0000000d;
+                            "
+                        >
+
+                            <img
+                                src="${url}"
+                                alt="${archivo.descripcion || 'Foto OT'}"
+                                style="
+                                    width:100%;
+                                    height:180px;
+                                    object-fit:cover;
+                                    display:block;
+                                    cursor:pointer;
+                                "
+                                onclick="verImagenOT('${url}')"
+                            >
+
+                            <div
+                                style="
+                                    padding:12px;
+                                "
+                            >
+
+                                <div
+                                    style="
+                                        font-weight:700;
+                                        margin-bottom:5px;
+                                    "
+                                >
+                                    ${archivo.descripcion || 'Sin descripción'}
+                                </div>
+
+                                <div
+                                    style="
+                                        color:#6b7280;
+                                        font-size:12px;
+                                        margin-bottom:10px;
+                                    "
+                                >
+                                    ${archivo.nombre_archivo || ''}
+                                </div>
+
+                                <button
+                                    class="btn secondary"
+                                    onclick="
+                                        eliminarArchivoOT(
+                                            '${archivo.id}',
+                                            '${archivo.ruta_archivo}',
+                                            '${otId}'
+                                        )
+                                    "
+                                >
+                                    🗑️ Eliminar
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    `;
+
+                }).join('')}
+
+            </div>
+
+        `;
+
+    } catch (error) {
+
+        console.error(
+            'Error inesperado cargando archivos OT:',
+            error
+        );
+
+        contenedor.innerHTML = `
+            <div class="empty">
+                Error inesperado.
+            </div>
+        `;
+    }
+}
+
+
 // ==========================================================
 // 📤 SUBIR FOTO A UNA OT
 // ==========================================================
+
+async function subirArchivoOT(otId) {
+
+    const input =
+        document.getElementById('otArchivoInput');
+
+    const descripcion =
+        document
+            .getElementById('otArchivoDescripcion')
+            ?.value
+            .trim() || '';
+
+    if (!input || !input.files.length) {
+
+        alert(
+            'Seleccioná una imagen.'
+        );
+
+        return;
+    }
+
+    const archivo =
+        input.files[0];
+
+    // ------------------------------------------
+    // Validaciones
+    // ------------------------------------------
+
+    if (!archivo.type.startsWith('image/')) {
+
+        alert(
+            'Por ahora solo se permiten imágenes.'
+        );
+
+        return;
+    }
+
+    const maximo =
+        8 * 1024 * 1024;
+
+    if (archivo.size > maximo) {
+
+        alert(
+            'La imagen no puede superar los 8 MB.'
+        );
+
+        return;
+    }
+
+    try {
+
+        const extension =
+            archivo.name
+                .split('.')
+                .pop()
+                .toLowerCase();
+
+        const nombreUnico =
+            `${Date.now()}_${Math.random()
+                .toString(36)
+                .substring(2,8)}.${extension}`;
+
+        const ruta =
+            `${otId}/${nombreUnico}`;
+
+        console.log(
+            '📤 Subiendo archivo:',
+            ruta
+        );
+
+        // ------------------------------------------
+        // STORAGE
+        // ------------------------------------------
+
+        const { error: errorUpload } =
+            await supabaseClient
+                .storage
+                .from('ot-fotos')
+                .upload(
+                    ruta,
+                    archivo,
+                    {
+                        cacheControl: '3600',
+                        upsert: false,
+                        contentType: archivo.type
+                    }
+                );
+
+        if (errorUpload) {
+
+            console.error(
+                'Error subiendo imagen:',
+                errorUpload
+            );
+
+            alert(
+                'No se pudo subir la imagen:\n\n' +
+                errorUpload.message
+            );
+
+            return;
+        }
+
+        // ------------------------------------------
+        // REGISTRO EN BASE DE DATOS
+        // ------------------------------------------
+
+        const { error: errorDB } =
+            await supabaseClient
+                .from('ot_archivos')
+               .insert({
+    ot_id: otId,
+    archivo_url: ruta,
+    nombre_archivo: archivo.name,
+    ruta_archivo: ruta,
+    tipo: 'foto',
+    tipo_archivo: archivo.type,
+    descripcion: descripcion || null
+});
+        if (errorDB) {
+
+            console.error(
+                'Error guardando registro de imagen:',
+                errorDB
+            );
+
+            // Si falló la DB intentamos borrar
+            // la imagen del Storage.
+
+            await supabaseClient
+                .storage
+                .from('ot-fotos')
+                .remove([ruta]);
+
+            alert(
+                'La imagen se subió pero no pudo registrarse.'
+            );
+
+            return;
+        }
+
+        console.log(
+            '✅ Imagen guardada correctamente'
+        );
+
+        // Limpiar formulario
+
+        input.value = '';
+
+        const descripcionInput =
+            document.getElementById(
+                'otArchivoDescripcion'
+            );
+
+        if (descripcionInput) {
+            descripcionInput.value = '';
+        }
+
+        await cargarArchivosOT(otId);
+
+    } catch (error) {
+
+        console.error(
+            'Error inesperado subiendo imagen:',
+            error
+        );
+
+        alert(
+            'Ocurrió un error al subir la imagen.'
+        );
+    }
+}
+
 
 // ==========================================================
 // 🗑️ ELIMINAR FOTO
 // ==========================================================
 
+async function eliminarArchivoOT(
+    archivoId,
+    rutaArchivo,
+    otId
+) {
+
+    const confirmar =
+        confirm(
+            '¿Querés eliminar esta foto de la OT?'
+        );
+
+    if (!confirmar) return;
+
+    try {
+
+        // ------------------------------------------
+        // BORRAR STORAGE
+        // ------------------------------------------
+
+        const { error: errorStorage } =
+            await supabaseClient
+                .storage
+                .from('ot-fotos')
+                .remove([
+                    rutaArchivo
+                ]);
+
+        if (errorStorage) {
+
+            console.error(
+                'Error eliminando imagen:',
+                errorStorage
+            );
+        }
+
+        // ------------------------------------------
+        // BORRAR REGISTRO
+        // ------------------------------------------
+
+        const { error } =
+            await supabaseClient
+                .from('ot_archivos')
+                .delete()
+                .eq('id', archivoId);
+
+        if (error) {
+
+            console.error(
+                'Error eliminando registro:',
+                error
+            );
+
+            alert(
+                'No se pudo eliminar la foto:\n\n' +
+                error.message
+            );
+
+            return;
+        }
+
+        console.log(
+            '🗑️ Foto eliminada'
+        );
+
+        await cargarArchivosOT(otId);
+
+    } catch (error) {
+
+        console.error(
+            'Error inesperado eliminando foto:',
+            error
+        );
+
+        alert(
+            'Ocurrió un error eliminando la foto.'
+        );
+    }
+}
+
+
 // ==========================================================
 // 🖼️ VER IMAGEN GRANDE
 // ==========================================================
 
+function verImagenOT(url) {
+
+    const modal =
+        document.getElementById('modalbox');
+
+    if (!modal) return;
+
+    modal.innerHTML = `
+
+        <h2>
+            📷 Imagen de la OT
+        </h2>
+
+        <div
+            style="
+                display:flex;
+                justify-content:center;
+                align-items:center;
+                background:#111827;
+                border-radius:14px;
+                padding:15px;
+            "
+        >
+
+            <img
+                src="${url}"
+                style="
+                    max-width:100%;
+                    max-height:65vh;
+                    object-fit:contain;
+                    border-radius:10px;
+                "
+            >
+
+        </div>
+
+        <div class="actions">
+
+            <button
+                class="btn secondary"
+                onclick="closeModal()"
+            >
+                ← Volver
+            </button>
+
+        </div>
+
+    `;
+
+    document
+        .getElementById('modal')
+        .classList
+        .add('show');
+}
 /* =========================================================
    📸 FOTOS DE ORDEN DE TRABAJO
    ========================================================= */
@@ -1368,6 +1842,132 @@ body {
     }
 
 }
+
+/* =========================================================
+   📚 BIBLIOTECA TÉCNICA - ETAPA 1
+   ========================================================= */
+
+.biblioteca-panel {
+    overflow-x: hidden !important;
+}
+
+.biblioteca-kpis .card {
+    min-height: 125px;
+}
+
+.biblioteca-panel .section-title {
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: 14px;
+}
+
+.biblioteca-panel .toolbar {
+    margin-bottom: 18px;
+}
+
+.biblioteca-panel .toolbar input {
+    flex: 1 1 360px;
+}
+
+.biblioteca-panel .toolbar select {
+    min-width: 210px;
+}
+
+.biblioteca-categorias {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.biblioteca-cat {
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    border-radius: 16px;
+    padding: 18px;
+    text-align: left;
+    cursor: pointer;
+    box-shadow: 0 3px 15px #0000000d;
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.biblioteca-cat:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px #00000014;
+}
+
+.biblioteca-cat span {
+    display: block;
+    font-size: 28px;
+    margin-bottom: 10px;
+}
+
+.biblioteca-cat strong {
+    display: block;
+    font-size: 15px;
+    color: #111827;
+    margin-bottom: 5px;
+}
+
+.biblioteca-cat small {
+    display: block;
+    color: #6b7280;
+    line-height: 1.4;
+}
+
+.biblioteca-resultados {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+}
+
+.biblioteca-item {
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 16px;
+    background: #fff;
+}
+
+.biblioteca-item-categoria {
+    font-size: 12px;
+    font-weight: 700;
+    color: #6b7280;
+    margin-bottom: 7px;
+}
+
+.biblioteca-item h3 {
+    margin: 0 0 7px;
+    font-size: 17px;
+}
+
+.biblioteca-item p {
+    margin: 0 0 12px;
+    color: #6b7280;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.biblioteca-item .btn {
+    width: 100%;
+}
+
+@media (max-width: 850px) {
+    .biblioteca-categorias {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 600px) {
+    .biblioteca-categorias {
+        grid-template-columns: 1fr;
+    }
+
+    .biblioteca-panel .toolbar input,
+    .biblioteca-panel .toolbar select {
+        width: 100%;
+        min-width: 0;
+    }
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head>
 <body>
@@ -1523,138 +2123,99 @@ body {
 <div id="inventario" class="view" style="display:none"><div class="top"><div class="title"><h1>Inventario</h1><p>Stock y alertas de reposición</p></div><button class="btn" onclick="openPart()">＋ Nuevo repuesto</button></div><div class="panel"><div class="toolbar"><input id="partSearch" placeholder="Buscar repuesto" oninput="renderParts()"></div><div id="partTable"></div></div></div>
 <div id="presupuestos" class="view" style="display:none"><div class="top"><div class="title"><h1>Presupuestos</h1><p>Estados y seguimiento</p></div></div><div class="panel"><div id="quoteTable"></div></div></div>
 <div id="caja" class="view" style="display:none"><div class="top"><div class="title"><h1>Caja</h1><p>Ingresos, egresos y saldo</p></div><div><button class="btn" onclick="openMove('Ingreso')">＋ Ingreso</button> <button class="btn secondary" onclick="openMove('Egreso')">＋ Egreso</button></div></div><div class="panel" id="cashPanel"></div></div>
-<div
-    id="biblioteca"
-    class="view"
-    style="display:none"
->
+<div id="biblioteca" class="view" style="display:none">
 
     <div class="top">
-
         <div class="title">
-
-            <h1>
-                📚 Biblioteca Técnica
-            </h1>
-
-            <p>
-                Información técnica para diagnóstico y reparación
-            </p>
-
+            <h1>📚 Biblioteca Técnica</h1>
+            <p>Información técnica para diagnóstico, reparación y consulta rápida</p>
         </div>
-
+        <button class="btn" onclick="abrirFichaTecnicaNueva()">＋ Nueva ficha técnica</button>
     </div>
 
-
-    <div class="cards">
-
-
+    <div class="cards biblioteca-kpis">
         <div class="card">
-
-            <div class="label">
-                🏍️ Motos
-            </div>
-
-            <div class="num">
-                0
-            </div>
-
-            <div class="label">
-                Modelos disponibles
-            </div>
-
+            <div class="label">🏍️ Modelos</div>
+            <div class="num" id="bibliotecaKpiModelos">0</div>
+            <div class="label">Fichas técnicas</div>
         </div>
-
-
         <div class="card">
-
-            <div class="label">
-                ⚡ Diagramas
-            </div>
-
-            <div class="num">
-                0
-            </div>
-
-            <div class="label">
-                Diagramas eléctricos
-            </div>
-
+            <div class="label">🔩 Despieces</div>
+            <div class="num" id="bibliotecaKpiDespieces">0</div>
+            <div class="label">Disponibles</div>
         </div>
-
-
         <div class="card">
-
-            <div class="label">
-                🔧 Despieces
-            </div>
-
-            <div class="num">
-                0
-            </div>
-
-            <div class="label">
-                Despieces disponibles
-            </div>
-
+            <div class="label">⚡ Eléctrico</div>
+            <div class="num" id="bibliotecaKpiElectricos">0</div>
+            <div class="label">Diagramas / sistemas</div>
         </div>
-
-
+        <div class="card">
+            <div class="label">🧰 Procedimientos</div>
+            <div class="num" id="bibliotecaKpiProcedimientos">0</div>
+            <div class="label">Guías de reparación</div>
+        </div>
     </div>
-
 
     <div class="section">
-
-        <div class="section-title">
-            🔍 Buscar información técnica
+        <div class="panel biblioteca-panel">
+            <div class="section-title">🔎 Buscar en la biblioteca</div>
+            <div class="toolbar">
+                <input
+                    type="text"
+                    id="bibliotecaSearch"
+                    placeholder="Buscar marca, modelo, motor, sistema o componente..."
+                    oninput="renderBiblioteca()"
+                >
+                <select id="bibliotecaCategoria" onchange="renderBiblioteca()">
+                    <option value="">Todas las categorías</option>
+                    <option value="ficha">📋 Ficha técnica</option>
+                    <option value="despiece">🔩 Despiece</option>
+                    <option value="electrico">⚡ Sistema eléctrico</option>
+                    <option value="mantenimiento">🛢️ Mantenimiento</option>
+                    <option value="diagnostico">💡 Diagnóstico</option>
+                    <option value="procedimiento">🧰 Procedimiento</option>
+                </select>
+            </div>
+            <div id="bibliotecaResultados"></div>
         </div>
+    </div>
 
-        <div class="toolbar">
-
-            <input
-                type="text"
-                id="bibliotecaSearch"
-                placeholder="Buscar marca, modelo o sistema..."
-            >
-
+    <div class="section">
+        <div class="biblioteca-categorias">
+            <button class="biblioteca-cat" onclick="filtrarBibliotecaCategoria('ficha')">
+                <span>📋</span>
+                <strong>Fichas técnicas</strong>
+                <small>Datos generales y especificaciones</small>
+            </button>
+            <button class="biblioteca-cat" onclick="filtrarBibliotecaCategoria('despiece')">
+                <span>🔩</span>
+                <strong>Despieces</strong>
+                <small>Componentes y conjuntos</small>
+            </button>
+            <button class="biblioteca-cat" onclick="filtrarBibliotecaCategoria('electrico')">
+                <span>⚡</span>
+                <strong>Electricidad</strong>
+                <small>Diagramas y sistemas eléctricos</small>
+            </button>
+            <button class="biblioteca-cat" onclick="filtrarBibliotecaCategoria('mantenimiento')">
+                <span>🛢️</span>
+                <strong>Mantenimiento</strong>
+                <small>Servicios, fluidos y ajustes</small>
+            </button>
+            <button class="biblioteca-cat" onclick="filtrarBibliotecaCategoria('diagnostico')">
+                <span>💡</span>
+                <strong>Diagnóstico</strong>
+                <small>Fallas, síntomas y pruebas</small>
+            </button>
+            <button class="biblioteca-cat" onclick="filtrarBibliotecaCategoria('procedimiento')">
+                <span>🧰</span>
+                <strong>Procedimientos</strong>
+                <small>Guías paso a paso</small>
+            </button>
         </div>
-
-
-        <div class="empty">
-
-            📚 La biblioteca técnica será incorporada
-            progresivamente.
-
-            <br><br>
-
-            Acá vamos a construir:
-
-            <br>
-
-            🏍️ Fichas técnicas
-
-            <br>
-
-            ⚡ Diagramas eléctricos
-
-            <br>
-
-            🔧 Despieces interactivos
-
-            <br>
-
-            📐 Especificaciones
-
-            <br>
-
-            🧠 Información para diagnóstico
-
-        </div>
-
     </div>
 
 </div>
-
 
 <div
     id="estadisticas"
@@ -1938,10 +2499,320 @@ function show(id, btn) {
             renderCash();
             break;
 
+        case 'biblioteca':
+            renderBiblioteca();
+            break;
+
         default:
             console.warn('⚠️ Módulo sin render:', id);
     }
 }
+
+/* ==========================================================
+   📚 BIBLIOTECA TÉCNICA - ETAPA 1
+   Estructura visual local. En la siguiente etapa se conecta
+   a Supabase y se incorporan las fichas técnicas reales.
+   ========================================================== */
+
+const bibliotecaBase = [
+    {
+        id: 'demo-ybr125',
+        marca: 'Yamaha',
+        modelo: 'YBR 125',
+        categoria: 'ficha',
+        titulo: 'Yamaha YBR 125',
+        descripcion: 'Ficha técnica, motor, transmisión, mantenimiento y especificaciones.'
+    },
+    {
+        id: 'demo-embrague',
+        marca: 'General',
+        modelo: 'Motocicletas',
+        categoria: 'despiece',
+        titulo: 'Despiece de embrague',
+        descripcion: 'Conjunto de embrague: canasta, discos, separadores, resortes y componentes.'
+    },
+    {
+        id: 'demo-electrico',
+        marca: 'General',
+        modelo: 'Motocicletas',
+        categoria: 'electrico',
+        titulo: 'Sistema eléctrico',
+        descripcion: 'Batería, carga, arranque, iluminación, fusibles y conexiones.'
+    },
+    {
+        id: 'demo-mantenimiento',
+        marca: 'General',
+        modelo: 'Motocicletas',
+        categoria: 'mantenimiento',
+        titulo: 'Mantenimiento periódico',
+        descripcion: 'Servicios, fluidos, inspecciones, ajustes y controles preventivos.'
+    },
+    {
+        id: 'demo-diagnostico',
+        marca: 'General',
+        modelo: 'Motocicletas',
+        categoria: 'diagnostico',
+        titulo: 'Diagnóstico de fallas',
+        descripcion: 'Síntomas, comprobaciones, mediciones y posibles causas.'
+    },
+    {
+        id: 'demo-procedimiento',
+        marca: 'General',
+        modelo: 'Motocicletas',
+        categoria: 'procedimiento',
+        titulo: 'Procedimientos de reparación',
+        descripcion: 'Guías de trabajo paso a paso para las reparaciones del taller.'
+    }
+];
+
+function obtenerBiblioteca() {
+    return bibliotecaBase;
+}
+
+function etiquetaCategoriaBiblioteca(categoria) {
+    const etiquetas = {
+        ficha: '📋 Ficha técnica',
+        despiece: '🔩 Despiece',
+        electrico: '⚡ Sistema eléctrico',
+        mantenimiento: '🛢️ Mantenimiento',
+        diagnostico: '💡 Diagnóstico',
+        procedimiento: '🧰 Procedimiento'
+    };
+
+    return etiquetas[categoria] || '📚 Información técnica';
+}
+
+function renderBiblioteca() {
+
+    const contenedor = document.getElementById('bibliotecaResultados');
+    if (!contenedor) return;
+
+    const busqueda =
+        (document.getElementById('bibliotecaSearch')?.value || '')
+            .trim()
+            .toLowerCase();
+
+    const categoria =
+        document.getElementById('bibliotecaCategoria')?.value || '';
+
+    const datos = obtenerBiblioteca().filter(item => {
+
+        const texto = [
+            item.marca,
+            item.modelo,
+            item.categoria,
+            item.titulo,
+            item.descripcion
+        ].join(' ').toLowerCase();
+
+        const coincideTexto =
+            !busqueda || texto.includes(busqueda);
+
+        const coincideCategoria =
+            !categoria || item.categoria === categoria;
+
+        return coincideTexto && coincideCategoria;
+    });
+
+    actualizarKpisBiblioteca();
+
+    if (!datos.length) {
+        contenedor.innerHTML = `
+            <div class="empty">
+                🔎 No encontramos información con esos filtros.
+                <br><br>
+                Probá con otra marca, modelo o componente.
+            </div>
+        `;
+        return;
+    }
+
+    contenedor.innerHTML = `
+        <div class="biblioteca-resultados">
+            ${datos.map(item => `
+                <div class="biblioteca-item">
+                    <div class="biblioteca-item-categoria">
+                        ${etiquetaCategoriaBiblioteca(item.categoria)}
+                    </div>
+
+                    <h3>
+                        ${item.titulo}
+                    </h3>
+
+                    <p>
+                        ${item.descripcion}
+                    </p>
+
+                    <button
+                        class="btn secondary"
+                        onclick="abrirRecursoBiblioteca('${item.id}')"
+                    >
+                        Ver información
+                    </button>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function actualizarKpisBiblioteca() {
+
+    const datos = obtenerBiblioteca();
+
+    const modelos = new Set(
+        datos
+            .filter(x => x.categoria === 'ficha')
+            .map(x => `${x.marca}-${x.modelo}`)
+    ).size;
+
+    const despieces =
+        datos.filter(x => x.categoria === 'despiece').length;
+
+    const electricos =
+        datos.filter(x => x.categoria === 'electrico').length;
+
+    const procedimientos =
+        datos.filter(x => x.categoria === 'procedimiento').length;
+
+    const elementos = {
+        bibliotecaKpiModelos: modelos,
+        bibliotecaKpiDespieces: despieces,
+        bibliotecaKpiElectricos: electricos,
+        bibliotecaKpiProcedimientos: procedimientos
+    };
+
+    Object.entries(elementos).forEach(([id, valor]) => {
+        const elemento = document.getElementById(id);
+        if (elemento) elemento.textContent = valor;
+    });
+}
+
+function filtrarBibliotecaCategoria(categoria) {
+
+    const select =
+        document.getElementById('bibliotecaCategoria');
+
+    if (select) {
+        select.value = categoria;
+    }
+
+    renderBiblioteca();
+
+    const resultados =
+        document.getElementById('bibliotecaResultados');
+
+    if (resultados) {
+        resultados.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+        });
+    }
+}
+
+function abrirRecursoBiblioteca(id) {
+
+    const recurso =
+        obtenerBiblioteca().find(x => x.id === id);
+
+    if (!recurso) return;
+
+    const modalbox =
+        document.getElementById('modalbox');
+
+    if (!modalbox) return;
+
+    modalbox.innerHTML = `
+        <h2>
+            ${etiquetaCategoriaBiblioteca(recurso.categoria)}
+        </h2>
+
+        <div class="panel" style="box-shadow:none;border:1px solid #e5e7eb;">
+            <div class="label">Marca</div>
+            <strong>${recurso.marca}</strong>
+
+            <div class="label" style="margin-top:12px;">Modelo / conjunto</div>
+            <strong>${recurso.modelo}</strong>
+
+            <div class="label" style="margin-top:12px;">Contenido</div>
+            <p style="color:#6b7280;line-height:1.5;">
+                ${recurso.descripcion}
+            </p>
+
+            <div class="empty" style="padding:25px 10px;">
+                📚 Este recurso es parte de la estructura inicial.
+                <br>
+                En la próxima etapa vamos a cargar aquí
+                la información técnica real.
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="btn secondary" onclick="closeModal()">
+                ← Volver
+            </button>
+        </div>
+    `;
+
+    document
+        .getElementById('modal')
+        .classList.add('show');
+}
+
+function abrirFichaTecnicaNueva() {
+
+    const modalbox =
+        document.getElementById('modalbox');
+
+    if (!modalbox) return;
+
+    modalbox.innerHTML = `
+        <h2>📋 Nueva ficha técnica</h2>
+
+        <div class="form">
+
+            <label>
+                Marca
+                <input id="bibliotecaNuevaMarca"
+                       placeholder="Ej.: Yamaha">
+            </label>
+
+            <label>
+                Modelo
+                <input id="bibliotecaNuevoModelo"
+                       placeholder="Ej.: YBR 125">
+            </label>
+
+        </div>
+
+        <div style="margin-top:12px;">
+            <label>
+                Descripción
+                <input
+                    id="bibliotecaNuevaDescripcion"
+                    style="width:100%;margin-top:5px;"
+                    placeholder="Descripción de la información técnica"
+                >
+            </label>
+        </div>
+
+        <div class="empty" style="padding:20px 5px;">
+            ℹ️ En esta primera etapa la ficha es solo visual.
+            <br>
+            La guardaremos en Supabase en el siguiente paso.
+        </div>
+
+        <div class="actions">
+            <button class="btn secondary" onclick="closeModal()">
+                Cancelar
+            </button>
+        </div>
+    `;
+
+    document
+        .getElementById('modal')
+        .classList.add('show');
+}
+
 function nextId(arr, prefix) {
 
     let n =
@@ -10512,8 +11383,6 @@ async function subirArchivoOT(otId) {
                 .insert({
 
                     ot_id: otId,
-
-                    archivo_url: ruta,
 
                     nombre_archivo:
                         archivo.name,
