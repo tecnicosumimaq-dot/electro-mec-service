@@ -1844,786 +1844,251 @@ function verImagenOT(url) {
 }
 
 /* =========================================================
-   📚 BIBLIOTECA TÉCNICA - ETAPA 1
+   📚 BIBLIOTECA TÉCNICA - SUPABASE
+   Marcas → Modelos → Recursos → Storage
    ========================================================= */
 
-.biblioteca-panel {
-    overflow-x: hidden !important;
-}
-
-.biblioteca-kpis .card {
-    min-height: 125px;
-}
-
-.biblioteca-panel .section-title {
-    font-size: 18px;
-    font-weight: 800;
-    margin-bottom: 14px;
-}
-
-.biblioteca-panel .toolbar {
-    margin-bottom: 18px;
-}
-
-.biblioteca-panel .toolbar input {
-    flex: 1 1 360px;
-}
-
-.biblioteca-panel .toolbar select {
-    min-width: 210px;
-}
-
-.biblioteca-categorias {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 14px;
-}
-
-.biblioteca-cat {
-    border: 1px solid #e5e7eb;
-    background: #fff;
-    border-radius: 16px;
-    padding: 18px;
-    text-align: left;
-    cursor: pointer;
-    box-shadow: 0 3px 15px #0000000d;
-    transition: transform .15s ease, box-shadow .15s ease;
-}
-
-.biblioteca-cat:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px #00000014;
-}
-
-.biblioteca-cat span {
-    display: block;
-    font-size: 28px;
-    margin-bottom: 10px;
-}
-
-.biblioteca-cat strong {
-    display: block;
-    font-size: 15px;
-    color: #111827;
-    margin-bottom: 5px;
-}
-
-.biblioteca-cat small {
-    display: block;
-    color: #6b7280;
-    line-height: 1.4;
-}
-
-.biblioteca-resultados {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 14px;
-}
-
-.biblioteca-item {
-    border: 1px solid #e5e7eb;
-    border-radius: 14px;
-    padding: 16px;
-    background: #fff;
-}
-
-.biblioteca-item-categoria {
-    font-size: 12px;
-    font-weight: 700;
-    color: #6b7280;
-    margin-bottom: 7px;
-}
-
-.biblioteca-item h3 {
-    margin: 0 0 7px;
-    font-size: 17px;
-}
-
-.biblioteca-item p {
-    margin: 0 0 12px;
-    color: #6b7280;
-    font-size: 13px;
-    line-height: 1.45;
-}
-
-.biblioteca-item .btn {
-    width: 100%;
-}
-
-@media (max-width: 850px) {
-    .biblioteca-categorias {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-}
-
-@media (max-width: 600px) {
-    .biblioteca-categorias {
-        grid-template-columns: 1fr;
-    }
-
-    .biblioteca-panel .toolbar input,
-    .biblioteca-panel .toolbar select {
-        width: 100%;
-        min-width: 0;
-    }
-}
-
-</style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head>
-<body>
-    <div id="resetPasswordScreen" style="display:none; min-height:100vh; align-items:center; justify-content:center; background:#f4f6f8; padding:20px;">
-    <div style="background:white; padding:30px; border-radius:16px; width:min(420px,100%); box-shadow:0 3px 20px #0002;">
-        
-        <h2 style="margin-top:0;">🔐 Nueva contraseña</h2>
-        
-        <p style="color:#6b7280;">
-            Ingresá una nueva contraseña para tu cuenta de Electro Mec Service.
-        </p>
-
-        <label style="display:block; margin-top:15px;">
-            Nueva contraseña
-            <input 
-                id="newPassword"
-                type="password"
-                placeholder="Nueva contraseña"
-                style="width:100%; margin-top:6px;"
-            >
-        </label>
-
-        <label style="display:block; margin-top:15px;">
-            Repetir contraseña
-            <input 
-                id="newPasswordConfirm"
-                type="password"
-                placeholder="Repetir contraseña"
-                style="width:100%; margin-top:6px;"
-            >
-        </label>
-
-        <div id="resetPasswordError" style="color:#b91c1c; margin-top:12px;"></div>
-
-        <button 
-            class="btn"
-            onclick="cambiarPassword()"
-            style="width:100%; margin-top:18px;"
-        >
-            Cambiar contraseña
-        </button>
-
-    </div>
-</div>
-    <div class="login-screen" id="loginScreen">
-    <div class="login-box">
-        <h1>⚡ Electro Mec</h1>
-        <p>Service · Acceso al sistema</p>
-
-        <label>
-            Email
-            <input type="email" id="loginEmail" placeholder="tu@email.com">
-        </label>
-
-        <label>
-            Contraseña
-            <input type="password" id="loginPassword" placeholder="••••••••">
-        </label>
-
-        <button class="btn" onclick="iniciarSesion()">
-            Iniciar sesión
-        </button>
-
-        <div class="login-error" id="loginError"></div>
-    </div>
-</div>
-<div class="app">
-<aside class="side"><div class="brand">⚡ Electro Mec<small>Service · App V1</small></div><div class="nav">
-
-    <div class="nav-title">
-        TALLER
-    </div>
-
-    <button
-        class="active"
-        onclick="show('inicio',this)">
-        🏠 Inicio
-    </button>
-
-    <button
-        onclick="show('clientes',this)">
-        👤 Clientes
-    </button>
-
-    <button
-        onclick="show('motos',this)">
-        🏍️ Motos / Equipos
-    </button>
-
-    <button
-        onclick="show('ot',this)">
-        🔧 Órdenes de trabajo
-    </button>
-
-
-    <div class="nav-title">
-        ADMINISTRACIÓN
-    </div>
-
-    <button
-        onclick="show('inventario',this)">
-        📦 Inventario
-    </button>
-
-    <button
-        onclick="show('presupuestos',this)">
-        💰 Presupuestos
-    </button>
-
-    <button
-        onclick="show('caja',this)">
-        💵 Caja
-    </button>
-
-
-    <div class="nav-title">
-        INFORMACIÓN TÉCNICA
-    </div>
-
-    <button
-        onclick="show('biblioteca',this)">
-        📚 Biblioteca técnica
-    </button>
-
-    <button
-        onclick="show('estadisticas',this)">
-        📊 Estadísticas
-    </button>
-
-</div>
-</aside>
-
-<main class="main">
-
-<div id="inicio" class="view">
-<div class="top"><div class="title"><h1>Panel de control</h1><p>Centro de operaciones del taller</p></div></div>
-<div class="cards" id="kpis"></div>
-<div class="section"><h2>⚡ Alertas</h2><div class="panel" id="alerts"></div></div>
-</div>
-<div id="clientes" class="view" style="display:none">
-<div class="top"><div class="title"><h1>Clientes</h1><p>Base de clientes del taller</p></div><button class="btn" onclick="openClient()">＋ Nuevo cliente</button></div>
-<div class="panel"><div class="toolbar"><input id="clientSearch" placeholder="Buscar por nombre o teléfono" oninput="renderClients()"></div><div id="clientTable"></div></div>
-</div>
-<div id="motos" class="view" style="display:none">
-<div class="top"><div class="title"><h1>Motos / Equipos</h1>
-<p>Vehículos, máquinas y equipos asociados a clientes</p></div><button class="btn" onclick="openMoto()">
-    ＋ Nuevo equipo
-</button>
-</div>
-<div class="panel"><div class="toolbar"><input id="motoSearch" placeholder="Buscar dominio, marca o modelo" oninput="renderMotos()"></div><div id="motoTable"></div></div>
-</div>
-<div id="ot" class="view" style="display:none"><div class="top"><div class="title"><h1>Órdenes de Trabajo</h1><p>Recepción, diagnóstico y seguimiento</p></div><button class="btn" onclick="openOT()">＋ Nueva OT</button></div><div class="panel"><div class="toolbar"><input id="otSearch" placeholder="Buscar OT, dominio o cliente" oninput="renderOT()"></div><div id="otTable"></div></div></div>
-<div id="inventario" class="view" style="display:none"><div class="top"><div class="title"><h1>Inventario</h1><p>Stock y alertas de reposición</p></div><button class="btn" onclick="openPart()">＋ Nuevo repuesto</button></div><div class="panel"><div class="toolbar"><input id="partSearch" placeholder="Buscar repuesto" oninput="renderParts()"></div><div id="partTable"></div></div></div>
-<div id="presupuestos" class="view" style="display:none"><div class="top"><div class="title"><h1>Presupuestos</h1><p>Estados y seguimiento</p></div></div><div class="panel"><div id="quoteTable"></div></div></div>
-<div id="caja" class="view" style="display:none"><div class="top"><div class="title"><h1>Caja</h1><p>Ingresos, egresos y saldo</p></div><div><button class="btn" onclick="openMove('Ingreso')">＋ Ingreso</button> <button class="btn secondary" onclick="openMove('Egreso')">＋ Egreso</button></div></div><div class="panel" id="cashPanel"></div></div>
-<div id="biblioteca" class="view" style="display:none">
-
-    <div class="top">
-        <div class="title">
-            <h1>📚 Biblioteca Técnica</h1>
-            <p>Información técnica para diagnóstico, reparación y consulta rápida</p>
-        </div>
-        <button class="btn" onclick="abrirFichaTecnicaNueva()">＋ Nueva ficha técnica</button>
-    </div>
-
-    <div class="cards biblioteca-kpis">
-        <div class="card">
-            <div class="label">🏍️ Modelos</div>
-            <div class="num" id="bibliotecaKpiModelos">0</div>
-            <div class="label">Fichas técnicas</div>
-        </div>
-        <div class="card">
-            <div class="label">🔩 Despieces</div>
-            <div class="num" id="bibliotecaKpiDespieces">0</div>
-            <div class="label">Disponibles</div>
-        </div>
-        <div class="card">
-            <div class="label">⚡ Eléctrico</div>
-            <div class="num" id="bibliotecaKpiElectricos">0</div>
-            <div class="label">Diagramas / sistemas</div>
-        </div>
-        <div class="card">
-            <div class="label">🧰 Procedimientos</div>
-            <div class="num" id="bibliotecaKpiProcedimientos">0</div>
-            <div class="label">Guías de reparación</div>
-        </div>
-    </div>
-
-    <div class="section">
-        <div class="panel biblioteca-panel">
-            <div class="section-title">🔎 Buscar en la biblioteca</div>
-            <div class="toolbar">
-                <input
-                    type="text"
-                    id="bibliotecaSearch"
-                    placeholder="Buscar marca, modelo, motor, sistema o componente..."
-                    oninput="renderBiblioteca()"
-                >
-                <select id="bibliotecaCategoria" onchange="renderBiblioteca()">
-                    <option value="">Todas las categorías</option>
-                    <option value="ficha">📋 Ficha técnica</option>
-                    <option value="despiece">🔩 Despiece</option>
-                    <option value="electrico">⚡ Sistema eléctrico</option>
-                    <option value="mantenimiento">🛢️ Mantenimiento</option>
-                    <option value="diagnostico">💡 Diagnóstico</option>
-                    <option value="procedimiento">🧰 Procedimiento</option>
-                </select>
-            </div>
-            <div id="bibliotecaResultados"></div>
-        </div>
-    </div>
-
-    <div class="section">
-        <div class="biblioteca-categorias">
-            <button class="biblioteca-cat" onclick="filtrarBibliotecaCategoria('ficha')">
-                <span>📋</span>
-                <strong>Fichas técnicas</strong>
-                <small>Datos generales y especificaciones</small>
-            </button>
-            <button class="biblioteca-cat" onclick="filtrarBibliotecaCategoria('despiece')">
-                <span>🔩</span>
-                <strong>Despieces</strong>
-                <small>Componentes y conjuntos</small>
-            </button>
-            <button class="biblioteca-cat" onclick="filtrarBibliotecaCategoria('electrico')">
-                <span>⚡</span>
-                <strong>Electricidad</strong>
-                <small>Diagramas y sistemas eléctricos</small>
-            </button>
-            <button class="biblioteca-cat" onclick="filtrarBibliotecaCategoria('mantenimiento')">
-                <span>🛢️</span>
-                <strong>Mantenimiento</strong>
-                <small>Servicios, fluidos y ajustes</small>
-            </button>
-            <button class="biblioteca-cat" onclick="filtrarBibliotecaCategoria('diagnostico')">
-                <span>💡</span>
-                <strong>Diagnóstico</strong>
-                <small>Fallas, síntomas y pruebas</small>
-            </button>
-            <button class="biblioteca-cat" onclick="filtrarBibliotecaCategoria('procedimiento')">
-                <span>🧰</span>
-                <strong>Procedimientos</strong>
-                <small>Guías paso a paso</small>
-            </button>
-        </div>
-    </div>
-
-</div>
-
-<div
-    id="estadisticas"
-    class="view"
-    style="display:none"
->
-
-    <div class="top">
-
-        <div class="title">
-
-            <h1>
-                📊 Estadísticas
-            </h1>
-
-            <p>
-                Información y rendimiento del taller
-            </p>
-
-        </div>
-
-    </div>
-
-
-    <div class="section">
-
-        <div class="section-title">
-            📈 Próximamente
-        </div>
-
-        <div class="empty">
-
-            Esta sección va a mostrar:
-
-            <br><br>
-
-            🔧 Trabajos realizados
-
-            <br>
-
-            💰 Facturación
-
-            <br>
-
-            📦 Repuestos utilizados
-
-            <br>
-
-            📊 Rentabilidad por OT
-
-            <br>
-
-            🏍️ Motos atendidas
-
-            <br>
-
-            👤 Clientes nuevos
-
-        </div>
-
-    </div>
-
-</div>
-</main></div>
-<div class="modal" id="modal"><div class="modalbox" id="modalbox"></div></div>
-<script>
-const SUPABASE_URL = 'https://vqkqiogttsjfrbomghtl.supabase.co';
-
-const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_3u_6QZ0oMgDi4Dp18qD1TQ_Vw--DeMN';
-
-const supabaseClient = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_PUBLISHABLE_KEY
-);
-
-async function comprobarSupabase() {
-    try {
-        const { data: { session }, error } =
-            await supabaseClient.auth.getSession();
-
-        if (error) {
-            console.error('Error Supabase:', error);
-            return;
-        }
-
-        if (session) {
-            console.log('Supabase conectado');
-            console.log('Usuario:', session.user.email);
-        } else {
-            console.log('Supabase conectado');
-            console.log('No hay usuario autenticado todavía');
-        }
-
-    } catch (error) {
-        console.error('Error de conexión:', error);
-    }
-}
-
-async function iniciarSesion() {
-
-    const email =
-        document.getElementById('loginEmail').value.trim();
-
-    const password =
-        document.getElementById('loginPassword').value;
-
-    const errorBox =
-        document.getElementById('loginError');
-
-    errorBox.textContent = '';
-
-    if (!email || !password) {
-        errorBox.textContent =
-            'Ingresá email y contraseña.';
-        return;
-    }
-
-    const { data, error } =
-        await supabaseClient.auth.signInWithPassword({
-            email: email,
-            password: password
-        });
-
-    if (error) {
-        console.error(error);
-        errorBox.textContent =
-            'Email o contraseña incorrectos.';
-        return;
-    }
-
-    console.log(
-        'Usuario autenticado:',
-        data.user.email
-    );
-
-    document.getElementById('loginScreen').style.display =
-        'none';
-}
-
-comprobarSupabase();
-    async function cambiarPassword() {
-
-    const password =
-        document.getElementById('newPassword').value;
-
-    const confirmPassword =
-        document.getElementById('newPasswordConfirm').value;
-
-    const errorBox =
-        document.getElementById('resetPasswordError');
-
-    errorBox.textContent = '';
-
-    if (!password || !confirmPassword) {
-        errorBox.textContent =
-            'Completá ambos campos.';
-        return;
-    }
-
-    if (password.length < 6) {
-        errorBox.textContent =
-            'La contraseña debe tener al menos 6 caracteres.';
-        return;
-    }
-
-    if (password !== confirmPassword) {
-        errorBox.textContent =
-            'Las contraseñas no coinciden.';
-        return;
-    }
-
-    const { error } =
-        await supabaseClient.auth.updateUser({
-            password: password
-        });
-
-    if (error) {
-        console.error(error);
-        errorBox.textContent =
-            'No se pudo cambiar la contraseña.';
-        return;
-    }
-
-    alert('✅ Contraseña actualizada correctamente.');
-
-    document.getElementById('resetPasswordScreen').style.display =
-        'none';
-
-    document.getElementById('loginScreen').style.display =
-        'flex';
-}
-    supabaseClient.auth.onAuthStateChange((event, session) => {
-
-    if (event === 'PASSWORD_RECOVERY') {
-
-        document.getElementById('loginScreen').style.display =
-            'none';
-
-        document.getElementById('resetPasswordScreen').style.display =
-            'flex';
-    }
-
-});
-
-
-const key = 'electroMecAppV1';
-
-let db = JSON.parse(
-    localStorage.getItem(key) ||
-    '{"clientes":[],"motos":[],"ots":[],"repuestos":[],"presupuestos":[],"movimientos":[]}'
-);
-
-
-function save() {
-
-    localStorage.setItem(
-        key,
-        JSON.stringify(db)
-    );
-
-    if (typeof renderAll === 'function') {
-        renderAll();
-    }
-}
-
-
-function show(id, btn) {
-
-    // Ocultar todas las vistas
-    document.querySelectorAll('.view').forEach(v => {
-        v.style.display = 'none';
-    });
-
-    // Mostrar la vista seleccionada
-    const vista = document.getElementById(id);
-
-    if (!vista) {
-        console.error('❌ No existe la vista:', id);
-        return;
-    }
-
-    vista.style.display = 'block';
-
-    // Actualizar botón activo
-    document.querySelectorAll('.nav button').forEach(b => {
-        b.classList.remove('active');
-    });
-
-    if (btn) {
-        btn.classList.add('active');
-    }
-
-    // Cargar solamente el módulo seleccionado
-    switch (id) {
-
-        case 'inicio':
-            renderDashboard();
-            break;
-
-        case 'clientes':
-            renderClients();
-            break;
-
-        case 'motos':
-            renderMotos();
-            break;
-
-        case 'ot':
-            renderOT();
-            break;
-
-        case 'inventario':
-            renderParts();
-            break;
-
-        case 'presupuestos':
-            renderQuotes();
-            break;
-
-        case 'caja':
-            renderCash();
-            break;
-
-        case 'biblioteca':
-            renderBiblioteca();
-            break;
-
-        default:
-            console.warn('⚠️ Módulo sin render:', id);
-    }
-}
-
-/* ==========================================================
-   📚 BIBLIOTECA TÉCNICA - ETAPA 1
-   Estructura visual local. En la siguiente etapa se conecta
-   a Supabase y se incorporan las fichas técnicas reales.
-   ========================================================== */
-
-const bibliotecaBase = [
+const BIBLIOTECA_BUCKET = 'biblioteca-tecnica';
+
+const bibliotecaCategorias = {
+    ficha_tecnica: '📋 Ficha técnica',
+    despiece: '🔩 Despiece',
+    sistema_electrico: '⚡ Sistema eléctrico',
+    mantenimiento: '🛢️ Mantenimiento',
+    diagnostico: '💡 Diagnóstico',
+    procedimiento: '🧰 Procedimiento',
+    manual_taller: '📘 Manual de taller',
+    catalogo_repuestos: '📦 Catálogo de repuestos',
+    diagrama: '📐 Diagrama',
+    otro: '📚 Otro'
+};
+
+const bibliotecaRecursosPublicos = [
     {
-        id: 'demo-ybr125',
-        marca: 'Yamaha',
-        modelo: 'YBR 125',
-        categoria: 'ficha',
-        titulo: 'Yamaha YBR 125',
-        descripcion: 'Ficha técnica, motor, transmisión, mantenimiento y especificaciones.'
+        id: 'public-loc-motorcycles-1914', marca: 'Biblioteca general', modelo: 'Motocicletas clásicas', modeloId: 'public-modelo-general', marcaId: 'public-marca-general',
+        categoria: 'manual_taller', titulo: 'Motorcycles, sidecars and cyclecars — construcción, gestión y reparación (1914)',
+        descripcion: 'Libro técnico histórico sobre construcción, funcionamiento, mantenimiento y reparación de motocicletas. Fuente declarada de dominio público por Library of Congress.',
+        fuente: 'Library of Congress — dominio público', url_archivo: 'https://www.loc.gov/item/14012638/', licencia: 'public_domain', tipo_recurso: 'enlace_externo', nombre_archivo: 'LOC — PDF / libro técnico 1914'
     },
     {
-        id: 'demo-embrague',
-        marca: 'General',
-        modelo: 'Motocicletas',
-        categoria: 'despiece',
-        titulo: 'Despiece de embrague',
-        descripcion: 'Conjunto de embrague: canasta, discos, separadores, resortes y componentes.'
+        id: 'public-loc-electric-wiring-1906', marca: 'Biblioteca general', modelo: 'Electricidad', modeloId: 'public-modelo-electrico', marcaId: 'public-marca-general',
+        categoria: 'sistema_electrico', titulo: 'Electric-Wiring, Diagrams and Switchboards (1906)',
+        descripcion: 'Tratado histórico de circuitos, diagramas y tableros eléctricos. Library of Congress lo identifica como dominio público.',
+        fuente: 'Library of Congress — dominio público', url_archivo: 'https://www.loc.gov/item/2021655001/', licencia: 'public_domain', tipo_recurso: 'enlace_externo', nombre_archivo: 'LOC — PDF / electricidad 1906'
     },
     {
-        id: 'demo-electrico',
-        marca: 'General',
-        modelo: 'Motocicletas',
-        categoria: 'electrico',
-        titulo: 'Sistema eléctrico',
-        descripcion: 'Batería, carga, arranque, iluminación, fusibles y conexiones.'
+        id: 'public-loc-electrical-circuits-1904', marca: 'Biblioteca general', modelo: 'Electricidad', modeloId: 'public-modelo-electrico', marcaId: 'public-marca-general',
+        categoria: 'sistema_electrico', titulo: 'Electrical Circuits and Diagrams (1904)',
+        descripcion: 'Material histórico de teoría y diagramas eléctricos declarado de dominio público por Library of Congress.',
+        fuente: 'Library of Congress — dominio público', url_archivo: 'https://www.loc.gov/item/05003499/', licencia: 'public_domain', tipo_recurso: 'enlace_externo', nombre_archivo: 'LOC — PDF / circuitos 1904'
     },
     {
-        id: 'demo-mantenimiento',
-        marca: 'General',
-        modelo: 'Motocicletas',
-        categoria: 'mantenimiento',
-        titulo: 'Mantenimiento periódico',
-        descripcion: 'Servicios, fluidos, inspecciones, ajustes y controles preventivos.'
+        id: 'public-wikimedia-ts185', marca: 'Suzuki', modelo: 'TS185 1975', modeloId: 'public-ts185-1975', marcaId: 'public-suzuki',
+        categoria: 'sistema_electrico', titulo: 'Diagrama eléctrico Suzuki TS185 1975 — redibujado',
+        descripcion: 'Diagrama redibujado por el autor y publicado bajo dominio público en Wikimedia Commons.',
+        fuente: 'Wikimedia Commons — dominio público', url_archivo: 'https://commons.wikimedia.org/wiki/File:1975_TS185_Wiring_Diagram.svg', licencia: 'public_domain', tipo_recurso: 'enlace_externo', nombre_archivo: '1975 TS185 Wiring Diagram.svg'
     },
     {
-        id: 'demo-diagnostico',
-        marca: 'General',
-        modelo: 'Motocicletas',
-        categoria: 'diagnostico',
-        titulo: 'Diagnóstico de fallas',
-        descripcion: 'Síntomas, comprobaciones, mediciones y posibles causas.'
+        id: 'public-wikimedia-moto-diagram', marca: 'Biblioteca general', modelo: 'Motocicleta — partes', modeloId: 'public-modelo-general', marcaId: 'public-marca-general',
+        categoria: 'diagrama', titulo: 'Diagrama general de una motocicleta',
+        descripcion: 'Diagrama original de partes de una motocicleta, publicado bajo CC0.',
+        fuente: 'Wikimedia Commons — CC0', url_archivo: 'https://commons.wikimedia.org/wiki/File:Diagram_of_motorcycle_(sport_touring).svg', licencia: 'cc0', tipo_recurso: 'enlace_externo', nombre_archivo: 'Diagram of motorcycle (sport touring).svg'
     },
     {
-        id: 'demo-procedimiento',
-        marca: 'General',
-        modelo: 'Motocicletas',
-        categoria: 'procedimiento',
-        titulo: 'Procedimientos de reparación',
-        descripcion: 'Guías de trabajo paso a paso para las reparaciones del taller.'
+        id: 'public-wikimedia-suspension', marca: 'Biblioteca general', modelo: 'Suspensión de motocicleta', modeloId: 'public-modelo-general', marcaId: 'public-marca-general',
+        categoria: 'diagrama', titulo: 'Esquema de suspensión tipo plunger',
+        descripcion: 'Esquema técnico original publicado bajo CC0.',
+        fuente: 'Wikimedia Commons — CC0', url_archivo: 'https://commons.wikimedia.org/wiki/File:Schematic_diagram_of_plunger-type_motorcycle_suspension.png', licencia: 'cc0', tipo_recurso: 'enlace_externo', nombre_archivo: 'Schematic diagram of plunger-type motorcycle suspension.png'
+    },
+    {
+        id: 'official-yamaha-ybr125ed-ficha', marca: 'Yamaha', modelo: 'YBR 125 ED', modeloId: 'official-ybr125ed', marcaId: 'official-yamaha',
+        categoria: 'ficha_tecnica', titulo: 'Ficha técnica oficial Yamaha YBR125 ED',
+        descripcion: 'Ficha técnica publicada por Yamaha Motor Argentina. Se conserva como enlace a la fuente oficial; no se redistribuye el PDF.',
+        fuente: 'Yamaha Motor Argentina — fuente oficial', url_archivo: 'https://www.yamaha-motor.com.ar/modelo/pdf/ybr125-ed', licencia: 'oficial_con_restricciones', tipo_recurso: 'enlace_externo', nombre_archivo: 'Fuente oficial Yamaha'
+    },
+    {
+        id: 'official-yamaha-ybr125z-manual', marca: 'Yamaha', modelo: 'YBR 125 Z', modeloId: 'official-ybr125z', marcaId: 'official-yamaha',
+        categoria: 'manual_taller', titulo: 'Manual del propietario Yamaha YBR125 Z',
+        descripcion: 'PDF publicado por Yamaha Motor Argentina. Enlace directo a la fuente oficial.',
+        fuente: 'Yamaha Motor Argentina — fuente oficial', url_archivo: 'https://www.yamaha-motor.com.ar/modelo/descargar-manual-de-servicio/ybr125-z', licencia: 'oficial_con_restricciones', tipo_recurso: 'enlace_externo', nombre_archivo: 'Manual oficial Yamaha YBR125 Z'
+    },
+    {
+        id: 'official-yamaha-parts-catalogue', marca: 'Yamaha', modelo: 'Catálogo general de piezas', modeloId: 'official-yamaha-parts', marcaId: 'official-yamaha',
+        categoria: 'catalogo_repuestos', titulo: 'Catálogo oficial de piezas Yamaha',
+        descripcion: 'Buscador oficial de Yamaha con dibujos técnicos y piezas por modelo.',
+        fuente: 'Yamaha Motor — catálogo oficial', url_archivo: 'https://www.yamaha-motor.eu/es/es/service-support/genuine-parts/parts-catalogue/', licencia: 'oficial_con_restricciones', tipo_recurso: 'enlace_externo', nombre_archivo: 'Yamaha Genuine Parts Catalogue'
+    },
+    {
+        id: 'official-honda-motopub-argentina', marca: 'Honda', modelo: 'Biblioteca Motopub Argentina', modeloId: 'official-honda-general', marcaId: 'official-honda',
+        categoria: 'manual_taller', titulo: 'Honda Motopub — publicaciones de servicio',
+        descripcion: 'Portal oficial Honda Argentina para manuales de usuario y catálogos/publicaciones de servicio. Requiere aceptar su licencia.',
+        fuente: 'Honda Motor de Argentina — fuente oficial', url_archivo: 'https://www.hondamotopub.com/HAR/', licencia: 'oficial_con_restricciones', tipo_recurso: 'enlace_externo', nombre_archivo: 'Honda Motopub Argentina'
+    },
+    {
+        id: 'official-honda-cg150-2019', marca: 'Honda', modelo: 'CG150 Titan 2019–2021', modeloId: 'official-cg150-2019', marcaId: 'official-honda',
+        categoria: 'manual_taller', titulo: 'Manual oficial Honda CG150 Titan 2019–2021',
+        descripcion: 'Publicación oficial Honda Motopub. El documento está sujeto al acuerdo de licencia de Honda.',
+        fuente: 'Honda Motopub — fuente oficial', url_archivo: 'https://www.hondamotopub.com/model/HAR/KVS191-KVS201-KVS211/', licencia: 'oficial_con_restricciones', tipo_recurso: 'enlace_externo', nombre_archivo: 'Honda CG150 Titan 2019–2021'
+    },
+    {
+        id: 'official-honda-cg150-2015', marca: 'Honda', modelo: 'CG150 Titan 2015–2018', modeloId: 'official-cg150-2015', marcaId: 'official-honda',
+        categoria: 'manual_taller', titulo: 'Manual oficial Honda CG150 Titan 2015–2018',
+        descripcion: 'Publicación oficial Honda Motopub. El documento está sujeto al acuerdo de licencia de Honda.',
+        fuente: 'Honda Motopub — fuente oficial', url_archivo: 'https://www.hondamotopub.com/model/HAR/KVS151-KVS161-KVS171-KVS181', licencia: 'oficial_con_restricciones', tipo_recurso: 'enlace_externo', nombre_archivo: 'Honda CG150 Titan 2015–2018'
     }
 ];
 
-function obtenerBiblioteca() {
-    return bibliotecaBase;
+const bibliotecaModelosPublicos = [
+    {id:'public-modelo-general',marca_id:'public-marca-general',nombre:'Biblioteca general',activo:true},
+    {id:'public-modelo-electrico',marca_id:'public-marca-general',nombre:'Electricidad',activo:true},
+    {id:'public-ts185-1975',marca_id:'public-suzuki',nombre:'TS185 1975',activo:true,cilindrada:'185 cc',año_desde:1975,año_hasta:1975},
+    {id:'official-ybr125ed',marca_id:'official-yamaha',nombre:'YBR 125 ED',activo:true,cilindrada:'124 cc'},
+    {id:'official-ybr125z',marca_id:'official-yamaha',nombre:'YBR 125 Z',activo:true,cilindrada:'125 cc'},
+    {id:'official-yamaha-parts',marca_id:'official-yamaha',nombre:'Catálogo general de piezas',activo:true},
+    {id:'official-honda-general',marca_id:'official-honda',nombre:'Biblioteca Motopub Argentina',activo:true},
+    {id:'official-cg150-2019',marca_id:'official-honda',nombre:'CG150 Titan 2019–2021',activo:true,cilindrada:'149 cc'},
+    {id:'official-cg150-2015',marca_id:'official-honda',nombre:'CG150 Titan 2015–2018',activo:true,cilindrada:'149 cc'}
+];
+
+const bibliotecaMarcasPublicas = [
+    {id:'public-marca-general',nombre:'Biblioteca general',activo:true},
+    {id:'public-suzuki',nombre:'Suzuki',activo:true},
+    {id:'official-yamaha',nombre:'Yamaha',activo:true},
+    {id:'official-honda',nombre:'Honda',activo:true}
+];
+
+let bibliotecaCache = {
+    marcas: [],
+    modelos: [],
+    recursos: []
+};
+
+function escapeBiblioteca(valor) {
+    return String(valor ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function slugBiblioteca(valor) {
+    return String(valor || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
 }
 
 function etiquetaCategoriaBiblioteca(categoria) {
-    const etiquetas = {
-        ficha: '📋 Ficha técnica',
-        despiece: '🔩 Despiece',
-        electrico: '⚡ Sistema eléctrico',
-        mantenimiento: '🛢️ Mantenimiento',
-        diagnostico: '💡 Diagnóstico',
-        procedimiento: '🧰 Procedimiento'
-    };
-
-    return etiquetas[categoria] || '📚 Información técnica';
+    return bibliotecaCategorias[categoria] || '📚 Información técnica';
 }
 
-function renderBiblioteca() {
+async function cargarBibliotecaSupabase() {
+    try {
+        const [resultadoMarcas, resultadoModelos, resultadoRecursos] =
+            await Promise.all([
+                supabaseClient.from('biblioteca_marcas')
+                    .select('*').eq('activo', true).order('nombre'),
+                supabaseClient.from('biblioteca_modelos')
+                    .select('*').eq('activo', true).order('nombre'),
+                supabaseClient.from('biblioteca_recursos')
+                    .select('*').eq('activo', true)
+                    .order('fecha_alta', { ascending: false })
+            ]);
 
+        if (resultadoMarcas.error) throw resultadoMarcas.error;
+        if (resultadoModelos.error) throw resultadoModelos.error;
+        if (resultadoRecursos.error) throw resultadoRecursos.error;
+
+        bibliotecaCache.marcas = [...bibliotecaMarcasPublicas, ...(resultadoMarcas.data || [])]
+            .filter((item, index, arr) => arr.findIndex(x => x.id === item.id) === index);
+        bibliotecaCache.modelos = [...bibliotecaModelosPublicos, ...(resultadoModelos.data || [])]
+            .filter((item, index, arr) => arr.findIndex(x => x.id === item.id) === index);
+        bibliotecaCache.recursos = [...bibliotecaRecursosPublicos, ...(resultadoRecursos.data || [])]
+            .filter((item, index, arr) => arr.findIndex(x => x.id === item.id) === index);
+
+        return bibliotecaCache;
+    } catch (error) {
+        console.error('Error cargando Biblioteca Técnica:', error);
+        const contenedor = document.getElementById('bibliotecaResultados');
+        if (contenedor) {
+            contenedor.innerHTML = `
+                <div class="empty">
+                    ❌ No se pudo cargar la Biblioteca Técnica.
+                    <br><br>${escapeBiblioteca(error.message || 'Error desconocido')}
+                </div>`;
+        }
+        return bibliotecaCache;
+    }
+}
+
+function obtenerBiblioteca() {
+    return bibliotecaCache.recursos.map(recurso => {
+        const modelo = bibliotecaCache.modelos.find(m => m.id === recurso.modelo_id);
+        const marca = modelo
+            ? bibliotecaCache.marcas.find(m => m.id === modelo.marca_id)
+            : null;
+
+        return {
+            ...recurso,
+            marca: marca?.nombre || 'Sin marca',
+            modelo: modelo?.nombre || 'Sin modelo',
+            modeloId: modelo?.id || '',
+            marcaId: marca?.id || ''
+        };
+    });
+}
+
+async function renderBiblioteca() {
     const contenedor = document.getElementById('bibliotecaResultados');
     if (!contenedor) return;
 
-    const busqueda =
-        (document.getElementById('bibliotecaSearch')?.value || '')
-            .trim()
-            .toLowerCase();
+    contenedor.innerHTML = `<div class="empty">⏳ Cargando Biblioteca Técnica...</div>`;
+    await cargarBibliotecaSupabase();
 
-    const categoria =
-        document.getElementById('bibliotecaCategoria')?.value || '';
+    const busqueda = (document.getElementById('bibliotecaSearch')?.value || '')
+        .trim().toLowerCase();
+    const categoria = document.getElementById('bibliotecaCategoria')?.value || '';
 
     const datos = obtenerBiblioteca().filter(item => {
-
         const texto = [
-            item.marca,
-            item.modelo,
-            item.categoria,
-            item.titulo,
-            item.descripcion
+            item.marca, item.modelo, item.categoria,
+            item.titulo, item.descripcion, item.fuente
         ].join(' ').toLowerCase();
 
-        const coincideTexto =
-            !busqueda || texto.includes(busqueda);
-
-        const coincideCategoria =
-            !categoria || item.categoria === categoria;
-
-        return coincideTexto && coincideCategoria;
+        return (!busqueda || texto.includes(busqueda)) &&
+               (!categoria || item.categoria === categoria);
     });
 
     actualizarKpisBiblioteca();
 
     if (!datos.length) {
-        contenedor.innerHTML = `
-            <div class="empty">
-                🔎 No encontramos información con esos filtros.
+        const modelos = bibliotecaCache.modelos.filter(modelo => {
+            const marca = bibliotecaCache.marcas.find(m => m.id === modelo.marca_id);
+            const texto = [
+                marca?.nombre, modelo.nombre, modelo.version,
+                modelo.cilindrada, modelo.motor
+            ].join(' ').toLowerCase();
+            return !busqueda || texto.includes(busqueda);
+        });
+
+        contenedor.innerHTML = modelos.length
+            ? `<div class="empty">
+                🏍️ Encontramos ${modelos.length} modelo(s), pero todavía no tienen archivos cargados.
                 <br><br>
-                Probá con otra marca, modelo o componente.
-            </div>
-        `;
+                ${modelos.slice(0, 12).map(modelo => {
+                    const marca = bibliotecaCache.marcas.find(m => m.id === modelo.marca_id);
+                    return `<span class="badge" style="margin:4px;">
+                        ${escapeBiblioteca(marca?.nombre || '')} ${escapeBiblioteca(modelo.nombre)}
+                    </span>`;
+                }).join('')}
+               </div>`
+            : `<div class="empty">
+                🔎 No encontramos información con esos filtros.
+                <br><br>Probá con otra marca o modelo, o agregá el primer recurso.
+              </div>`;
         return;
     }
 
@@ -2632,53 +2097,32 @@ function renderBiblioteca() {
             ${datos.map(item => `
                 <div class="biblioteca-item">
                     <div class="biblioteca-item-categoria">
-                        ${etiquetaCategoriaBiblioteca(item.categoria)}
+                        ${escapeBiblioteca(etiquetaCategoriaBiblioteca(item.categoria))}
                     </div>
-
-                    <h3>
-                        ${item.titulo}
-                    </h3>
-
+                    <h3>${escapeBiblioteca(item.marca)} · ${escapeBiblioteca(item.modelo)}</h3>
                     <p>
-                        ${item.descripcion}
+                        <strong>${escapeBiblioteca(item.titulo)}</strong>
+                        ${item.descripcion ? `<br>${escapeBiblioteca(item.descripcion)}` : ''}
                     </p>
-
-                    <button
-                        class="btn secondary"
-                        onclick="abrirRecursoBiblioteca('${item.id}')"
-                    >
-                        Ver información
+                    ${item.nombre_archivo ? `
+                        <div class="label" style="margin-bottom:10px;">
+                            📎 ${escapeBiblioteca(item.nombre_archivo)}
+                        </div>` : ''}
+                    <button class="btn secondary"
+                            onclick="abrirRecursoBiblioteca('${item.id}')">
+                        Ver recurso
                     </button>
                 </div>
             `).join('')}
-        </div>
-    `;
+        </div>`;
 }
 
 function actualizarKpisBiblioteca() {
-
-    const datos = obtenerBiblioteca();
-
-    const modelos = new Set(
-        datos
-            .filter(x => x.categoria === 'ficha')
-            .map(x => `${x.marca}-${x.modelo}`)
-    ).size;
-
-    const despieces =
-        datos.filter(x => x.categoria === 'despiece').length;
-
-    const electricos =
-        datos.filter(x => x.categoria === 'electrico').length;
-
-    const procedimientos =
-        datos.filter(x => x.categoria === 'procedimiento').length;
-
     const elementos = {
-        bibliotecaKpiModelos: modelos,
-        bibliotecaKpiDespieces: despieces,
-        bibliotecaKpiElectricos: electricos,
-        bibliotecaKpiProcedimientos: procedimientos
+        bibliotecaKpiModelos: bibliotecaCache.modelos.length,
+        bibliotecaKpiDespieces: bibliotecaCache.recursos.filter(x => x.categoria === 'despiece').length,
+        bibliotecaKpiElectricos: bibliotecaCache.recursos.filter(x => x.categoria === 'sistema_electrico').length,
+        bibliotecaKpiProcedimientos: bibliotecaCache.recursos.filter(x => x.categoria === 'procedimiento').length
     };
 
     Object.entries(elementos).forEach(([id, valor]) => {
@@ -2688,129 +2132,350 @@ function actualizarKpisBiblioteca() {
 }
 
 function filtrarBibliotecaCategoria(categoria) {
-
-    const select =
-        document.getElementById('bibliotecaCategoria');
-
-    if (select) {
-        select.value = categoria;
-    }
-
+    const select = document.getElementById('bibliotecaCategoria');
+    if (select) select.value = categoria;
     renderBiblioteca();
 
-    const resultados =
-        document.getElementById('bibliotecaResultados');
-
-    if (resultados) {
-        resultados.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start'
-        });
-    }
+    const resultados = document.getElementById('bibliotecaResultados');
+    if (resultados) resultados.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function abrirRecursoBiblioteca(id) {
-
-    const recurso =
-        obtenerBiblioteca().find(x => x.id === id);
-
+async function abrirRecursoBiblioteca(id) {
+    const recurso = bibliotecaCache.recursos.find(x => x.id === id);
     if (!recurso) return;
 
-    const modalbox =
-        document.getElementById('modalbox');
+    const modelo = bibliotecaCache.modelos.find(x => x.id === recurso.modelo_id);
+    const marca = modelo
+        ? bibliotecaCache.marcas.find(x => x.id === modelo.marca_id)
+        : null;
 
+    const modalbox = document.getElementById('modalbox');
     if (!modalbox) return;
 
     modalbox.innerHTML = `
-        <h2>
-            ${etiquetaCategoriaBiblioteca(recurso.categoria)}
-        </h2>
-
+        <h2>${escapeBiblioteca(etiquetaCategoriaBiblioteca(recurso.categoria))}</h2>
         <div class="panel" style="box-shadow:none;border:1px solid #e5e7eb;">
             <div class="label">Marca</div>
-            <strong>${recurso.marca}</strong>
+            <strong>${escapeBiblioteca(marca?.nombre || 'Sin marca')}</strong>
 
-            <div class="label" style="margin-top:12px;">Modelo / conjunto</div>
-            <strong>${recurso.modelo}</strong>
+            <div class="label" style="margin-top:12px;">Modelo</div>
+            <strong>${escapeBiblioteca(modelo?.nombre || 'Sin modelo')}</strong>
 
-            <div class="label" style="margin-top:12px;">Contenido</div>
-            <p style="color:#6b7280;line-height:1.5;">
-                ${recurso.descripcion}
-            </p>
+            ${modelo?.version ? `
+                <div class="label" style="margin-top:12px;">Versión</div>
+                <strong>${escapeBiblioteca(modelo.version)}</strong>` : ''}
 
-            <div class="empty" style="padding:25px 10px;">
-                📚 Este recurso es parte de la estructura inicial.
-                <br>
-                En la próxima etapa vamos a cargar aquí
-                la información técnica real.
+            ${modelo?.año_desde || modelo?.año_hasta ? `
+                <div class="label" style="margin-top:12px;">Año / período</div>
+                <strong>
+                    ${escapeBiblioteca(modelo.año_desde || '')}
+                    ${modelo.año_hasta ? ` - ${escapeBiblioteca(modelo.año_hasta)}` : ''}
+                </strong>` : ''}
+
+            <div class="label" style="margin-top:12px;">Recurso</div>
+            <strong>${escapeBiblioteca(recurso.titulo)}</strong>
+
+            ${recurso.descripcion ? `
+                <div class="label" style="margin-top:12px;">Descripción</div>
+                <p style="color:#6b7280;line-height:1.5;">
+                    ${escapeBiblioteca(recurso.descripcion)}
+                </p>` : ''}
+
+            ${recurso.nombre_archivo ? `
+                <div class="label" style="margin-top:12px;">Archivo</div>
+                <p>📎 ${escapeBiblioteca(recurso.nombre_archivo)}</p>` : ''}
+
+            ${recurso.fuente ? `
+                <div class="label" style="margin-top:12px;">Fuente</div>
+                <p style="color:#6b7280;">${escapeBiblioteca(recurso.fuente)}</p>` : ''}
+
+            ${recurso.licencia ? `
+                <div class="label" style="margin-top:12px;">Estado de uso</div>
+                <p style="color:#6b7280;">${escapeBiblioteca(etiquetaLicenciaBiblioteca(recurso.licencia))}</p>` : ''}
+
+            <div class="actions" style="justify-content:flex-start;margin-top:18px;">
+                ${recurso.ruta_archivo ? `
+                    <button class="btn" onclick="abrirArchivoBiblioteca('${recurso.id}')">
+                        📎 Abrir archivo
+                    </button>` : ''}
+                ${recurso.url_archivo ? `
+                    <button class="btn" onclick="abrirEnlaceBiblioteca('${recurso.id}')">
+                        🔗 Abrir fuente / documento
+                    </button>` : ''}
+                <button class="btn secondary" onclick="closeModal()">← Volver</button>
             </div>
-        </div>
+        </div>`;
+    document.getElementById('modal').classList.add('show');
+}
 
-        <div class="actions">
-            <button class="btn secondary" onclick="closeModal()">
-                ← Volver
-            </button>
-        </div>
-    `;
+function etiquetaLicenciaBiblioteca(licencia) {
+    const etiquetas = {
+        public_domain: '✅ Dominio público / reutilización permitida según la fuente',
+        cc0: '✅ CC0 / dominio público',
+        cc_by: '🟢 Creative Commons CC BY — requiere atribución',
+        cc_by_sa: '🟢 Creative Commons CC BY-SA — requiere atribución y compartir igual',
+        oficial_con_restricciones: '⚠️ Fuente oficial con condiciones/licencia — no se redistribuye el archivo',
+        copyright: '⚠️ Copyright — usar solo mediante enlace o con permiso',
+        desconocida: '❓ Licencia no verificada'
+    };
+    return etiquetas[licencia] || licencia;
+}
 
-    document
-        .getElementById('modal')
-        .classList.add('show');
+function abrirEnlaceBiblioteca(id) {
+    const recurso = bibliotecaCache.recursos.find(x => x.id === id);
+    if (!recurso?.url_archivo) {
+        alert('Este recurso no tiene una fuente externa asociada.');
+        return;
+    }
+    window.open(recurso.url_archivo, '_blank', 'noopener,noreferrer');
+}
+
+async function abrirArchivoBiblioteca(id) {
+    const recurso = bibliotecaCache.recursos.find(x => x.id === id);
+
+    if (!recurso?.ruta_archivo) {
+        alert('Este recurso todavía no tiene un archivo asociado.');
+        return;
+    }
+
+    try {
+        const { data, error } = await supabaseClient
+            .storage.from(BIBLIOTECA_BUCKET)
+            .createSignedUrl(recurso.ruta_archivo, 60 * 10);
+
+        if (error) throw error;
+        if (!data?.signedUrl) throw new Error('No se pudo generar el enlace seguro.');
+
+        window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+        console.error('Error abriendo archivo de Biblioteca:', error);
+        alert('No se pudo abrir el archivo:\n\n' + error.message);
+    }
 }
 
 function abrirFichaTecnicaNueva() {
-
-    const modalbox =
-        document.getElementById('modalbox');
-
+    const modalbox = document.getElementById('modalbox');
     if (!modalbox) return;
 
     modalbox.innerHTML = `
-        <h2>📋 Nueva ficha técnica</h2>
+        <h2>📋 Nueva ficha técnica / modelo</h2>
 
         <div class="form">
-
-            <label>
-                Marca
-                <input id="bibliotecaNuevaMarca"
-                       placeholder="Ej.: Yamaha">
+            <label>Marca *
+                <input id="bibliotecaNuevaMarca" placeholder="Ej.: Yamaha">
             </label>
-
-            <label>
-                Modelo
-                <input id="bibliotecaNuevoModelo"
-                       placeholder="Ej.: YBR 125">
+            <label>Modelo *
+                <input id="bibliotecaNuevoModelo" placeholder="Ej.: YBR 125">
             </label>
-
+            <label>Versión
+                <input id="bibliotecaNuevaVersion" placeholder="Ej.: ED / KS">
+            </label>
+            <label>Cilindrada
+                <input id="bibliotecaNuevaCilindrada" placeholder="Ej.: 125 cc">
+            </label>
+            <label>Año desde
+                <input id="bibliotecaNuevaAnioDesde" type="number" placeholder="Ej.: 2006">
+            </label>
+            <label>Año hasta
+                <input id="bibliotecaNuevaAnioHasta" type="number" placeholder="Ej.: 2015">
+            </label>
         </div>
 
         <div style="margin-top:12px;">
-            <label>
-                Descripción
-                <input
-                    id="bibliotecaNuevaDescripcion"
-                    style="width:100%;margin-top:5px;"
-                    placeholder="Descripción de la información técnica"
-                >
+            <label>Motor
+                <input id="bibliotecaNuevoMotor"
+                       style="width:100%;margin-top:5px;"
+                       placeholder="Ej.: monocilíndrico 4T">
             </label>
         </div>
 
-        <div class="empty" style="padding:20px 5px;">
-            ℹ️ En esta primera etapa la ficha es solo visual.
-            <br>
-            La guardaremos en Supabase en el siguiente paso.
+        <div style="margin-top:12px;">
+            <label>Título del recurso
+                <input id="bibliotecaNuevoTitulo"
+                       style="width:100%;margin-top:5px;"
+                       value="Ficha técnica"
+                       placeholder="Ej.: Ficha técnica completa">
+            </label>
+        </div>
+
+        <div style="margin-top:12px;">
+            <label>Categoría
+                <select id="bibliotecaNuevaCategoria"
+                        style="width:100%;margin-top:5px;">
+                    <option value="ficha_tecnica">📋 Ficha técnica</option>
+                    <option value="despiece">🔩 Despiece</option>
+                    <option value="sistema_electrico">⚡ Sistema eléctrico</option>
+                    <option value="mantenimiento">🛢️ Mantenimiento</option>
+                    <option value="diagnostico">💡 Diagnóstico</option>
+                    <option value="procedimiento">🧰 Procedimiento</option>
+                    <option value="manual_taller">📘 Manual de taller</option>
+                    <option value="catalogo_repuestos">📦 Catálogo de repuestos</option>
+                    <option value="diagrama">📐 Diagrama</option>
+                    <option value="otro">📚 Otro</option>
+                </select>
+            </label>
+        </div>
+
+        <div style="margin-top:12px;">
+            <label>Descripción
+                <textarea id="bibliotecaNuevaDescripcion"
+                    style="width:100%;min-height:80px;margin-top:5px;padding:11px;border:1px solid #d1d5db;border-radius:9px;resize:vertical;"
+                    placeholder="Descripción del contenido"></textarea>
+            </label>
+        </div>
+
+        <div style="margin-top:12px;">
+            <label>Archivo técnico
+                <input id="bibliotecaNuevoArchivo"
+                       type="file"
+                       accept=".pdf,.jpg,.jpeg,.png,.webp,.gif"
+                       style="width:100%;margin-top:5px;">
+            </label>
+            <small style="display:block;color:#6b7280;margin-top:5px;">
+                PDF, imágenes o diagramas. Máximo: 20 MB.
+            </small>
         </div>
 
         <div class="actions">
-            <button class="btn secondary" onclick="closeModal()">
-                Cancelar
-            </button>
-        </div>
-    `;
+            <button class="btn secondary" onclick="closeModal()">Cancelar</button>
+            <button class="btn" onclick="guardarFichaBiblioteca()">💾 Guardar</button>
+        </div>`;
 
-    document
-        .getElementById('modal')
-        .classList.add('show');
+    document.getElementById('modal').classList.add('show');
+}
+
+async function guardarFichaBiblioteca() {
+    const marcaNombre = document.getElementById('bibliotecaNuevaMarca')?.value.trim();
+    const modeloNombre = document.getElementById('bibliotecaNuevoModelo')?.value.trim();
+
+    if (!marcaNombre || !modeloNombre) {
+        alert('Ingresá la marca y el modelo.');
+        return;
+    }
+
+    const version = document.getElementById('bibliotecaNuevaVersion')?.value.trim() || null;
+    const cilindrada = document.getElementById('bibliotecaNuevaCilindrada')?.value.trim() || null;
+    const anioDesde = Number(document.getElementById('bibliotecaNuevaAnioDesde')?.value) || null;
+    const anioHasta = Number(document.getElementById('bibliotecaNuevaAnioHasta')?.value) || null;
+    const motor = document.getElementById('bibliotecaNuevoMotor')?.value.trim() || null;
+    const titulo = document.getElementById('bibliotecaNuevoTitulo')?.value.trim() || 'Ficha técnica';
+    const categoria = document.getElementById('bibliotecaNuevaCategoria')?.value || 'ficha_tecnica';
+    const descripcion = document.getElementById('bibliotecaNuevaDescripcion')?.value.trim() || null;
+    const archivo = document.getElementById('bibliotecaNuevoArchivo')?.files?.[0] || null;
+
+    if (archivo && archivo.size > 20 * 1024 * 1024) {
+        alert('El archivo no puede superar los 20 MB.');
+        return;
+    }
+
+    let rutaArchivo = null;
+
+    try {
+        // 1. Buscar o crear marca.
+        let marca = bibliotecaCache.marcas.find(
+            x => x.nombre.toLowerCase() === marcaNombre.toLowerCase()
+        );
+
+        if (!marca) {
+            const { data, error } = await supabaseClient
+                .from('biblioteca_marcas')
+                .insert({ nombre: marcaNombre })
+                .select()
+                .single();
+
+            if (error) throw error;
+            marca = data;
+        }
+
+        // 2. Buscar o crear modelo.
+        let modelo = bibliotecaCache.modelos.find(
+            x =>
+                x.marca_id === marca.id &&
+                x.nombre.toLowerCase() === modeloNombre.toLowerCase() &&
+                (x.version || '').toLowerCase() === (version || '').toLowerCase()
+        );
+
+        if (!modelo) {
+            const { data, error } = await supabaseClient
+                .from('biblioteca_modelos')
+                .insert({
+                    marca_id: marca.id,
+                    nombre: modeloNombre,
+                    version,
+                    cilindrada,
+                    año_desde: anioDesde,
+                    año_hasta: anioHasta,
+                    motor
+                })
+                .select()
+                .single();
+
+            if (error) throw error;
+            modelo = data;
+        }
+
+        // 3. Subir archivo si se seleccionó.
+        let nombreArchivo = null;
+        let tipoArchivo = null;
+        let tamanoArchivo = null;
+
+        if (archivo) {
+            nombreArchivo = archivo.name;
+            tipoArchivo = archivo.type || null;
+            tamanoArchivo = archivo.size;
+
+            const extension = archivo.name.includes('.')
+                ? archivo.name.split('.').pop().toLowerCase()
+                : 'bin';
+
+            rutaArchivo =
+                `${slugBiblioteca(marca.nombre)}/` +
+                `${slugBiblioteca(modelo.nombre)}/` +
+                `${crypto.randomUUID()}.${extension}`;
+
+            const { error } = await supabaseClient
+                .storage.from(BIBLIOTECA_BUCKET)
+                .upload(rutaArchivo, archivo, {
+                    cacheControl: '3600',
+                    upsert: false,
+                    contentType: archivo.type || undefined
+                });
+
+            if (error) throw error;
+        }
+
+        // 4. Registrar recurso.
+        const { error: errorRecurso } = await supabaseClient
+            .from('biblioteca_recursos')
+            .insert({
+                modelo_id: modelo.id,
+                titulo,
+                categoria,
+                descripcion,
+                nombre_archivo: nombreArchivo,
+                ruta_archivo: rutaArchivo,
+                url_archivo: rutaArchivo,
+                tipo_archivo: tipoArchivo,
+                tamaño_archivo: tamanoArchivo
+            });
+
+        if (errorRecurso) {
+            if (rutaArchivo) {
+                await supabaseClient
+                    .storage.from(BIBLIOTECA_BUCKET)
+                    .remove([rutaArchivo]);
+            }
+            throw errorRecurso;
+        }
+
+        closeModal();
+        await renderBiblioteca();
+        alert('✅ Recurso guardado correctamente en la Biblioteca Técnica.');
+
+    } catch (error) {
+        console.error('Error guardando recurso de Biblioteca:', error);
+        alert('No se pudo guardar el recurso:\n\n' + error.message);
+    }
 }
 
 function nextId(arr, prefix) {
