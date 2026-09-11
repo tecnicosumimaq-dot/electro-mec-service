@@ -1968,6 +1968,31 @@ function verImagenOT(url) {
     }
 }
 
+
+/* =========================================================
+   BIBLIOTECA TÉCNICA — FICHA COMPLETA DE MODELO
+   ========================================================= */
+.biblioteca-modelo-card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:18px;box-shadow:0 3px 15px #0000000d;margin-bottom:14px}
+.biblioteca-modelo-head{display:flex;justify-content:space-between;gap:15px;align-items:flex-start;flex-wrap:wrap}
+.biblioteca-modelo-head h3{margin:0;font-size:20px}
+.biblioteca-modelo-meta{color:#6b7280;font-size:13px;margin-top:5px}
+.biblioteca-modelo-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.biblioteca-tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid #e5e7eb;padding-bottom:10px;margin-bottom:16px}
+.biblioteca-tab{border:0;background:#f3f4f6;color:#374151;padding:9px 12px;border-radius:9px;cursor:pointer;font-weight:600}
+.biblioteca-tab.active{background:#111827;color:#fff}
+.biblioteca-detail-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.biblioteca-detail-card{background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:13px}
+.biblioteca-detail-card .label{margin-bottom:5px}
+.biblioteca-table{width:100%;border-collapse:collapse}
+.biblioteca-table th,.biblioteca-table td{padding:9px 8px;border-bottom:1px solid #e5e7eb;text-align:left;font-size:13px;vertical-align:top}
+.biblioteca-table th{background:#f9fafb}
+.biblioteca-resource-list{display:grid;gap:10px}
+.biblioteca-resource-row{border:1px solid #e5e7eb;border-radius:12px;padding:13px;background:#fff}
+.biblioteca-resource-row h4{margin:0 0 5px}
+.biblioteca-resource-row p{margin:5px 0;color:#6b7280;font-size:13px}
+@media(max-width:800px){.biblioteca-detail-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.biblioteca-detail-grid{grid-template-columns:1fr}.biblioteca-tabs{overflow-x:auto;flex-wrap:nowrap}.biblioteca-tab{white-space:nowrap}}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head>
 <body>
@@ -2745,16 +2770,26 @@ async function renderBiblioteca() {
         });
 
         contenedor.innerHTML = modelos.length
-            ? `<div class="empty">
-                🏍️ Encontramos ${modelos.length} modelo(s), pero todavía no tienen archivos cargados.
-                <br><br>
-                ${modelos.slice(0, 12).map(modelo => {
+            ? `<div>
+                ${modelos.slice(0, 20).map(modelo => {
                     const marca = bibliotecaCache.marcas.find(m => m.id === modelo.marca_id);
-                    return `<span class="badge" style="margin:4px;">
-                        ${escapeBiblioteca(marca?.nombre || '')} ${escapeBiblioteca(modelo.nombre)}
-                    </span>`;
+                    return `<div class="biblioteca-modelo-card">
+                        <div class="biblioteca-modelo-head">
+                            <div>
+                                <h3>${escapeBiblioteca(marca?.nombre || 'Sin marca')} · ${escapeBiblioteca(modelo.nombre)}</h3>
+                                <div class="biblioteca-modelo-meta">
+                                    ${escapeBiblioteca(modelo.version || '')}
+                                    ${modelo.cilindrada ? ' · ' + escapeBiblioteca(modelo.cilindrada) : ''}
+                                    ${modelo.motor ? ' · ' + escapeBiblioteca(modelo.motor) : ''}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="biblioteca-modelo-actions">
+                            <button class="btn" onclick="abrirFichaModeloBiblioteca('${modelo.id}')">📋 Abrir ficha técnica</button>
+                        </div>
+                    </div>`;
                 }).join('')}
-               </div>`
+              </div>`
             : `<div class="empty">
                 🔎 No encontramos información con esos filtros.
                 <br><br>Probá con otra marca o modelo, o agregá el primer recurso.
@@ -2778,10 +2813,14 @@ async function renderBiblioteca() {
                         <div class="label" style="margin-bottom:10px;">
                             📎 ${escapeBiblioteca(item.nombre_archivo)}
                         </div>` : ''}
-                    <button class="btn secondary"
-                            onclick="abrirRecursoBiblioteca('${item.id}')">
-                        Ver recurso
-                    </button>
+                    <div class="biblioteca-modelo-actions">
+                        <button class="btn" onclick="abrirFichaModeloBiblioteca('${item.modeloId}')">
+                            📋 Abrir ficha técnica
+                        </button>
+                        <button class="btn secondary" onclick="abrirRecursoBiblioteca('${item.id}')">
+                            Ver recurso
+                        </button>
+                    </div>
                 </div>
             `).join('')}
         </div>`;
@@ -2808,6 +2847,203 @@ function filtrarBibliotecaCategoria(categoria) {
 
     const resultados = document.getElementById('bibliotecaResultados');
     if (resultados) resultados.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function cargarDatosModeloBiblioteca(modeloId) {
+    const [especificaciones, mantenimientos, diagnosticos, recursos] = await Promise.all([
+        supabaseClient.from('biblioteca_especificaciones')
+            .select('*').eq('modelo_id', modeloId).eq('activo', true)
+            .order('categoria').order('nombre'),
+        supabaseClient.from('biblioteca_mantenimientos')
+            .select('*').eq('modelo_id', modeloId).eq('activo', true)
+            .order('intervalo_km', { ascending: true, nullsFirst: false })
+            .order('categoria').order('tarea'),
+        supabaseClient.from('biblioteca_diagnosticos')
+            .select('*').eq('modelo_id', modeloId).eq('activo', true)
+            .order('sistema').order('sintoma'),
+        supabaseClient.from('biblioteca_recursos')
+            .select('*').eq('modelo_id', modeloId).eq('activo', true)
+            .order('fecha_alta', { ascending: false })
+    ]);
+
+    if (especificaciones.error) throw especificaciones.error;
+    if (mantenimientos.error) throw mantenimientos.error;
+    if (diagnosticos.error) throw diagnosticos.error;
+    if (recursos.error) throw recursos.error;
+
+    return {
+        especificaciones: especificaciones.data || [],
+        mantenimientos: mantenimientos.data || [],
+        diagnosticos: diagnosticos.data || [],
+        recursos: recursos.data || []
+    };
+}
+
+function agruparBibliotecaPorCategoria(items) {
+    return items.reduce((grupos, item) => {
+        const categoria = item.categoria || 'otro';
+        if (!grupos[categoria]) grupos[categoria] = [];
+        grupos[categoria].push(item);
+        return grupos;
+    }, {});
+}
+
+function renderTabFichaBiblioteca(tab, datos, modelo) {
+    const contenedor = document.getElementById('bibliotecaFichaContenido');
+    if (!contenedor) return;
+
+    if (tab === 'resumen') {
+        const especificaciones = datos.especificaciones.slice(0, 12);
+        contenedor.innerHTML = `
+            <div class="biblioteca-detail-grid">
+                <div class="biblioteca-detail-card"><div class="label">Marca</div><strong>${escapeBiblioteca(modelo.marcaNombre)}</strong></div>
+                <div class="biblioteca-detail-card"><div class="label">Modelo</div><strong>${escapeBiblioteca(modelo.nombre)}</strong></div>
+                <div class="biblioteca-detail-card"><div class="label">Versión</div><strong>${escapeBiblioteca(modelo.version || '—')}</strong></div>
+                <div class="biblioteca-detail-card"><div class="label">Cilindrada</div><strong>${escapeBiblioteca(modelo.cilindrada || '—')}</strong></div>
+                <div class="biblioteca-detail-card"><div class="label">Años</div><strong>${escapeBiblioteca(modelo.año_desde || '—')}${modelo.año_hasta ? ' - ' + escapeBiblioteca(modelo.año_hasta) : ''}</strong></div>
+                <div class="biblioteca-detail-card"><div class="label">Motor</div><strong>${escapeBiblioteca(modelo.motor || '—')}</strong></div>
+            </div>
+            ${modelo.descripcion ? `<div class="section"><div class="label">Descripción</div><p>${escapeBiblioteca(modelo.descripcion)}</p></div>` : ''}
+            <div class="section">
+                <h3>📌 Datos principales</h3>
+                ${especificaciones.length ? `<table class="biblioteca-table"><thead><tr><th>Categoría</th><th>Dato</th><th>Valor</th></tr></thead><tbody>${especificaciones.map(x => `<tr><td>${escapeBiblioteca(x.categoria)}</td><td>${escapeBiblioteca(x.nombre)}</td><td>${escapeBiblioteca(x.valor)} ${escapeBiblioteca(x.unidad || '')}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">Todavía no hay especificaciones cargadas.</div>'}
+            </div>`;
+        return;
+    }
+
+    if (tab === 'especificaciones') {
+        const grupos = agruparBibliotecaPorCategoria(datos.especificaciones);
+        contenedor.innerHTML = Object.keys(grupos).length ? Object.entries(grupos).map(([categoria, items]) => `
+            <div class="section" style="margin-top:0;margin-bottom:18px;">
+                <h3>${escapeBiblioteca(categoria)}</h3>
+                <table class="biblioteca-table"><thead><tr><th>Dato</th><th>Valor</th><th>Unidad</th></tr></thead><tbody>
+                ${items.map(x => `<tr><td>${escapeBiblioteca(x.nombre)}</td><td>${escapeBiblioteca(x.valor)}</td><td>${escapeBiblioteca(x.unidad || '')}</td></tr>`).join('')}
+                </tbody></table>
+            </div>`).join('') : '<div class="empty">No hay especificaciones cargadas para este modelo.</div>';
+        return;
+    }
+
+    if (tab === 'mantenimiento') {
+        contenedor.innerHTML = datos.mantenimientos.length ? `
+            <table class="biblioteca-table"><thead><tr><th>Intervalo</th><th>Categoría</th><th>Tarea</th><th>Detalle</th></tr></thead><tbody>
+            ${datos.mantenimientos.map(x => `<tr><td>${x.intervalo_km != null ? escapeBiblioteca(x.intervalo_km + ' km') : escapeBiblioteca(x.intervalo_tiempo || 'Según programa')}</td><td>${escapeBiblioteca(x.categoria)}</td><td><strong>${escapeBiblioteca(x.tarea)}</strong></td><td>${escapeBiblioteca(x.detalle || '')}</td></tr>`).join('')}
+            </tbody></table>` : '<div class="empty">No hay mantenimiento cargado para este modelo.</div>';
+        return;
+    }
+
+    if (tab === 'diagnostico') {
+        contenedor.innerHTML = datos.diagnosticos.length ? `<div class="biblioteca-resource-list">
+            ${datos.diagnosticos.map(x => `<div class="biblioteca-resource-row"><h4>💡 ${escapeBiblioteca(x.sistema)} — ${escapeBiblioteca(x.sintoma)}</h4><p><strong>Causa posible:</strong> ${escapeBiblioteca(x.causa_posible || '—')}</p><p><strong>Comprobación:</strong> ${escapeBiblioteca(x.comprobacion || '—')}</p><p><strong>Solución orientativa:</strong> ${escapeBiblioteca(x.solucion || '—')}</p></div>`).join('')}
+            </div>` : '<div class="empty">No hay diagnósticos cargados para este modelo.</div>';
+        return;
+    }
+
+    if (tab === 'documentacion') {
+        contenedor.innerHTML = datos.recursos.length ? `<div class="biblioteca-resource-list">
+            ${datos.recursos.map(x => `<div class="biblioteca-resource-row"><h4>${escapeBiblioteca(etiquetaCategoriaBiblioteca(x.categoria))} — ${escapeBiblioteca(x.titulo)}</h4><p>${escapeBiblioteca(x.descripcion || '')}</p><p>${x.fuente ? '<strong>Fuente:</strong> ' + escapeBiblioteca(x.fuente) : ''}</p><p>${x.licencia ? '<strong>Uso:</strong> ' + escapeBiblioteca(etiquetaLicenciaBiblioteca(x.licencia)) : ''}</p><div class="biblioteca-modelo-actions">${x.ruta_archivo ? `<button class="btn" onclick="abrirArchivoBiblioteca('${x.id}')">📎 Abrir archivo</button>` : ''}${x.url_archivo ? `<button class="btn secondary" onclick="abrirEnlaceBiblioteca('${x.id}')">🔗 Abrir fuente</button>` : ''}</div></div>`).join('')}
+            </div>` : '<div class="empty">No hay documentación cargada para este modelo.</div>';
+        return;
+    }
+
+    if (tab === 'electrico') {
+        const items = datos.especificaciones.filter(x => x.categoria === 'electrico' || x.categoria === 'encendido');
+        const recursos = datos.recursos.filter(x => x.categoria === 'sistema_electrico' || x.categoria === 'diagrama');
+        contenedor.innerHTML = `
+            ${items.length ? `<h3>⚡ Datos eléctricos</h3><table class="biblioteca-table"><thead><tr><th>Dato</th><th>Valor</th><th>Unidad</th></tr></thead><tbody>${items.map(x => `<tr><td>${escapeBiblioteca(x.nombre)}</td><td>${escapeBiblioteca(x.valor)}</td><td>${escapeBiblioteca(x.unidad || '')}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">No hay datos eléctricos específicos cargados.</div>'}
+            <div class="section"><h3>📐 Diagramas / recursos</h3>${recursos.length ? `<div class="biblioteca-resource-list">${recursos.map(x => `<div class="biblioteca-resource-row"><h4>${escapeBiblioteca(x.titulo)}</h4><p>${escapeBiblioteca(x.descripcion || '')}</p><div class="biblioteca-modelo-actions">${x.ruta_archivo ? `<button class="btn" onclick="abrirArchivoBiblioteca('${x.id}')">📎 Abrir archivo</button>` : ''}${x.url_archivo ? `<button class="btn secondary" onclick="abrirEnlaceBiblioteca('${x.id}')">🔗 Abrir fuente</button>` : ''}</div></div>`).join('')}</div>` : '<div class="empty">No hay diagramas eléctricos cargados.</div>'}</div>`;
+        return;
+    }
+
+    if (tab === 'despiece') {
+        const recursos = datos.recursos.filter(x => x.categoria === 'despiece' || x.categoria === 'catalogo_repuestos');
+        contenedor.innerHTML = recursos.length ? `<div class="biblioteca-resource-list">${recursos.map(x => `<div class="biblioteca-resource-row"><h4>🔩 ${escapeBiblioteca(x.titulo)}</h4><p>${escapeBiblioteca(x.descripcion || '')}</p><div class="biblioteca-modelo-actions">${x.ruta_archivo ? `<button class="btn" onclick="abrirArchivoBiblioteca('${x.id}')">📎 Abrir archivo</button>` : ''}${x.url_archivo ? `<button class="btn secondary" onclick="abrirEnlaceBiblioteca('${x.id}')">🔗 Abrir fuente</button>` : ''}</div></div>`).join('')}</div>` : '<div class="empty">No hay despieces o catálogos cargados para este modelo.</div>';
+        return;
+    }
+
+    if (tab === 'notas') {
+        contenedor.innerHTML = `<div class="panel" style="box-shadow:none;border:1px solid #e5e7eb;background:#f9fafb;"><h3>📝 Notas del técnico</h3><p style="color:#6b7280;line-height:1.6;">${escapeBiblioteca(modelo.descripcion || 'Este modelo todavía no tiene notas propias cargadas.')}</p><small style="color:#9ca3af;">Las notas persistentes del taller las agregaremos en la siguiente etapa, vinculadas directamente al modelo.</small></div>`;
+    }
+}
+
+async function abrirFichaModeloBiblioteca(modeloId) {
+    if (!modeloId) return;
+
+    await cargarBibliotecaSupabase();
+    const modelo = bibliotecaCache.modelos.find(x => x.id === modeloId);
+    if (!modelo) {
+        alert('No se encontró el modelo en la Biblioteca Técnica.');
+        return;
+    }
+
+    const marca = bibliotecaCache.marcas.find(x => x.id === modelo.marca_id);
+    modelo.marcaNombre = marca?.nombre || 'Sin marca';
+
+    const modalbox = document.getElementById('modalbox');
+    if (!modalbox) return;
+
+    modalbox.innerHTML = `
+        <div class="biblioteca-modelo-head">
+            <div>
+                <h2>🏍️ ${escapeBiblioteca(modelo.marcaNombre)} · ${escapeBiblioteca(modelo.nombre)}</h2>
+                <div class="biblioteca-modelo-meta">
+                    ${modelo.version ? escapeBiblioteca(modelo.version) : ''}
+                    ${modelo.cilindrada ? ' · ' + escapeBiblioteca(modelo.cilindrada) : ''}
+                    ${modelo.motor ? ' · ' + escapeBiblioteca(modelo.motor) : ''}
+                </div>
+            </div>
+            <button class="btn secondary" onclick="closeModal()">✕ Cerrar</button>
+        </div>
+        <div id="bibliotecaFichaContenido" style="margin-top:18px;"><div class="empty">⏳ Cargando información técnica...</div></div>`;
+
+    document.getElementById('modal').classList.add('show');
+
+    try {
+        const datos = await cargarDatosModeloBiblioteca(modeloId);
+        const tabs = [
+            ['resumen','📌 Resumen'],
+            ['especificaciones','📋 Especificaciones'],
+            ['mantenimiento','🔧 Mantenimiento'],
+            ['diagnostico','🧪 Diagnóstico'],
+            ['documentacion','📚 Documentación'],
+            ['electrico','⚡ Eléctrico'],
+            ['despiece','🔩 Despiece'],
+            ['notas','📝 Notas']
+        ];
+        modalbox.innerHTML = `
+            <div class="biblioteca-modelo-head">
+                <div>
+                    <h2>🏍️ ${escapeBiblioteca(modelo.marcaNombre)} · ${escapeBiblioteca(modelo.nombre)}</h2>
+                    <div class="biblioteca-modelo-meta">
+                        ${modelo.version ? escapeBiblioteca(modelo.version) : ''}
+                        ${modelo.cilindrada ? ' · ' + escapeBiblioteca(modelo.cilindrada) : ''}
+                        ${modelo.motor ? ' · ' + escapeBiblioteca(modelo.motor) : ''}
+                    </div>
+                </div>
+                <button class="btn secondary" onclick="closeModal()">✕ Cerrar</button>
+            </div>
+            <div class="biblioteca-tabs" style="margin-top:18px;">
+                ${tabs.map(([id, label], index) => `<button class="biblioteca-tab ${index === 0 ? 'active' : ''}" data-biblioteca-tab="${id}" onclick="seleccionarTabFichaBiblioteca('${id}', '${modeloId}')">${label}</button>`).join('')}
+            </div>
+            <div id="bibliotecaFichaContenido"></div>`;
+        document.getElementById('modal').classList.add('show');
+        window.bibliotecaFichaDatos = datos;
+        window.bibliotecaFichaModelo = modelo;
+        renderTabFichaBiblioteca('resumen', datos, modelo);
+    } catch (error) {
+        console.error('Error cargando ficha técnica:', error);
+        const contenedor = document.getElementById('bibliotecaFichaContenido');
+        if (contenedor) contenedor.innerHTML = `<div class="empty">❌ No se pudo cargar la ficha técnica.<br><br>${escapeBiblioteca(error.message || 'Error desconocido')}</div>`;
+    }
+}
+
+function seleccionarTabFichaBiblioteca(tab, modeloId) {
+    const datos = window.bibliotecaFichaDatos;
+    const modelo = window.bibliotecaFichaModelo;
+    if (!datos || !modelo || modelo.id !== modeloId) return;
+    document.querySelectorAll('[data-biblioteca-tab]').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-biblioteca-tab') === tab);
+    });
+    renderTabFichaBiblioteca(tab, datos, modelo);
 }
 
 async function abrirRecursoBiblioteca(id) {
