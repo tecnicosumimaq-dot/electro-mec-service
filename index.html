@@ -1968,6 +1968,13 @@ function verImagenOT(url) {
     }
 }
 
+
+.biblioteca3-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.biblioteca3-card{border:1px solid #e5e7eb;border-radius:14px;padding:14px;background:#fff}
+.biblioteca3-card h3{margin:0 0 8px}.biblioteca3-card p{margin:5px 0;color:#4b5563;line-height:1.5}
+.biblioteca3-progress{height:10px;background:#e5e7eb;border-radius:99px;overflow:hidden}.biblioteca3-progress>span{display:block;height:100%;background:#111827}
+.biblioteca3-kpi{font-size:28px;font-weight:800}.biblioteca3-muted{font-size:12px;color:#6b7280}
+@media(max-width:800px){.biblioteca3-grid{grid-template-columns:1fr}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style id="biblioteca2-css">
 .biblioteca2-manager{display:grid;gap:16px}
@@ -2202,7 +2209,12 @@ function verImagenOT(url) {
                     <option value="otro">📚 Otro</option>
                 </select>
             </div>
-            <div id="bibliotecaResultados"></div>
+            <div class="biblioteca2-toolbar" style="margin:12px 0 0;">
+  <button class="btn secondary" onclick="biblioteca3BusquedaTecnica()">🔎 Búsqueda técnica avanzada</button>
+  <button class="btn secondary" onclick="biblioteca3DiagnosticoInteractivo()">🧪 Diagnóstico interactivo</button>
+  <button class="btn secondary" onclick="biblioteca3Completeness()">📊 Completeness</button>
+</div>
+<div id="bibliotecaResultados"></div>
         </div>
     </div>
 
@@ -12936,6 +12948,126 @@ async function biblioteca2AbrirContenido(id){
         const mb=document.getElementById('modalbox');mb.innerHTML=`<div class="biblioteca2-manager"><div class="biblioteca-modelo-head"><div><h2>📖 ${biblioteca2Html(recurso.titulo)}</h2><p class="biblioteca2-help">${biblioteca2Html(recurso.descripcion||'')}</p></div><button class="btn secondary" onclick="closeModal()">✕ Cerrar</button></div><div class="biblioteca2-viewer">${esImagen?`<img src="${url}" alt="${biblioteca2Html(recurso.titulo)}">`:esPdf?`<iframe src="${url}#toolbar=1&navpanes=0"></iframe>`:`<iframe src="${url}"></iframe>`}</div><div class="actions"><a class="btn" href="${url}" target="_blank" rel="noopener noreferrer">↗ Abrir en pestaña</a>${recurso.url_archivo?`<button class="btn secondary" onclick="abrirEnlaceBiblioteca('${id}')">🔗 Fuente</button>`:''}</div></div>`;
         document.getElementById('modal').classList.add('show');
     }catch(e){alert('No se pudo visualizar el archivo:\n\n'+e.message)}
+}
+
+
+/* =========================================================
+   BIBLIOTECA TÉCNICA 3.0 — BÚSQUEDA / DIAGNÓSTICO / COMPLETITUD
+   ========================================================= */
+
+async function biblioteca3CargarModeloCompleto(modeloId){
+    await cargarBibliotecaSupabase();
+    const modelo=bibliotecaCache.modelos.find(x=>x.id===modeloId);
+    if(!modelo) throw new Error('Modelo no encontrado.');
+    const [es,ma,di,re]=await Promise.all([
+        supabaseClient.from('biblioteca_especificaciones').select('*').eq('modelo_id',modeloId).eq('activo',true).order('categoria').order('nombre'),
+        supabaseClient.from('biblioteca_mantenimientos').select('*').eq('modelo_id',modeloId).eq('activo',true).order('intervalo_km',{ascending:true,nullsFirst:false}).order('tarea'),
+        supabaseClient.from('biblioteca_diagnosticos').select('*').eq('modelo_id',modeloId).eq('activo',true).order('sistema').order('sintoma'),
+        supabaseClient.from('biblioteca_recursos').select('*').eq('modelo_id',modeloId).eq('activo',true).order('fecha_alta',{ascending:false})
+    ]);
+    for(const x of [es,ma,di,re]) if(x.error) throw x.error;
+    return {modelo, especificaciones:es.data||[], mantenimientos:ma.data||[], diagnosticos:di.data||[], recursos:re.data||[]};
+}
+
+function biblioteca3ModelosOpciones(){
+    return bibliotecaCache.modelos.filter(m=>m.id&&!String(m.id).startsWith('public-')).map(m=>{
+        const marca=bibliotecaCache.marcas.find(x=>x.id===m.marca_id);
+        return `<option value="${biblioteca2Html(m.id)}">${biblioteca2Html(marca?.nombre||'')} · ${biblioteca2Html(m.nombre)}${m.version?' · '+biblioteca2Html(m.version):''}</option>`;
+    }).join('');
+}
+
+async function biblioteca3BusquedaTecnica(){
+    try{await cargarBibliotecaSupabase();}catch(e){alert(e.message);return;}
+    const mb=document.getElementById('modalbox'); if(!mb)return;
+    mb.innerHTML=`<div class="biblioteca2-manager">
+      <div class="biblioteca-modelo-head"><div><h2>🔎 Búsqueda técnica avanzada</h2><p class="biblioteca2-help">Busca simultáneamente en modelos, especificaciones, mantenimiento, diagnósticos y documentación.</p></div><button class="btn secondary" onclick="closeModal()">✕ Cerrar</button></div>
+      <div class="biblioteca2-field"><label>Término</label><input id="b3Search" placeholder="Ej.: carburador, 10W40, batería, válvulas, no arranca..."></div>
+      <div class="biblioteca2-toolbar" style="margin-top:10px"><button class="btn" onclick="biblioteca3EjecutarBusqueda()">🔎 Buscar</button></div>
+      <div id="b3SearchResults" style="margin-top:14px"></div></div>`;
+    document.getElementById('modal').classList.add('show');
+}
+
+async function biblioteca3EjecutarBusqueda(){
+    const q=(document.getElementById('b3Search')?.value||'').trim().toLowerCase();
+    const out=document.getElementById('b3SearchResults'); if(!out)return;
+    if(q.length<2){out.innerHTML='<div class="empty">Escribí al menos 2 caracteres.</div>';return;}
+    out.innerHTML='<div class="empty">⏳ Buscando...</div>';
+    try{
+      await cargarBibliotecaSupabase();
+      const modelos=bibliotecaCache.modelos.map(m=>({m,marca:bibliotecaCache.marcas.find(x=>x.id===m.marca_id)}));
+      const ids=modelos.map(x=>x.m.id);
+      const [es,ma,di,re]=await Promise.all([
+        supabaseClient.from('biblioteca_especificaciones').select('*').in('modelo_id',ids).eq('activo',true),
+        supabaseClient.from('biblioteca_mantenimientos').select('*').in('modelo_id',ids).eq('activo',true),
+        supabaseClient.from('biblioteca_diagnosticos').select('*').in('modelo_id',ids).eq('activo',true),
+        supabaseClient.from('biblioteca_recursos').select('*').in('modelo_id',ids).eq('activo',true)
+      ]);
+      for(const x of [es,ma,di,re])if(x.error)throw x.error;
+      const modelMap=new Map(modelos.map(x=>[x.m.id,x]));
+      const rows=[];
+      const add=(tipo,x,text)=>{if(String(text||'').toLowerCase().includes(q)){const z=modelMap.get(x.modelo_id);rows.push({tipo,modelo:`${z?.marca?.nombre||''} · ${z?.m.nombre||''}`,texto});}};
+      (es.data||[]).forEach(x=>add('Especificación',x,`${x.categoria} ${x.nombre} ${x.valor} ${x.unidad||''} ${x.fuente||''}`));
+      (ma.data||[]).forEach(x=>add('Mantenimiento',x,`${x.categoria} ${x.tarea} ${x.detalle||''} ${x.intervalo_km||''} ${x.intervalo_tiempo||''}`));
+      (di.data||[]).forEach(x=>add('Diagnóstico',x,`${x.sistema} ${x.sintoma} ${x.causa_posible||''} ${x.comprobacion||''} ${x.solucion||''}`));
+      (re.data||[]).forEach(x=>add('Recurso',x,`${x.titulo} ${x.categoria} ${x.descripcion||''} ${x.fuente||''}`));
+      out.innerHTML=rows.length?`<div class="biblioteca2-list">${rows.slice(0,100).map(r=>`<div class="biblioteca2-row"><div class="biblioteca2-row-main"><strong>${biblioteca2Html(r.tipo)} · ${biblioteca2Html(r.modelo)}</strong><small>${biblioteca2Html(r.texto)}</small></div></div>`).join('')}</div><div class="biblioteca3-muted" style="margin-top:8px">Mostrando hasta 100 coincidencias.</div>`:'<div class="empty">🔎 No se encontraron coincidencias técnicas.</div>';
+    }catch(e){out.innerHTML=`<div class="empty">❌ ${biblioteca2Html(e.message)}</div>`;}
+}
+
+async function biblioteca3DiagnosticoInteractivo(){
+    try{await cargarBibliotecaSupabase();}catch(e){alert(e.message);return;}
+    const mb=document.getElementById('modalbox'); if(!mb)return;
+    mb.innerHTML=`<div class="biblioteca2-manager">
+      <div class="biblioteca-modelo-head"><div><h2>🧪 Diagnóstico interactivo</h2><p class="biblioteca2-help">Seleccioná el modelo, sistema y síntoma. La biblioteca devuelve causas posibles, comprobaciones y solución.</p></div><button class="btn secondary" onclick="closeModal()">✕ Cerrar</button></div>
+      <div class="biblioteca2-grid"><div class="biblioteca2-field"><label>Modelo</label><select id="b3DiagModelo" onchange="biblioteca3CargarSistemas()"><option value="">Seleccionar...</option>${biblioteca3ModelosOpciones()}</select></div><div class="biblioteca2-field"><label>Sistema</label><select id="b3DiagSistema" onchange="biblioteca3CargarSintomas()"><option value="">Seleccionar modelo primero...</option></select></div></div>
+      <div class="biblioteca2-field" style="margin-top:12px"><label>Síntoma</label><select id="b3DiagSintoma"><option value="">Seleccionar sistema primero...</option></select></div>
+      <div class="biblioteca2-toolbar" style="margin-top:10px"><button class="btn" onclick="biblioteca3ResolverDiagnostico()">🧪 Analizar falla</button></div>
+      <div id="b3DiagResult" style="margin-top:14px"></div></div>`;
+    document.getElementById('modal').classList.add('show');
+}
+
+let biblioteca3DiagnosticosActual=[];
+async function biblioteca3CargarSistemas(){
+    const modeloId=document.getElementById('b3DiagModelo')?.value; const s=document.getElementById('b3DiagSistema'); const t=document.getElementById('b3DiagSintoma');
+    if(!s||!t)return; s.innerHTML='<option value="">⏳ Cargando...</option>'; t.innerHTML='<option value="">Seleccionar sistema...</option>';
+    if(!modeloId){s.innerHTML='<option value="">Seleccionar...</option>';return;}
+    const r=await supabaseClient.from('biblioteca_diagnosticos').select('*').eq('modelo_id',modeloId).eq('activo',true).order('sistema').order('sintoma');
+    if(r.error){s.innerHTML='<option value="">Error</option>';return;}
+    biblioteca3DiagnosticosActual=r.data||[];
+    const sistemas=[...new Set(biblioteca3DiagnosticosActual.map(x=>x.sistema).filter(Boolean))];
+    s.innerHTML='<option value="">Seleccionar...</option>'+sistemas.map(x=>`<option value="${biblioteca2Html(x)}">${biblioteca2Html(x)}</option>`).join('');
+}
+function biblioteca3CargarSintomas(){
+    const sistema=document.getElementById('b3DiagSistema')?.value; const t=document.getElementById('b3DiagSintoma');
+    const arr=biblioteca3DiagnosticosActual.filter(x=>x.sistema===sistema);
+    t.innerHTML='<option value="">Seleccionar...</option>'+arr.map((x,i)=>`<option value="${i}">${biblioteca2Html(x.sintoma)}</option>`).join('');
+}
+function biblioteca3ResolverDiagnostico(){
+    const sistema=document.getElementById('b3DiagSistema')?.value, i=Number(document.getElementById('b3DiagSintoma')?.value); const out=document.getElementById('b3DiagResult');
+    const arr=biblioteca3DiagnosticosActual.filter(x=>x.sistema===sistema); const x=arr[i];
+    if(!x){out.innerHTML='<div class="empty">Seleccioná sistema y síntoma.</div>';return;}
+    out.innerHTML=`<div class="biblioteca3-grid"><div class="biblioteca3-card"><h3>🔎 Síntoma</h3><p>${biblioteca2Html(x.sintoma)}</p></div><div class="biblioteca3-card"><h3>⚠️ Causa posible</h3><p>${biblioteca2Html(x.causa_posible||'Sin dato cargado.')}</p></div><div class="biblioteca3-card"><h3>🧪 Comprobación</h3><p>${biblioteca2Html(x.comprobacion||'Sin comprobación cargada.')}</p></div><div class="biblioteca3-card"><h3>🧰 Solución</h3><p>${biblioteca2Html(x.solucion||'Sin solución cargada.')}</p></div></div>`;
+}
+
+async function biblioteca3Completeness(){
+    try{await cargarBibliotecaSupabase();}catch(e){alert(e.message);return;}
+    const mb=document.getElementById('modalbox'); if(!mb)return;
+    mb.innerHTML=`<div class="biblioteca2-manager"><div class="biblioteca-modelo-head"><div><h2>📊 Completitud de la biblioteca</h2><p class="biblioteca2-help">Indicador práctico para detectar qué modelos todavía necesitan contenido.</p></div><button class="btn secondary" onclick="closeModal()">✕ Cerrar</button></div><div id="b3CompletenessList" class="biblioteca2-list"><div class="empty">⏳ Analizando...</div></div></div>`;
+    document.getElementById('modal').classList.add('show');
+    const rows=[];
+    for(const m of bibliotecaCache.modelos.filter(x=>!String(x.id).startsWith('public-'))){
+      const recursos=bibliotecaCache.recursos.filter(x=>x.modelo_id===m.id);
+      const [es,ma,di]=await Promise.all([
+        supabaseClient.from('biblioteca_especificaciones').select('id',{count:'exact',head:true}).eq('modelo_id',m.id).eq('activo',true),
+        supabaseClient.from('biblioteca_mantenimientos').select('id',{count:'exact',head:true}).eq('modelo_id',m.id).eq('activo',true),
+        supabaseClient.from('biblioteca_diagnosticos').select('id',{count:'exact',head:true}).eq('modelo_id',m.id).eq('activo',true)
+      ]);
+      const checks=[recursos.length>0,recursos.some(x=>x.categoria==='sistema_electrico'),recursos.some(x=>x.categoria==='despiece'),(es.count||0)>0,(ma.count||0)>0,(di.count||0)>0];
+      const score=Math.round(checks.filter(Boolean).length/checks.length*100); const marca=bibliotecaCache.marcas.find(x=>x.id===m.marca_id);
+      rows.push({marca:marca?.nombre||'',modelo:m.nombre,score,checks});
+    }
+    rows.sort((a,b)=>a.score-b.score);
+    document.getElementById('b3CompletenessList').innerHTML=rows.slice(0,120).map(x=>`<div class="biblioteca2-row"><div class="biblioteca2-row-main" style="flex:1"><strong>${biblioteca2Html(x.marca)} · ${biblioteca2Html(x.modelo)}</strong><div class="biblioteca3-progress" style="margin-top:7px"><span style="width:${x.score}%"></span></div><small>${x.score}% · ${x.checks.filter(Boolean).length}/6 bloques cargados</small></div></div>`).join('');
 }
 
 // Usar el visor interno cuando se abre un archivo de biblioteca.
