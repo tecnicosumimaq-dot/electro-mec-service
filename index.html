@@ -1969,7 +1969,28 @@ function verImagenOT(url) {
 }
 
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style id="biblioteca2-css">
+.biblioteca2-manager{display:grid;gap:16px}
+.biblioteca2-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.biblioteca2-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.biblioteca2-grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.biblioteca2-field label{display:block;font-size:12px;font-weight:700;color:#4b5563;margin-bottom:5px}
+.biblioteca2-field input,.biblioteca2-field select,.biblioteca2-field textarea{width:100%;padding:10px;border:1px solid #d1d5db;border-radius:9px;background:#fff}
+.biblioteca2-field textarea{min-height:90px;resize:vertical}
+.biblioteca2-box{border:1px solid #e5e7eb;border-radius:14px;padding:14px;background:#f9fafb}
+.biblioteca2-list{display:grid;gap:8px;max-height:430px;overflow:auto}
+.biblioteca2-row{display:flex;justify-content:space-between;gap:10px;align-items:center;border:1px solid #e5e7eb;border-radius:10px;padding:10px;background:#fff}
+.biblioteca2-row-main{min-width:0}.biblioteca2-row-main strong{display:block}.biblioteca2-row-main small{display:block;color:#6b7280;margin-top:3px;overflow-wrap:anywhere}
+.biblioteca2-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.biblioteca2-tabs{display:flex;gap:6px;overflow:auto;border-bottom:1px solid #e5e7eb;padding-bottom:8px}
+.biblioteca2-tab{border:0;background:#eef2f7;padding:9px 12px;border-radius:9px;cursor:pointer;font-weight:700;white-space:nowrap}
+.biblioteca2-tab.active{background:#111827;color:#fff}
+.biblioteca2-viewer{width:100%;min-height:520px;border:1px solid #e5e7eb;border-radius:12px;background:#111827;overflow:hidden}
+.biblioteca2-viewer iframe{width:100%;height:70vh;min-height:520px;border:0;background:#fff}
+.biblioteca2-viewer img{display:block;max-width:100%;max-height:75vh;margin:auto;object-fit:contain}
+.biblioteca2-help{font-size:12px;color:#6b7280;line-height:1.5}
+@media(max-width:800px){.biblioteca2-grid,.biblioteca2-grid-3{grid-template-columns:1fr}.biblioteca2-row{align-items:flex-start;flex-direction:column}.biblioteca2-actions{justify-content:flex-start}}
+</style></head>
 <body>
     <div id="resetPasswordScreen" style="display:none; min-height:100vh; align-items:center; justify-content:center; background:#f4f6f8; padding:20px;">
     <div style="background:white; padding:30px; border-radius:16px; width:min(420px,100%); box-shadow:0 3px 20px #0002;">
@@ -2131,6 +2152,7 @@ function verImagenOT(url) {
             <p>Información técnica para diagnóstico, reparación y consulta rápida</p>
         </div>
         <button class="btn" onclick="abrirFichaTecnicaNueva()">＋ Nueva ficha técnica</button>
+        <button class="btn secondary" onclick="biblioteca2AbrirGestor()">⚙ Gestionar biblioteca</button>
     </div>
 
     <div class="cards biblioteca-kpis">
@@ -12607,5 +12629,317 @@ function textoDatoPDF(
         y
     );
 }
+
+/* =========================================================
+   BIBLIOTECA TÉCNICA 2.0 — GESTIÓN INTERACTIVA
+   ========================================================= */
+
+let biblioteca2Datos = { especificaciones: [], mantenimientos: [], diagnosticos: [], recursos: [], notas: [] };
+let biblioteca2ModeloId = '';
+let biblioteca2Modelo = null;
+
+function biblioteca2Html(valor){ return escapeBiblioteca(valor); }
+
+async function biblioteca2CargarModelo(modeloId){
+    await cargarBibliotecaSupabase();
+    biblioteca2ModeloId = modeloId || '';
+    biblioteca2Modelo = bibliotecaCache.modelos.find(x => x.id === modeloId) || null;
+    if (!biblioteca2Modelo) throw new Error('No se encontró el modelo seleccionado.');
+    const [es, ma, di, re, no] = await Promise.all([
+        supabaseClient.from('biblioteca_especificaciones').select('*').eq('modelo_id',modeloId).eq('activo',true).order('categoria').order('nombre'),
+        supabaseClient.from('biblioteca_mantenimientos').select('*').eq('modelo_id',modeloId).eq('activo',true).order('intervalo_km',{ascending:true,nullsFirst:false}).order('tarea'),
+        supabaseClient.from('biblioteca_diagnosticos').select('*').eq('modelo_id',modeloId).eq('activo',true).order('sistema').order('sintoma'),
+        supabaseClient.from('biblioteca_recursos').select('*').eq('modelo_id',modeloId).eq('activo',true).order('fecha_alta',{ascending:false}),
+        supabaseClient.from('biblioteca_notas').select('*').eq('modelo_id',modeloId).eq('activo',true).order('fecha_alta',{ascending:false})
+    ]);
+    if(es.error) throw es.error; if(ma.error) throw ma.error; if(di.error) throw di.error; if(re.error) throw re.error; if(no.error) throw no.error;
+    biblioteca2Datos={especificaciones:es.data||[],mantenimientos:ma.data||[],diagnosticos:di.data||[],recursos:re.data||[],notas:no.data||[]};
+}
+
+function biblioteca2SelectModelos(){
+    return bibliotecaCache.modelos.filter(x=>x.id && !String(x.id).startsWith('public-') && !String(x.id).startsWith('official-')).map(m=>{
+        const marca=bibliotecaCache.marcas.find(x=>x.id===m.marca_id);
+        return `<option value="${biblioteca2Html(m.id)}">${biblioteca2Html(marca?.nombre||'Sin marca')} · ${biblioteca2Html(m.nombre)}${m.version?' · '+biblioteca2Html(m.version):''}</option>`;
+    }).join('');
+}
+
+function biblioteca2Categorias(){
+    return `<option value="ficha_tecnica">📋 Ficha técnica</option>
+    <option value="despiece">🔩 Despiece</option>
+    <option value="sistema_electrico">⚡ Sistema eléctrico</option>
+    <option value="mantenimiento">🛢️ Mantenimiento</option>
+    <option value="diagnostico">💡 Diagnóstico</option>
+    <option value="procedimiento">🧰 Procedimiento</option>
+    <option value="manual_taller">📘 Manual de taller</option>
+    <option value="catalogo_repuestos">📦 Catálogo de repuestos</option>
+    <option value="diagrama">📐 Diagrama</option>
+    <option value="otro">📚 Otro</option>`;
+}
+
+function biblioteca2Licencias(){
+    return `<option value="desconocida">❓ Licencia no verificada</option>
+    <option value="public_domain">✅ Dominio público</option>
+    <option value="cc0">✅ CC0</option>
+    <option value="cc_by">🟢 CC BY</option>
+    <option value="cc_by_sa">🟢 CC BY-SA</option>
+    <option value="oficial_con_restricciones">⚠️ Oficial con restricciones</option>
+    <option value="copyright">⚠️ Copyright — solo enlace/permiso</option>`;
+}
+
+async function biblioteca2AbrirGestor(modeloId=''){
+    try{ await cargarBibliotecaSupabase(); }catch(e){ alert('No se pudo cargar la Biblioteca Técnica:\n\n'+e.message); return; }
+    biblioteca2ModeloId=modeloId||'';
+    const modalbox=document.getElementById('modalbox'); if(!modalbox)return;
+    modalbox.innerHTML=`
+      <div class="biblioteca2-manager">
+        <div class="biblioteca-modelo-head">
+          <div><h2>⚙️ Gestor de Biblioteca Técnica</h2><p class="biblioteca2-help">Desde aquí podés crear modelos, cargar especificaciones, mantenimiento, diagnósticos, notas y documentación. Los archivos privados quedan en Supabase Storage.</p></div>
+          <button class="btn secondary" onclick="closeModal()">✕ Cerrar</button>
+        </div>
+        <div class="biblioteca2-tabs">
+          <button class="biblioteca2-tab active" data-b2tab="modelo" onclick="biblioteca2Tab('modelo')">🏍️ Modelo</button>
+          <button class="biblioteca2-tab" data-b2tab="recurso" onclick="biblioteca2Tab('recurso')">📎 Recurso</button>
+          <button class="biblioteca2-tab" data-b2tab="spec" onclick="biblioteca2Tab('spec')">📋 Especificación</button>
+          <button class="biblioteca2-tab" data-b2tab="mantenimiento" onclick="biblioteca2Tab('mantenimiento')">🔧 Mantenimiento</button>
+          <button class="biblioteca2-tab" data-b2tab="diagnostico" onclick="biblioteca2Tab('diagnostico')">🧪 Diagnóstico</button>
+          <button class="biblioteca2-tab" data-b2tab="nota" onclick="biblioteca2Tab('nota')">📝 Nota</button>
+          <button class="biblioteca2-tab" data-b2tab="administrar" onclick="biblioteca2Tab('administrar')">🗂️ Administrar</button>
+        </div>
+        <div id="biblioteca2Contenido"></div>
+      </div>`;
+    document.getElementById('modal').classList.add('show');
+    biblioteca2RenderTab('modelo');
+}
+
+function biblioteca2Tab(tab){
+    document.querySelectorAll('[data-b2tab]').forEach(b=>b.classList.toggle('active',b.dataset.b2tab===tab));
+    biblioteca2RenderTab(tab);
+}
+
+function biblioteca2RenderTab(tab){
+    const c=document.getElementById('biblioteca2Contenido'); if(!c)return;
+    if(tab==='modelo'){
+        c.innerHTML=`
+        <div class="biblioteca2-box">
+          <h3>🏍️ Crear marca y modelo</h3>
+          <div class="biblioteca2-grid">
+            <div class="biblioteca2-field"><label>Marca *</label><input id="b2Marca" placeholder="Ej.: Yamaha"></div>
+            <div class="biblioteca2-field"><label>Modelo *</label><input id="b2Modelo" placeholder="Ej.: YBR 125"></div>
+            <div class="biblioteca2-field"><label>Versión</label><input id="b2Version" placeholder="ED / Z / Full..."></div>
+            <div class="biblioteca2-field"><label>Cilindrada</label><input id="b2Cilindrada" placeholder="125 cc"></div>
+            <div class="biblioteca2-field"><label>Año desde</label><input id="b2Desde" type="number"></div>
+            <div class="biblioteca2-field"><label>Año hasta</label><input id="b2Hasta" type="number"></div>
+          </div>
+          <div class="biblioteca2-field" style="margin-top:12px"><label>Tipo de moto</label><input id="b2Tipo" placeholder="Street / Cub / On-Off / Scooter..."></div>
+          <div class="biblioteca2-field" style="margin-top:12px"><label>Motor</label><input id="b2Motor" placeholder="Monocilíndrico 4T..."></div>
+          <div class="biblioteca2-field" style="margin-top:12px"><label>Descripción</label><textarea id="b2Descripcion" placeholder="Descripción técnica o notas generales"></textarea></div>
+          <div class="actions"><button class="btn" onclick="biblioteca2GuardarModelo()">💾 Crear modelo</button></div>
+        </div>`;
+        return;
+    }
+    if(tab==='recurso'){
+        const modelos=biblioteca2SelectModelos();
+        c.innerHTML=`
+        <div class="biblioteca2-box">
+          <h3>📎 Agregar documentación / archivo</h3>
+          <div class="biblioteca2-grid">
+            <div class="biblioteca2-field"><label>Modelo *</label><select id="b2RecursoModelo"><option value="">Seleccionar...</option>${modelos}</select></div>
+            <div class="biblioteca2-field"><label>Categoría *</label><select id="b2RecursoCategoria">${biblioteca2Categorias()}</select></div>
+          </div>
+          <div class="biblioteca2-field" style="margin-top:12px"><label>Título *</label><input id="b2RecursoTitulo" placeholder="Ej.: Diagrama eléctrico completo"></div>
+          <div class="biblioteca2-field" style="margin-top:12px"><label>Descripción</label><textarea id="b2RecursoDescripcion"></textarea></div>
+          <div class="biblioteca2-grid">
+            <div class="biblioteca2-field"><label>Fuente</label><input id="b2RecursoFuente" placeholder="Ej.: Yamaha Motor Argentina"></div>
+            <div class="biblioteca2-field"><label>Autor</label><input id="b2RecursoAutor"></div>
+          </div>
+          <div class="biblioteca2-field" style="margin-top:12px"><label>Licencia / uso</label><select id="b2RecursoLicencia">${biblioteca2Licencias()}</select></div>
+          <div class="biblioteca2-field" style="margin-top:12px"><label>Enlace externo (si corresponde)</label><input id="b2RecursoUrl" type="url" placeholder="https://..."></div>
+          <div class="biblioteca2-field" style="margin-top:12px"><label>Archivo local para almacenar</label><input id="b2RecursoArchivo" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.svg,.txt,.csv"><div class="biblioteca2-help">Para material con copyright o restricciones, dejá el archivo sin cargar y usá solamente el enlace externo.</div></div>
+          <div class="actions"><button class="btn" onclick="biblioteca2GuardarRecurso()">💾 Guardar recurso</button></div>
+        </div>`;
+        if(biblioteca2ModeloId) document.getElementById('b2RecursoModelo').value=biblioteca2ModeloId;
+        return;
+    }
+    if(tab==='spec'){
+        c.innerHTML=`
+        <div class="biblioteca2-box">
+          <h3>📋 Agregar especificación</h3>
+          <div class="biblioteca2-field"><label>Modelo *</label><select id="b2SpecModelo"><option value="">Seleccionar...</option>${biblioteca2SelectModelos()}</select></div>
+          <div class="biblioteca2-grid-3" style="margin-top:12px">
+            <div class="biblioteca2-field"><label>Categoría *</label><input id="b2SpecCategoria" placeholder="motor, electrico, frenos..."></div>
+            <div class="biblioteca2-field"><label>Nombre *</label><input id="b2SpecNombre" placeholder="Potencia"></div>
+            <div class="biblioteca2-field"><label>Valor *</label><input id="b2SpecValor" placeholder="13,4"></div>
+          </div>
+          <div class="biblioteca2-grid" style="margin-top:12px">
+            <div class="biblioteca2-field"><label>Unidad</label><input id="b2SpecUnidad" placeholder="HP a 8500 rpm"></div>
+            <div class="biblioteca2-field"><label>Fuente</label><input id="b2SpecFuente" placeholder="Fuente oficial / medición propia"></div>
+          </div>
+          <div class="biblioteca2-field" style="margin-top:12px"><label>Licencia</label><select id="b2SpecLicencia">${biblioteca2Licencias()}</select></div>
+          <div class="actions"><button class="btn" onclick="biblioteca2GuardarSpec()">💾 Guardar especificación</button></div>
+        </div>`;
+        if(biblioteca2ModeloId) document.getElementById('b2SpecModelo').value=biblioteca2ModeloId;
+        return;
+    }
+    if(tab==='mantenimiento'){
+        c.innerHTML=`
+        <div class="biblioteca2-box">
+          <h3>🔧 Agregar mantenimiento</h3>
+          <div class="biblioteca2-field"><label>Modelo *</label><select id="b2MantModelo"><option value="">Seleccionar...</option>${biblioteca2SelectModelos()}</select></div>
+          <div class="biblioteca2-grid" style="margin-top:12px">
+            <div class="biblioteca2-field"><label>Categoría *</label><input id="b2MantCategoria" placeholder="motor, transmisión..."></div>
+            <div class="biblioteca2-field"><label>Tarea *</label><input id="b2MantTarea" placeholder="Cambio de aceite"></div>
+            <div class="biblioteca2-field"><label>Intervalo km</label><input id="b2MantKm" type="number" placeholder="3000"></div>
+            <div class="biblioteca2-field"><label>Intervalo tiempo</label><input id="b2MantTiempo" placeholder="6 meses"></div>
+          </div>
+          <div class="biblioteca2-field" style="margin-top:12px"><label>Detalle</label><textarea id="b2MantDetalle"></textarea></div>
+          <div class="biblioteca2-grid">
+            <div class="biblioteca2-field"><label>Fuente</label><input id="b2MantFuente"></div>
+            <div class="biblioteca2-field"><label>Licencia</label><select id="b2MantLicencia">${biblioteca2Licencias()}</select></div>
+          </div>
+          <div class="actions"><button class="btn" onclick="biblioteca2GuardarMantenimiento()">💾 Guardar mantenimiento</button></div>
+        </div>`;
+        if(biblioteca2ModeloId) document.getElementById('b2MantModelo').value=biblioteca2ModeloId;
+        return;
+    }
+    if(tab==='diagnostico'){
+        c.innerHTML=`
+        <div class="biblioteca2-box">
+          <h3>🧪 Agregar diagnóstico</h3>
+          <div class="biblioteca2-field"><label>Modelo *</label><select id="b2DiagModelo"><option value="">Seleccionar...</option>${biblioteca2SelectModelos()}</select></div>
+          <div class="biblioteca2-grid" style="margin-top:12px">
+            <div class="biblioteca2-field"><label>Sistema *</label><input id="b2DiagSistema" placeholder="Arranque / carga / motor..."></div>
+            <div class="biblioteca2-field"><label>Síntoma *</label><input id="b2DiagSintoma" placeholder="No arranca"></div>
+          </div>
+          <div class="biblioteca2-field" style="margin-top:12px"><label>Causa posible</label><textarea id="b2DiagCausa"></textarea></div>
+          <div class="biblioteca2-field" style="margin-top:12px"><label>Comprobación</label><textarea id="b2DiagComprobacion"></textarea></div>
+          <div class="biblioteca2-field" style="margin-top:12px"><label>Solución orientativa</label><textarea id="b2DiagSolucion"></textarea></div>
+          <div class="actions"><button class="btn" onclick="biblioteca2GuardarDiagnostico()">💾 Guardar diagnóstico</button></div>
+        </div>`;
+        if(biblioteca2ModeloId) document.getElementById('b2DiagModelo').value=biblioteca2ModeloId;
+        return;
+    }
+    if(tab==='nota'){
+        c.innerHTML=`
+        <div class="biblioteca2-box">
+          <h3>📝 Agregar nota técnica</h3>
+          <div class="biblioteca2-field"><label>Modelo *</label><select id="b2NotaModelo"><option value="">Seleccionar...</option>${biblioteca2SelectModelos()}</select></div>
+          <div class="biblioteca2-field" style="margin-top:12px"><label>Título *</label><input id="b2NotaTitulo" placeholder="Ej.: Observación de taller"></div>
+          <div class="biblioteca2-field" style="margin-top:12px"><label>Contenido *</label><textarea id="b2NotaContenido" style="min-height:160px"></textarea></div>
+          <div class="biblioteca2-grid" style="margin-top:12px">
+            <div class="biblioteca2-field"><label>Tipo</label><input id="b2NotaTipo" value="nota_tecnica"></div>
+            <div class="biblioteca2-field"><label>Fuente</label><input id="b2NotaFuente"></div>
+          </div>
+          <div class="biblioteca2-field" style="margin-top:12px"><label>Licencia</label><select id="b2NotaLicencia">${biblioteca2Licencias()}</select></div>
+          <div class="actions"><button class="btn" onclick="biblioteca2GuardarNota()">💾 Guardar nota</button></div>
+        </div>`;
+        if(biblioteca2ModeloId) document.getElementById('b2NotaModelo').value=biblioteca2ModeloId;
+        return;
+    }
+    if(tab==='administrar'){
+        c.innerHTML=`
+        <div class="biblioteca2-box">
+          <h3>🗂️ Contenido cargado</h3>
+          <div class="biblioteca2-toolbar"><input id="b2AdminSearch" placeholder="Buscar modelo o recurso..." oninput="biblioteca2RenderAdmin()"><button class="btn secondary" onclick="cargarBibliotecaSupabase().then(()=>biblioteca2RenderAdmin())">↻ Actualizar</button></div>
+          <div id="b2AdminLista" style="margin-top:12px"></div>
+        </div>`;
+        biblioteca2RenderAdmin();
+    }
+}
+
+async function biblioteca2GuardarModelo(){
+    const marcaNombre=document.getElementById('b2Marca')?.value.trim();
+    const modeloNombre=document.getElementById('b2Modelo')?.value.trim();
+    if(!marcaNombre||!modeloNombre){alert('La marca y el modelo son obligatorios.');return;}
+    try{
+        let marca=bibliotecaCache.marcas.find(x=>String(x.nombre).trim().toLowerCase()===marcaNombre.toLowerCase() && !String(x.id).startsWith('public-') && !String(x.id).startsWith('official-'));
+        if(!marca){const r=await supabaseClient.from('biblioteca_marcas').insert({nombre:marcaNombre}).select().single();if(r.error)throw r.error;marca=r.data;}
+        const version=document.getElementById('b2Version')?.value.trim()||null;
+        const existe=bibliotecaCache.modelos.find(x=>x.marca_id===marca.id&&x.nombre.toLowerCase()===modeloNombre.toLowerCase()&&(x.version||'').toLowerCase()===(version||'').toLowerCase());
+        if(existe){alert('Ese modelo ya existe para esa marca.');return;}
+        const payload={marca_id:marca.id,nombre:modeloNombre,version,cilindrada:document.getElementById('b2Cilindrada')?.value.trim()||null,año_desde:Number(document.getElementById('b2Desde')?.value)||null,año_hasta:Number(document.getElementById('b2Hasta')?.value)||null,tipo_moto:document.getElementById('b2Tipo')?.value.trim()||null,motor:document.getElementById('b2Motor')?.value.trim()||null,descripcion:document.getElementById('b2Descripcion')?.value.trim()||null};
+        const r=await supabaseClient.from('biblioteca_modelos').insert(payload).select().single(); if(r.error)throw r.error;
+        await cargarBibliotecaSupabase(); biblioteca2ModeloId=r.data.id; alert('✅ Modelo creado correctamente.'); biblioteca2Tab('recurso');
+    }catch(e){console.error(e);alert('No se pudo crear el modelo:\n\n'+e.message)}
+}
+
+async function biblioteca2GuardarRecurso(){
+    const modeloId=document.getElementById('b2RecursoModelo')?.value;
+    const titulo=document.getElementById('b2RecursoTitulo')?.value.trim();
+    if(!modeloId||!titulo){alert('Seleccioná un modelo e ingresá el título.');return;}
+    const archivo=document.getElementById('b2RecursoArchivo')?.files?.[0]||null;
+    if(archivo&&archivo.size>50*1024*1024){alert('El archivo supera el límite de 50 MB.');return;}
+    let ruta=null;
+    try{
+        const modelo=bibliotecaCache.modelos.find(x=>x.id===modeloId); const marca=modelo?bibliotecaCache.marcas.find(x=>x.id===modelo.marca_id):null;
+        if(!modelo||!marca)throw new Error('Modelo o marca no encontrados.');
+        if(archivo){const ext=archivo.name.includes('.')?archivo.name.split('.').pop().toLowerCase():'bin';ruta=`${slugBiblioteca(marca.nombre)}/${slugBiblioteca(modelo.nombre)}/${crypto.randomUUID()}.${ext}`;const up=await supabaseClient.storage.from(BIBLIOTECA_BUCKET).upload(ruta,archivo,{cacheControl:'3600',upsert:false,contentType:archivo.type||undefined});if(up.error)throw up.error;}
+        const r=await supabaseClient.from('biblioteca_recursos').insert({modelo_id:modeloId,titulo,categoria:document.getElementById('b2RecursoCategoria')?.value||'otro',descripcion:document.getElementById('b2RecursoDescripcion')?.value.trim()||null,nombre_archivo:archivo?.name||null,ruta_archivo:ruta,url_archivo:document.getElementById('b2RecursoUrl')?.value.trim()||null,tipo_archivo:archivo?.type||null,tamaño_archivo:archivo?.size||null,fuente:document.getElementById('b2RecursoFuente')?.value.trim()||null,autor:document.getElementById('b2RecursoAutor')?.value.trim()||null,licencia:document.getElementById('b2RecursoLicencia')?.value||'desconocida'});if(r.error)throw r.error;
+        await cargarBibliotecaSupabase(); alert('✅ Recurso guardado.'); biblioteca2RenderTab('recurso');
+    }catch(e){if(ruta)await supabaseClient.storage.from(BIBLIOTECA_BUCKET).remove([ruta]);console.error(e);alert('No se pudo guardar el recurso:\n\n'+e.message)}
+}
+
+async function biblioteca2GuardarSpec(){
+    const modelo_id=document.getElementById('b2SpecModelo')?.value;if(!modelo_id)return alert('Seleccioná un modelo.');
+    const nombre=document.getElementById('b2SpecNombre')?.value.trim(), valor=document.getElementById('b2SpecValor')?.value.trim(), categoria=document.getElementById('b2SpecCategoria')?.value.trim();
+    if(!categoria||!nombre||!valor)return alert('Completá categoría, nombre y valor.');
+    const r=await supabaseClient.from('biblioteca_especificaciones').insert({modelo_id,categoria,nombre,valor,unidad:document.getElementById('b2SpecUnidad')?.value.trim()||null,fuente:document.getElementById('b2SpecFuente')?.value.trim()||null,licencia:document.getElementById('b2SpecLicencia')?.value||'desconocida'});
+    if(r.error){alert('No se pudo guardar la especificación:\n\n'+r.error.message);return} alert('✅ Especificación guardada.'); biblioteca2RenderTab('spec');
+}
+
+async function biblioteca2GuardarMantenimiento(){
+    const modelo_id=document.getElementById('b2MantModelo')?.value;if(!modelo_id)return alert('Seleccioná un modelo.');
+    const tarea=document.getElementById('b2MantTarea')?.value.trim(),categoria=document.getElementById('b2MantCategoria')?.value.trim();if(!categoria||!tarea)return alert('Completá categoría y tarea.');
+    const km=Number(document.getElementById('b2MantKm')?.value)||null;
+    const r=await supabaseClient.from('biblioteca_mantenimientos').insert({modelo_id,categoria,tarea,intervalo_km:km,intervalo_tiempo:document.getElementById('b2MantTiempo')?.value.trim()||null,detalle:document.getElementById('b2MantDetalle')?.value.trim()||null,fuente:document.getElementById('b2MantFuente')?.value.trim()||null,licencia:document.getElementById('b2MantLicencia')?.value||'desconocida'});
+    if(r.error){alert('No se pudo guardar el mantenimiento:\n\n'+r.error.message);return} alert('✅ Mantenimiento guardado.'); biblioteca2RenderTab('mantenimiento');
+}
+
+async function biblioteca2GuardarDiagnostico(){
+    const modelo_id=document.getElementById('b2DiagModelo')?.value;if(!modelo_id)return alert('Seleccioná un modelo.');
+    const sistema=document.getElementById('b2DiagSistema')?.value.trim(),sintoma=document.getElementById('b2DiagSintoma')?.value.trim();if(!sistema||!sintoma)return alert('Completá sistema y síntoma.');
+    const r=await supabaseClient.from('biblioteca_diagnosticos').insert({modelo_id,sistema,sintoma,causa_posible:document.getElementById('b2DiagCausa')?.value.trim()||null,comprobacion:document.getElementById('b2DiagComprobacion')?.value.trim()||null,solucion:document.getElementById('b2DiagSolucion')?.value.trim()||null});
+    if(r.error){alert('No se pudo guardar el diagnóstico:\n\n'+r.error.message);return} alert('✅ Diagnóstico guardado.'); biblioteca2RenderTab('diagnostico');
+}
+
+async function biblioteca2GuardarNota(){
+    const modelo_id=document.getElementById('b2NotaModelo')?.value;
+    const titulo=document.getElementById('b2NotaTitulo')?.value.trim();
+    const contenido=document.getElementById('b2NotaContenido')?.value.trim();
+    if(!modelo_id||!titulo||!contenido)return alert('Completá modelo, título y contenido.');
+    const r=await supabaseClient.from('biblioteca_notas').insert({modelo_id,titulo,contenido,tipo:document.getElementById('b2NotaTipo')?.value.trim()||'nota_tecnica',fuente:document.getElementById('b2NotaFuente')?.value.trim()||null,licencia:document.getElementById('b2NotaLicencia')?.value||'desconocida'});
+    if(r.error){alert('No se pudo guardar la nota:\n\n'+r.error.message);return}
+    alert('✅ Nota guardada.'); biblioteca2RenderTab('nota');
+}
+
+async function biblioteca2RenderAdmin(){
+    const c=document.getElementById('b2AdminLista');if(!c)return;
+    await cargarBibliotecaSupabase();
+    const q=(document.getElementById('b2AdminSearch')?.value||'').toLowerCase().trim();
+    const recursos=obtenerBiblioteca().filter(x=>!q||`${x.marca} ${x.modelo} ${x.titulo} ${x.categoria}`.toLowerCase().includes(q)).slice(0,100);
+    c.innerHTML=recursos.length?`<div class="biblioteca2-list">${recursos.map(x=>`<div class="biblioteca2-row"><div class="biblioteca2-row-main"><strong>${biblioteca2Html(x.marca)} · ${biblioteca2Html(x.modelo)}</strong><small>${biblioteca2Html(etiquetaCategoriaBiblioteca(x.categoria))} — ${biblioteca2Html(x.titulo)}${x.licencia?' · '+biblioteca2Html(etiquetaLicenciaBiblioteca(x.licencia)):''}</small></div><div class="biblioteca2-actions"><button class="btn secondary" onclick="abrirRecursoBiblioteca('${x.id}')">Ver</button>${x.ruta_archivo?`<button class="btn secondary" onclick="abrirArchivoBiblioteca('${x.id}')">Archivo</button>`:''}${x.url_archivo?`<button class="btn secondary" onclick="abrirEnlaceBiblioteca('${x.id}')">Fuente</button>`:''}${!String(x.id).startsWith('official-')&&!String(x.id).startsWith('public-')?`<button class="btn" onclick="biblioteca2EliminarRecurso('${x.id}')">Eliminar</button>`:''}</div></div>`).join('')}</div>`:'<div class="empty">No hay recursos para mostrar.</div>';
+}
+
+async function biblioteca2EliminarRecurso(id){
+    const recurso=bibliotecaCache.recursos.find(x=>x.id===id);if(!recurso||String(id).startsWith('official-')||String(id).startsWith('public-'))return;
+    if(!confirm(`¿Eliminar el recurso "${recurso.titulo}"?`))return;
+    try{if(recurso.ruta_archivo)await supabaseClient.storage.from(BIBLIOTECA_BUCKET).remove([recurso.ruta_archivo]);const r=await supabaseClient.from('biblioteca_recursos').delete().eq('id',id);if(r.error)throw r.error;await biblioteca2RenderAdmin();await renderBiblioteca();alert('✅ Recurso eliminado.');}catch(e){alert('No se pudo eliminar:\n\n'+e.message)}
+}
+
+async function biblioteca2AbrirContenido(id){
+    const recurso=bibliotecaCache.recursos.find(x=>x.id===id);if(!recurso)return;
+    if(!recurso.ruta_archivo){abrirEnlaceBiblioteca(id);return;}
+    try{
+        const r=await supabaseClient.storage.from(BIBLIOTECA_BUCKET).createSignedUrl(recurso.ruta_archivo,60*30);if(r.error)throw r.error;
+        const url=r.data?.signedUrl;if(!url)throw new Error('No se pudo generar el enlace seguro.');
+        const tipo=(recurso.tipo_archivo||'').toLowerCase();const esImagen=tipo.startsWith('image/')||/\.(jpg|jpeg|png|webp|gif|svg)$/i.test(recurso.nombre_archivo||'');
+        const esPdf=tipo==='application/pdf'||/\.pdf$/i.test(recurso.nombre_archivo||'');
+        const mb=document.getElementById('modalbox');mb.innerHTML=`<div class="biblioteca2-manager"><div class="biblioteca-modelo-head"><div><h2>📖 ${biblioteca2Html(recurso.titulo)}</h2><p class="biblioteca2-help">${biblioteca2Html(recurso.descripcion||'')}</p></div><button class="btn secondary" onclick="closeModal()">✕ Cerrar</button></div><div class="biblioteca2-viewer">${esImagen?`<img src="${url}" alt="${biblioteca2Html(recurso.titulo)}">`:esPdf?`<iframe src="${url}#toolbar=1&navpanes=0"></iframe>`:`<iframe src="${url}"></iframe>`}</div><div class="actions"><a class="btn" href="${url}" target="_blank" rel="noopener noreferrer">↗ Abrir en pestaña</a>${recurso.url_archivo?`<button class="btn secondary" onclick="abrirEnlaceBiblioteca('${id}')">🔗 Fuente</button>`:''}</div></div>`;
+        document.getElementById('modal').classList.add('show');
+    }catch(e){alert('No se pudo visualizar el archivo:\n\n'+e.message)}
+}
+
+// Usar el visor interno cuando se abre un archivo de biblioteca.
+const biblioteca2AbrirArchivoOriginal = abrirArchivoBiblioteca;
+abrirArchivoBiblioteca = biblioteca2AbrirContenido;
 </script>
 </body></html>
