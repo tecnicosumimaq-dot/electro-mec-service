@@ -12656,11 +12656,25 @@ let biblioteca2Modelo = null;
 
 function biblioteca2Html(valor){ return escapeBiblioteca(valor); }
 
+function bibliotecaEsUUID(id){
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(id||''));
+}
+
+function bibliotecaEsModeloSupabase(id){
+    return bibliotecaEsUUID(id);
+}
+
 async function biblioteca2CargarModelo(modeloId){
     await cargarBibliotecaSupabase();
     biblioteca2ModeloId = modeloId || '';
     biblioteca2Modelo = bibliotecaCache.modelos.find(x => x.id === modeloId) || null;
     if (!biblioteca2Modelo) throw new Error('No se encontró el modelo seleccionado.');
+    // Los modelos del catálogo público usan IDs lógicos (public-*).
+    // JAMÁS se envían esos IDs a columnas uuid de Supabase.
+    if (!bibliotecaEsModeloSupabase(modeloId)) {
+        biblioteca2Datos={especificaciones:[],mantenimientos:[],diagnosticos:[],recursos:[],notas:[]};
+        return;
+    }
     const [es, ma, di, re, no] = await Promise.all([
         supabaseClient.from('biblioteca_especificaciones').select('*').eq('modelo_id',modeloId).eq('activo',true).order('categoria').order('nombre'),
         supabaseClient.from('biblioteca_mantenimientos').select('*').eq('modelo_id',modeloId).eq('activo',true).order('intervalo_km',{ascending:true,nullsFirst:false}).order('tarea'),
@@ -12963,6 +12977,7 @@ async function biblioteca3CargarModeloCompleto(modeloId){
     await cargarBibliotecaSupabase();
     const modelo=bibliotecaCache.modelos.find(x=>x.id===modeloId);
     if(!modelo) throw new Error('Modelo no encontrado.');
+    if(!bibliotecaEsModeloSupabase(modeloId)) return {modelo, especificaciones:[], mantenimientos:[], diagnosticos:[], recursos:[]};
     const [es,ma,di,re]=await Promise.all([
         supabaseClient.from('biblioteca_especificaciones').select('*').eq('modelo_id',modeloId).eq('activo',true).order('categoria').order('nombre'),
         supabaseClient.from('biblioteca_mantenimientos').select('*').eq('modelo_id',modeloId).eq('activo',true).order('intervalo_km',{ascending:true,nullsFirst:false}).order('tarea'),
@@ -12974,7 +12989,7 @@ async function biblioteca3CargarModeloCompleto(modeloId){
 }
 
 function biblioteca3ModelosOpciones(){
-    return bibliotecaCache.modelos.filter(m=>m.id&&!String(m.id).startsWith('public-')).map(m=>{
+    return bibliotecaCache.modelos.filter(m=>m.id&&bibliotecaEsModeloSupabase(m.id)).map(m=>{
         const marca=bibliotecaCache.marcas.find(x=>x.id===m.marca_id);
         return `<option value="${biblioteca2Html(m.id)}">${biblioteca2Html(marca?.nombre||'')} · ${biblioteca2Html(m.nombre)}${m.version?' · '+biblioteca2Html(m.version):''}</option>`;
     }).join('');
@@ -12998,8 +13013,11 @@ async function biblioteca3EjecutarBusqueda(){
     out.innerHTML='<div class="empty">⏳ Buscando...</div>';
     try{
       await cargarBibliotecaSupabase();
-      const modelos=bibliotecaCache.modelos.map(m=>({m,marca:bibliotecaCache.marcas.find(x=>x.id===m.marca_id)}));
+      const modelos=bibliotecaCache.modelos
+        .filter(m=>m.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(m.id)))
+        .map(m=>({m,marca:bibliotecaCache.marcas.find(x=>x.id===m.marca_id)}));
       const ids=modelos.map(x=>x.m.id);
+      if(!ids.length){out.innerHTML='<div class="empty">🔎 No hay modelos con datos técnicos almacenados todavía.</div>';return;}
       const [es,ma,di,re]=await Promise.all([
         supabaseClient.from('biblioteca_especificaciones').select('*').in('modelo_id',ids).eq('activo',true),
         supabaseClient.from('biblioteca_mantenimientos').select('*').in('modelo_id',ids).eq('activo',true),
@@ -13035,6 +13053,11 @@ async function biblioteca3CargarSistemas(){
     const modeloId=document.getElementById('b3DiagModelo')?.value; const s=document.getElementById('b3DiagSistema'); const t=document.getElementById('b3DiagSintoma');
     if(!s||!t)return; s.innerHTML='<option value="">⏳ Cargando...</option>'; t.innerHTML='<option value="">Seleccionar sistema...</option>';
     if(!modeloId){s.innerHTML='<option value="">Seleccionar...</option>';return;}
+    if(!bibliotecaEsModeloSupabase(modeloId)){
+        s.innerHTML='<option value="">Sin diagnóstico técnico cargado</option>';
+        biblioteca3DiagnosticosActual=[];
+        return;
+    }
     const r=await supabaseClient.from('biblioteca_diagnosticos').select('*').eq('modelo_id',modeloId).eq('activo',true).order('sistema').order('sintoma');
     if(r.error){s.innerHTML='<option value="">Error</option>';return;}
     biblioteca3DiagnosticosActual=r.data||[];
@@ -13059,7 +13082,7 @@ async function biblioteca3Completeness(){
     mb.innerHTML=`<div class="biblioteca2-manager"><div class="biblioteca-modelo-head"><div><h2>📊 Completitud de la biblioteca</h2><p class="biblioteca2-help">Indicador práctico para detectar qué modelos todavía necesitan contenido.</p></div><button class="btn secondary" onclick="closeModal()">✕ Cerrar</button></div><div id="b3CompletenessList" class="biblioteca2-list"><div class="empty">⏳ Analizando...</div></div></div>`;
     document.getElementById('modal').classList.add('show');
     const rows=[];
-    for(const m of bibliotecaCache.modelos.filter(x=>!String(x.id).startsWith('public-'))){
+    for(const m of bibliotecaCache.modelos.filter(x=>bibliotecaEsModeloSupabase(x.id))){
       const recursos=bibliotecaCache.recursos.filter(x=>x.modelo_id===m.id);
       const [es,ma,di]=await Promise.all([
         supabaseClient.from('biblioteca_especificaciones').select('id',{count:'exact',head:true}).eq('modelo_id',m.id).eq('activo',true),
@@ -13089,10 +13112,12 @@ async function biblioteca31AbrirFicha(modeloId){
     const d=await biblioteca3CargarModeloCompleto(modeloId);
     const marca=bibliotecaCache.marcas.find(x=>x.id===d.modelo.marca_id);
     let notas=[];
-    try{
-      const n=await supabaseClient.from('biblioteca_notas').select('*').eq('modelo_id',modeloId).eq('activo',true).order('fecha_alta',{ascending:false});
-      if(!n.error) notas=n.data||[];
-    }catch(_){ }
+    if(bibliotecaEsModeloSupabase(modeloId)){
+      try{
+        const n=await supabaseClient.from('biblioteca_notas').select('*').eq('modelo_id',modeloId).eq('activo',true).order('fecha_alta',{ascending:false});
+        if(!n.error) notas=n.data||[];
+      }catch(_){ }
+    }
     const esc=biblioteca2Html;
     const grupos={};
     d.especificaciones.forEach(x=>(grupos[x.categoria]??=[]).push(x));
