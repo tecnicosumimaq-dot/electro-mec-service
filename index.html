@@ -1997,7 +1997,11 @@ function verImagenOT(url) {
 .biblioteca2-viewer img{display:block;max-width:100%;max-height:75vh;margin:auto;object-fit:contain}
 .biblioteca2-help{font-size:12px;color:#6b7280;line-height:1.5}
 @media(max-width:800px){.biblioteca2-grid,.biblioteca2-grid-3{grid-template-columns:1fr}.biblioteca2-row{align-items:flex-start;flex-direction:column}.biblioteca2-actions{justify-content:flex-start}}
-</style></head>
+</style>
+<style>
+.biblioteca31-model-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:14px}.biblioteca31-model-card{border:1px solid #e5e7eb;border-radius:14px;padding:14px;display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;background:#fff}.biblioteca31-model-card .btn{grid-column:1/-1}.biblioteca31-model-icon{font-size:30px}.biblioteca31-model-card h3{margin:0;font-size:15px}.biblioteca31-model-card p{margin:4px 0 0;color:#6b7280;font-size:13px}.biblioteca31-resource-heading{font-weight:800;margin:22px 0 8px}.biblioteca31-hero{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}.biblioteca31-hero>div{border:1px solid #e5e7eb;border-radius:12px;padding:12px;background:#f8fafc}.biblioteca31-hero b,.biblioteca31-hero span{display:block}.biblioteca31-hero b{font-size:11px;color:#64748b;text-transform:uppercase}.biblioteca31-hero span{margin-top:5px;font-weight:700}.biblioteca31-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0}.biblioteca31-tab{border:1px solid #d1d5db;background:#fff;border-radius:9px;padding:9px 12px;cursor:pointer}.biblioteca31-tab.active{background:#111827;color:#fff}.biblioteca31-pane{display:none}.biblioteca31-pane.active{display:block}.biblioteca31-section{margin-bottom:20px}.biblioteca31-specs{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:8px}.biblioteca31-specs>div{border:1px solid #e5e7eb;border-radius:10px;padding:10px;display:flex;justify-content:space-between;gap:12px}.biblioteca31-specs span{color:#64748b}.biblioteca31-table-wrap{overflow:auto}.biblioteca31-table{width:100%;border-collapse:collapse}.biblioteca31-table th,.biblioteca31-table td{border-bottom:1px solid #e5e7eb;padding:10px;text-align:left;vertical-align:top}.biblioteca31-table th{font-size:12px;text-transform:uppercase;color:#64748b}.biblioteca31-diag-group{margin-bottom:16px}.biblioteca31-diag-group details{border:1px solid #e5e7eb;border-radius:10px;margin:7px 0;padding:10px}.biblioteca31-diag-group summary{cursor:pointer;font-weight:700}.biblioteca31-diag-body{padding:8px 4px 0;color:#475569}.biblioteca31-note{border:1px solid #e5e7eb;border-radius:12px;padding:14px;margin:10px 0}.biblioteca31-note h3{margin-top:0}.biblioteca31-summary{border:1px solid #e5e7eb;border-radius:14px;padding:16px}.biblioteca31-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}@media(max-width:700px){.biblioteca31-hero{grid-template-columns:repeat(2,1fr)}.biblioteca31-specs>div{display:block}.biblioteca31-specs strong{display:block;margin-top:5px}}
+</style>
+</head>
 <body>
     <div id="resetPasswordScreen" style="display:none; min-height:100vh; align-items:center; justify-content:center; background:#f4f6f8; padding:20px;">
     <div style="background:white; padding:30px; border-radius:16px; width:min(420px,100%); box-shadow:0 3px 20px #0002;">
@@ -13073,5 +13077,64 @@ async function biblioteca3Completeness(){
 // Usar el visor interno cuando se abre un archivo de biblioteca.
 const biblioteca2AbrirArchivoOriginal = abrirArchivoBiblioteca;
 abrirArchivoBiblioteca = biblioteca2AbrirContenido;
+
+/* =========================================================
+   BIBLIOTECA 3.1 — FICHA TÉCNICA INTERACTIVA DE MODELO
+   ========================================================= */
+async function biblioteca31AbrirFicha(modeloId){
+  const mb=document.getElementById('modalbox'); if(!mb)return;
+  mb.innerHTML='<div class="biblioteca2-manager"><div class="empty">⏳ Cargando ficha técnica...</div></div>';
+  document.getElementById('modal').classList.add('show');
+  try{
+    const d=await biblioteca3CargarModeloCompleto(modeloId);
+    const marca=bibliotecaCache.marcas.find(x=>x.id===d.modelo.marca_id);
+    let notas=[];
+    try{
+      const n=await supabaseClient.from('biblioteca_notas').select('*').eq('modelo_id',modeloId).eq('activo',true).order('fecha_alta',{ascending:false});
+      if(!n.error) notas=n.data||[];
+    }catch(_){ }
+    const esc=biblioteca2Html;
+    const grupos={};
+    d.especificaciones.forEach(x=>(grupos[x.categoria]??=[]).push(x));
+    const specs=Object.entries(grupos).map(([cat,arr])=>`<div class="biblioteca31-section"><h3>📋 ${esc(cat)}</h3><div class="biblioteca31-specs">${arr.map(x=>`<div><span>${esc(x.nombre)}</span><strong>${esc(x.valor)}${x.unidad?' '+esc(x.unidad):''}</strong></div>`).join('')}</div></div>`).join('')||'<div class="empty">Todavía no hay especificaciones cargadas.</div>';
+    const mant=d.mantenimientos.length?`<div class="biblioteca31-table-wrap"><table class="biblioteca31-table"><thead><tr><th>Km</th><th>Tiempo</th><th>Tarea</th><th>Detalle</th></tr></thead><tbody>${d.mantenimientos.map(x=>`<tr><td>${x.intervalo_km??'—'}</td><td>${esc(x.intervalo_tiempo||'—')}</td><td>${esc(x.tarea)}</td><td>${esc(x.detalle||'—')}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Todavía no hay mantenimiento cargado.</div>';
+    const sistemas=[...new Set(d.diagnosticos.map(x=>x.sistema).filter(Boolean))];
+    const diag=d.diagnosticos.length?`<div class="biblioteca31-diag-list">${sistemas.map(sys=>`<div class="biblioteca31-diag-group"><h3>🧪 ${esc(sys)}</h3>${d.diagnosticos.filter(x=>x.sistema===sys).map(x=>`<details><summary>${esc(x.sintoma)}</summary><div class="biblioteca31-diag-body"><p><b>⚠️ Causa posible:</b> ${esc(x.causa_posible||'—')}</p><p><b>🔎 Comprobación:</b> ${esc(x.comprobacion||'—')}</p><p><b>🧰 Solución:</b> ${esc(x.solucion||'—')}</p></div></details>`).join('')}</div>`).join('')}</div>`:'<div class="empty">Todavía no hay diagnósticos cargados.</div>';
+    const recursos=d.recursos.length?`<div class="biblioteca31-resource-list">${d.recursos.map(x=>`<div class="biblioteca2-row"><div class="biblioteca2-row-main"><strong>${esc(x.titulo)}</strong><small>${esc(etiquetaCategoriaBiblioteca(x.categoria))}${x.fuente?' · '+esc(x.fuente):''}</small></div><div class="biblioteca2-actions">${x.ruta_archivo?`<button class="btn secondary" onclick="biblioteca2AbrirContenido('${x.id}')">📖 Ver</button>`:''}${x.url_archivo?`<button class="btn secondary" onclick="abrirEnlaceBiblioteca('${x.id}')">🔗 Fuente</button>`:''}</div></div>`).join('')}</div>`:'<div class="empty">No hay documentación cargada.</div>';
+    const notasHtml=notas.length?notas.map(x=>`<div class="biblioteca31-note"><h3>📝 ${esc(x.titulo)}</h3><p>${esc(x.contenido).replace(/\n/g,'<br>')}</p>${x.fuente?`<small>Fuente: ${esc(x.fuente)}</small>`:''}</div>`).join(''):'<div class="empty">No hay notas técnicas cargadas.</div>';
+    mb.innerHTML=`<div class="biblioteca2-manager biblioteca31-manager">
+      <div class="biblioteca-modelo-head"><div><h2>🏍️ ${esc(marca?.nombre||'')} · ${esc(d.modelo.nombre)}</h2><p class="biblioteca2-help">${esc([d.modelo.version,d.modelo.cilindrada,d.modelo.tipo_moto].filter(Boolean).join(' · '))}</p></div><button class="btn secondary" onclick="closeModal()">✕ Cerrar</button></div>
+      <div class="biblioteca31-hero"><div><b>Motor</b><span>${esc(d.modelo.motor||'Sin dato')}</span></div><div><b>Años</b><span>${esc([d.modelo.año_desde,d.modelo.año_hasta].filter(Boolean).join(' - ')||'Sin dato')}</span></div><div><b>Especificaciones</b><span>${d.especificaciones.length}</span></div><div><b>Diagnósticos</b><span>${d.diagnosticos.length}</span></div></div>
+      <div class="biblioteca31-tabs"><button class="biblioteca31-tab active" onclick="biblioteca31Tab(this,'b31resumen')">📋 Resumen</button><button class="biblioteca31-tab" onclick="biblioteca31Tab(this,'b31spec')">⚙ Especificaciones</button><button class="biblioteca31-tab" onclick="biblioteca31Tab(this,'b31mant')">🛢️ Mantenimiento</button><button class="biblioteca31-tab" onclick="biblioteca31Tab(this,'b31diag')">🧪 Diagnóstico</button><button class="biblioteca31-tab" onclick="biblioteca31Tab(this,'b31docs')">📚 Documentación</button><button class="biblioteca31-tab" onclick="biblioteca31Tab(this,'b31notas')">📝 Notas</button></div>
+      <section id="b31resumen" class="biblioteca31-pane active"><div class="biblioteca31-summary"><h3>Descripción</h3><p>${esc(d.modelo.descripcion||'No hay descripción cargada para este modelo.')}</p><div class="biblioteca31-actions"><button class="btn" onclick="biblioteca3DiagnosticoInteractivo();setTimeout(()=>{const s=document.getElementById('b3DiagModelo');if(s){s.value='${esc(modeloId)}';biblioteca3CargarSistemas();}},200)">🧪 Diagnóstico guiado</button><button class="btn secondary" onclick="biblioteca2AbrirGestor('${esc(modeloId)}')">⚙ Gestionar contenido</button></div></div></section>
+      <section id="b31spec" class="biblioteca31-pane">${specs}</section>
+      <section id="b31mant" class="biblioteca31-pane">${mant}</section>
+      <section id="b31diag" class="biblioteca31-pane">${diag}</section>
+      <section id="b31docs" class="biblioteca31-pane">${recursos}</section>
+      <section id="b31notas" class="biblioteca31-pane">${notasHtml}</section>
+    </div>`;
+  }catch(e){mb.innerHTML=`<div class="biblioteca2-manager"><div class="empty">❌ No se pudo cargar la ficha:<br><br>${biblioteca2Html(e.message)}</div></div>`;}
+}
+function biblioteca31Tab(btn,id){document.querySelectorAll('.biblioteca31-tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.biblioteca31-pane').forEach(x=>x.classList.remove('active'));btn.classList.add('active');document.getElementById(id)?.classList.add('active');}
+
+const biblioteca31RenderOriginal=renderBiblioteca;
+renderBiblioteca=async function(){
+  const contenedor=document.getElementById('bibliotecaResultados'); if(!contenedor)return;
+  contenedor.innerHTML='<div class="empty">⏳ Cargando Biblioteca Técnica...</div>';
+  await cargarBibliotecaSupabase();
+  const q=(document.getElementById('bibliotecaSearch')?.value||'').trim().toLowerCase();
+  const cat=document.getElementById('bibliotecaCategoria')?.value||'';
+  const modelos=bibliotecaCache.modelos.map(m=>({m,marca:bibliotecaCache.marcas.find(x=>x.id===m.marca_id)})).filter(x=>{
+    const txt=[x.marca?.nombre,x.m.nombre,x.m.version,x.m.cilindrada,x.m.motor].join(' ').toLowerCase(); return !q||txt.includes(q);
+  });
+  const recursos=obtenerBiblioteca().filter(x=>{const txt=[x.marca,x.modelo,x.categoria,x.titulo,x.descripcion,x.fuente].join(' ').toLowerCase();return (!q||txt.includes(q))&&(!cat||x.categoria===cat);});
+  actualizarKpisBiblioteca();
+  let html='';
+  if(!cat && modelos.length){html+=`<div class="biblioteca31-model-grid">${modelos.slice(0,80).map(x=>`<div class="biblioteca31-model-card"><div class="biblioteca31-model-icon">🏍️</div><div><h3>${biblioteca2Html(x.marca?.nombre||'')} · ${biblioteca2Html(x.m.nombre)}</h3><p>${biblioteca2Html([x.m.version,x.m.cilindrada,x.m.tipo_moto].filter(Boolean).join(' · ')||'Ficha técnica disponible')}</p></div><button class="btn secondary" onclick="biblioteca31AbrirFicha('${biblioteca2Html(x.m.id)}')">📋 Abrir ficha</button></div>`).join('')}</div>`;}
+  if(recursos.length){html+=`<div class="biblioteca31-resource-heading">📚 Recursos encontrados</div><div class="biblioteca-resultados">${recursos.slice(0,100).map(item=>`<div class="biblioteca-item"><div class="biblioteca-item-categoria">${biblioteca2Html(etiquetaCategoriaBiblioteca(item.categoria))}</div><h3>${biblioteca2Html(item.marca)} · ${biblioteca2Html(item.modelo)}</h3><p><strong>${biblioteca2Html(item.titulo)}</strong>${item.descripcion?`<br>${biblioteca2Html(item.descripcion)}`:''}</p><button class="btn secondary" onclick="abrirRecursoBiblioteca('${biblioteca2Html(item.id)}')">Ver recurso</button></div>`).join('')}</div>`;}
+  if(!html)html='<div class="empty">🔎 No encontramos información con esos filtros.</div>';
+  contenedor.innerHTML=html;
+};
+
 </script>
 </body></html>
